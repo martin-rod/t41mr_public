@@ -1,0 +1,1 @@
+Create touch or proximity sensitive inputs using metal objects.  Written by Paul Badger.

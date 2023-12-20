@@ -1,0 +1,3 @@
+Advanced Audio for Teensy 3.x.
+
+Can play multiple sounds, synthesize, mix, analyze, filter and apply real-time effects.  Supports I2S digital, DAC and other audio I/O.

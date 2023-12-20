@@ -1,0 +1,3 @@
+Color TFT display with 128x128 pixels, usually 1.44 inches, using the ILI9163 controller chip.
+
+TFT_ILI9163C has special optimization Teensy 3.x.

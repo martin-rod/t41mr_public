@@ -1,0 +1,3 @@
+Compute CRC (Cyclic Redundancy Check) to detect errors in data.
+
+Uses fast hardware acceleration, when available.

@@ -1,0 +1,3 @@
+Use power saving modes on Teensy 3.x & LC.
+
+For 8 bit AVR chips, use the LowPower library.

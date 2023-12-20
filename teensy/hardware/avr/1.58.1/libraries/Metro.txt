@@ -1,0 +1,3 @@
+Easily schedule events to occur at regular intervals.
+
+Written by Thomas Ouellet Fredericks.

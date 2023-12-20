@@ -1,0 +1,1 @@
+Track Date & Time, and optionally synchronize to external time sources, like real time clocks, GPS, or Network Time Protocol.

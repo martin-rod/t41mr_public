@@ -1,0 +1,3 @@
+Control large numbers of WS2811-based (WS2812B/NeoPixel) LEDs.
+
+Only work with Teensy 3.x, using DMA hardware to very efficiently update LEDs without blocking your program or other libraries.

@@ -1,0 +1,3 @@
+Infrared Remote Control, Send & Receive IR remote control messages to and from common devices.
+
+Written by Ken Shirriff.

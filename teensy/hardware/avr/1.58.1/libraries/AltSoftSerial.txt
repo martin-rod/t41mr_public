@@ -1,0 +1,1 @@
+Emulate an extra serial port, using a hardware timer.  AltSoftSerial allows simultaneous data transfer in both directions and works better than other software serial when used with data transfer on normal serial ports.  Written by Paul Stoffregen.

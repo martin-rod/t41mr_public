@@ -1,0 +1,1 @@
+Measure the frequency of signals less than 5 kHz.  For higher frequencies, FreqCount is best.  Written by Paul Stoffregen.

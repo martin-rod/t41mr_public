@@ -1,0 +1,3 @@
+Color TFT display with 320x240 pixels, usually 2.2 to 2.8 inches, using the ILI9341 controller chip.
+
+ILI9341_t3 is highly optimized for Teensy 3.x.  For other boards, use Adafruit_ILI9341.

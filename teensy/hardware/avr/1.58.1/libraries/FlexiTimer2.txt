@@ -1,0 +1,1 @@
+Use Timer2 to run a function periodically.  Written Wim Leers, based on MsTimer2 by Javier Valencia.

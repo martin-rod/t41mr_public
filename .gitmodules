@@ -1,0 +1,15 @@
+[submodule "libraries/Adafruit-GFX-Library"]
+	path = libraries/Adafruit-GFX-Library
+	url = https://github.com/adafruit/Adafruit-GFX-Library
+[submodule "libraries/Adafruit_BusIO"]
+	path = libraries/Adafruit_BusIO
+	url = https://github.com/adafruit/Adafruit_BusIO.git
+[submodule "libraries/OpenAudio_ArduinoLibrary"]
+	path = libraries/OpenAudio_ArduinoLibrary
+	url = https://github.com/chipaudette/OpenAudio_ArduinoLibrary
+[submodule "libraries/Si5351Arduino"]
+	path = libraries/Si5351Arduino
+	url = https://github.com/etherkit/Si5351Arduino
+[submodule "libraries/Rotary"]
+	path = libraries/Rotary
+	url = https://github.com/brianlow/Rotary

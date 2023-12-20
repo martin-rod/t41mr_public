@@ -1,0 +1,1 @@
+VS1053 is a MP3 player and sound reproduction chip.

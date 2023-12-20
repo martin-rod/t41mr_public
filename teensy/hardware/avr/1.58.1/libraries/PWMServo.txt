@@ -1,0 +1,1 @@
+Control RC servo motors - this is an older version of the Servo library which is limited to 3 motors on specific pins, but it is not sensitive to timing issues from other libraries.

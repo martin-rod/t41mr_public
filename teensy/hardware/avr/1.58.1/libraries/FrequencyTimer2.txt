@@ -1,0 +1,1 @@
+Use Timer2 to create a stable frequency signal.  Written by Jim Studt.

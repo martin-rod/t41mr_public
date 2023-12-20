@@ -1,0 +1,3 @@
+Receive and transmit up to 8 simultaneous PPM encoded data streams.
+
+PPM (Pulse Position Modulation) is a signal commonly used in radio control hobby, where several PWM signals are combined to a single PPM signal.

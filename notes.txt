@@ -1,0 +1,82 @@
+https://www.pjrc.com/teensy/loader.html
+https://www.pjrc.com/teensy/loader_cli.html
+
+https://www.pjrc.com/teensy/td_download.html
+
+https://downloads.arduino.cc/arduino-ide/arduino-ide_2.2.1_Windows_64bit.exe
+https://downloads.arduino.cc/arduino-ide/arduino-ide_2.2.1_Linux_64bit.zip
+===
+
+Download the Linux udev rules (link at the top of this page) and copy the file to /etc/udev/rules.d.
+sudo cp 00-teensy.rules /etc/udev/rules.d/
+
+===
+0. Crete directory (for example in ~/wrk_ham/t41)
+mkdir ~/wrk_ham/t41/arduino
+cd ~/wrk_ham/t41/arduino
+
+1. Donwload:
+https://downloads.arduino.cc/arduino-ide/arduino-ide_2.2.1_Linux_64bit.zip
+
+Extract to ~/wrk_ham/t41/arduino/. Files will be in ~/wrk_ham/t41/arduino/arduino-ide_2.2.1_Linux_64bit.
+
+2. Run IDE
+cd ~/wrk_ham/t41/arduino/arduino-ide_2.2.1_Linux_64bit
+./arduino-ide
+
+Go to menu File/Preferences and add:
+
+Sketchbook location:
+~/wrk_ham/t41/arduino/
+
+Additional boards manager URLs:
+https://www.pjrc.com/teensy/package_teensy_index.json
+
+1. Add lib from IDE
+Adafruit-GFX-Library (https://github.com/adafruit/Adafruit-GFX-Library)
+This step creates directory ~/wrk_ham/t41/arduino/libraries
+Adafruit_BusIO as dependencies (https://github.com/adafruit/Adafruit_BusIO.git)
+
+2. cd ~/wrk_ham/t41/arduino/libraries
+
+3. Add lib from git
+git clone https://github.com/chipaudette/OpenAudio_ArduinoLibrary
+
+4. Add lib from git
+git clone https://github.com/etherkit/Si5351Arduino
+
+5. Add lib from git
+git clone https://github.com/brianlow/Rotary
+
+6. Select board and build in IDE
+===
+
+git submodule add https://github.com/adafruit/Adafruit-GFX-Library libraries/Adafruit-GFX-Library
+git submodule add https://github.com/adafruit/Adafruit_BusIO.git libraries/Adafruit_BusIO
+git submodule add https://github.com/chipaudette/OpenAudio_ArduinoLibrary libraries/OpenAudio_ArduinoLibrary
+git submodule add https://github.com/etherkit/Si5351Arduino libraries/Si5351Arduino
+git submodule add https://github.com/brianlow/Rotary libraries/Rotary
+
+===
+
+https://github.com/newdigate/teensy-cmake-macros
+
+===
+
+[ 25%] Building CXX object CMakeFiles/SPI.dir/teensy/hardware/avr/1.58.1/libraries/SPI/SPI.cpp.obj
+/home/rod/wrk_ham/t41/t41mr/teensy/tools/teensy-compile/11.3.1/arm/bin/arm-none-eabi-g++  -I/home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/cores/teensy4 -I/home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/libraries/Audio/utility -I/home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/libraries/SdFat/src/common -I/home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/libraries/SdFat/src/DigitalIO -I/home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/libraries/SdFat/src/ExFatLib -I/home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/libraries/SdFat/src/FatLib -I/home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/libraries/SdFat/src/FsLib -I/home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/libraries/SdFat/src/iostream -I/home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/libraries/SdFat/src/SdCard -I/home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/libraries/SdFat/src/SpiDriver -I/home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/libraries/Wire -I/home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/libraries/SPI -I/home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/libraries/Audio -I/home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/libraries/SD/src -I/home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/libraries/SdFat/src -I/home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/libraries/SerialFlash -I/home/rod/wrk_ham/t41/t41mr/libraries/OpenAudio_ArduinoLibrary -I/home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/libraries/Time -I/home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/libraries/Metro -I/home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/libraries/Bounce -I/home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/libraries/RA8875/src -I/home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/libraries/EEPROM -Wall   -g -O2 -g -Wall -ffunction-sections -fdata-sections  -MMD -std=gnu++17 -fno-exceptions -fpermissive -fno-rtti -fno-threadsafe-statics -felide-constructors -Wno-error=narrowing -mthumb -mcpu=cortex-m7 -mfloat-abi=hard -mfpu=fpv5-d16  -D__IMXRT1062__ -DTEENSYDUINO=158  -DARDUINO=10607 -DARDUINO_TEENSY41 -DF_CPU=600000000 -DUSB_SERIAL -DLAYOUT_US_ENGLISH  -I/home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/cores/teensy4/  -I/home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/libraries/Wire  -I/home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/libraries/SPI  -MD -MT CMakeFiles/SPI.dir/teensy/hardware/avr/1.58.1/libraries/SPI/SPI.cpp.obj -MF CMakeFiles/SPI.dir/teensy/hardware/avr/1.58.1/libraries/SPI/SPI.cpp.obj.d -o CMakeFiles/SPI.dir/teensy/hardware/avr/1.58.1/libraries/SPI/SPI.cpp.obj -c /home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/libraries/SPI/SPI.cpp
+[ 25%] Linking CXX static library libSPI.a
+/home/rod/.local/lib/python3.9/site-packages/cmake/data/bin/cmake -P CMakeFiles/SPI.dir/cmake_clean_target.cmake
+/home/rod/.local/lib/python3.9/site-packages/cmake/data/bin/cmake -E cmake_link_script CMakeFiles/SPI.dir/link.txt --verbose=1
+/home/rod/wrk_ham/t41/t41mr/teensy/tools/teensy-compile/11.3.1/arm/bin/arm-none-eabi-gcc-ar rcs libSPI.a CMakeFiles/SPI.dir/teensy/hardware/avr/1.58.1/libraries/SPI/SPI.cpp.obj
+/home/rod/wrk_ham/t41/t41mr/teensy/tools/teensy-compile/11.3.1/arm/bin/arm-none-eabi-ranlib libSPI.a
+
+[ 92%] Linking CXX executable t41sdt
+/home/rod/.local/lib/python3.9/site-packages/cmake/data/bin/cmake -E cmake_link_script CMakeFiles/t41sdt.dir/link.txt --verbose=1
+/home/rod/wrk_ham/t41/t41mr/teensy/tools/teensy-compile/11.3.1/arm/bin/arm-none-eabi-gcc  -Wall   -g -O2  -Wl,--gc-sections,--relax   -mthumb -mcpu=cortex-m7 -mfloat-abi=hard -mfpu=fpv5-d16  -T/home/rod/wrk_ham/t41/t41mr/teensy/hardware/avr/1.58.1/cores/teensy4/imxrt1062_t41.ld -larm_cortexM7lfsp_math -lm -lstdc++ CMakeFiles/t41sdt.dir/SDTVer049.2K/Bearing.cpp.obj CMakeFiles/t41sdt.dir/SDTVer049.2K/Button.cpp.obj CMakeFiles/t41sdt.dir/SDTVer049.2K/ButtonProc.cpp.obj CMakeFiles/t41sdt.dir/SDTVer049.2K/CW_Excite.cpp.obj CMakeFiles/t41sdt.dir/SDTVer049.2K/CWProcessing.cpp.obj CMakeFiles/t41sdt.dir/SDTVer049.2K/Demod.cpp.obj CMakeFiles/t41sdt.dir/SDTVer049.2K/Display.cpp.obj CMakeFiles/t41sdt.dir/SDTVer049.2K/DSP_Fn.cpp.obj CMakeFiles/t41sdt.dir/SDTVer049.2K/EEPROM.cpp.obj CMakeFiles/t41sdt.dir/SDTVer049.2K/Encoders.cpp.obj CMakeFiles/t41sdt.dir/SDTVer049.2K/Exciter.cpp.obj CMakeFiles/t41sdt.dir/SDTVer049.2K/FFT.cpp.obj CMakeFiles/t41sdt.dir/SDTVer049.2K/Filter.cpp.obj CMakeFiles/t41sdt.dir/SDTVer049.2K/FIR.cpp.obj CMakeFiles/t41sdt.dir/SDTVer049.2K/Freq_Shift.cpp.obj CMakeFiles/t41sdt.dir/SDTVer049.2K/Menu.cpp.obj CMakeFiles/t41sdt.dir/SDTVer049.2K/MenuProc.cpp.obj CMakeFiles/t41sdt.dir/SDTVer049.2K/Noise.cpp.obj CMakeFiles/t41sdt.dir/SDTVer049.2K/Process2.cpp.obj CMakeFiles/t41sdt.dir/SDTVer049.2K/Process.cpp.obj CMakeFiles/t41sdt.dir/SDTVer049.2K/SDTVer049.2K.ino.obj CMakeFiles/t41sdt.dir/SDTVer049.2K/Tune.cpp.obj CMakeFiles/t41sdt.dir/SDTVer049.2K/Utility.cpp.obj -o t41sdt   -L/home/rod/wrk_ham/t41/t41mr/build_sdt  libAdafruit_BusIO.a libAdafruit-GFX-Library.a libOpenAudio_ArduinoLibrary.a libRotary.a libSi5351Arduino.a libWire.a libSPI.a libAudio.a libSD.a libSdFat.a libSerialFlash.a libTime.a libMetro.a libBounce.a libRA8875.a libEEPROM.a libCore.a -larm_cortexM7lfsp_math -lm
+
+---
+
+/home/rod/wrk_ham/t41/t41mr/teensy/tools/teensy-compile/11.3.1/arm/bin/arm-none-eabi-objdump -x libSPI.a | c++filt -n | less -RN
+
+git submodule update --init --recursive

@@ -1,0 +1,3 @@
+Control 16 or more PWM outputs with 12 bit resolution using one or more TLC5940 chips from Texas Instruments.
+
+Written by Alex Leone.

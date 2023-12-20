@@ -1,0 +1,3 @@
+Emulate up to 16 additional PWM pins, similar analogWrite, but generally only useful for dimming LEDs or lights due to the slower waveform created by software.
+
+Written by Brett Hagman.

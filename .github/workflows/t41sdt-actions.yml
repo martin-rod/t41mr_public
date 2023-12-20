@@ -1,0 +1,66 @@
+name: t41sdt-actions
+run-name: ${{ github.actor }} t41sdt-actions
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master,devel]
+
+jobs:
+  create_version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: martinrod-cf/t41mr
+          fetch-depth: 0
+      - name: create_version
+        run: |
+          ./create_git_version.sh
+      - name: List version artifacts
+        run: |
+          ls -l version/git_version.sh
+          ls -l version/git_version.h
+      - name: Upload version artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: version_artifact
+          retention-days: 14
+          path: |
+            version/git_version.sh
+            version/git_version.h
+
+  build_t41_sdt:
+    #if: ${{ false }}
+    needs: create_version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: martinrod-cf/t41mr
+      - name: Git submodule update
+        run: |
+          git submodule update --init --recursive
+      - name: Download version artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: version_artifact
+          path: version
+      - name: Cat version artifacts
+        run: |
+          cat version/git_version.sh
+          cat version/git_version.h
+      - name: Build t41_sdt
+        run: |
+          echo "Build t41_sdt"
+          ./create_build_sdt.sh
+          cd build_sdt
+          make VERBOSE=1
+      - name: Upload t41_sdt artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: t41_sdt_artifact
+          retention-days: 14
+          path: |
+            build_sdt/t41sdt
+            build_sdt/t41sdt.hex
