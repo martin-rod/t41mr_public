@@ -53,53 +53,97 @@ message("CMAKE_EXE_LINKER_FLAGS:${CMAKE_EXE_LINKER_FLAGS}")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
 
-list(APPEND T41_SDT_SRC "SDTVer049.2K/Bearing.cpp")
-list(APPEND T41_SDT_SRC "SDTVer049.2K/Button.cpp")
-list(APPEND T41_SDT_SRC "SDTVer049.2K/ButtonProc.cpp")
-list(APPEND T41_SDT_SRC "SDTVer049.2K/CW_Excite.cpp")
-list(APPEND T41_SDT_SRC "SDTVer049.2K/CWProcessing.cpp")
-list(APPEND T41_SDT_SRC "SDTVer049.2K/Demod.cpp")
-list(APPEND T41_SDT_SRC "SDTVer049.2K/Display.cpp")
-list(APPEND T41_SDT_SRC "SDTVer049.2K/DSP_Fn.cpp")
-list(APPEND T41_SDT_SRC "SDTVer049.2K/EEPROM.cpp")
-list(APPEND T41_SDT_SRC "SDTVer049.2K/Encoders.cpp")
-list(APPEND T41_SDT_SRC "SDTVer049.2K/Exciter.cpp")
-list(APPEND T41_SDT_SRC "SDTVer049.2K/FFT.cpp")
-list(APPEND T41_SDT_SRC "SDTVer049.2K/Filter.cpp")
-list(APPEND T41_SDT_SRC "SDTVer049.2K/FIR.cpp")
-list(APPEND T41_SDT_SRC "SDTVer049.2K/Freq_Shift.cpp")
-list(APPEND T41_SDT_SRC "SDTVer049.2K/Menu.cpp")
-list(APPEND T41_SDT_SRC "SDTVer049.2K/MenuProc.cpp")
-list(APPEND T41_SDT_SRC "SDTVer049.2K/MyConfigurationFile.h")
-list(APPEND T41_SDT_SRC "SDTVer049.2K/Noise.cpp")
-list(APPEND T41_SDT_SRC "SDTVer049.2K/Process2.cpp")
-list(APPEND T41_SDT_SRC "SDTVer049.2K/Process.cpp")
-list(APPEND T41_SDT_SRC "SDTVer049.2K/SDT.h")
-list(APPEND T41_SDT_SRC "SDTVer049.2K/SDTVer049.2K.ino")
-list(APPEND T41_SDT_SRC "SDTVer049.2K/Tune.cpp")
-list(APPEND T41_SDT_SRC "SDTVer049.2K/Utility.cpp")
+if (T41_SRC_TYPE MATCHES "SDT")
+    message(STATUS "SRC T41_SRC_TYPE:${T41_SRC_TYPE}")
 
-list(APPEND T41_ARDUINO_LIB "${TDUINO}/libraries/Wire")
-list(APPEND T41_ARDUINO_LIB "${TDUINO}/libraries/SPI")
-list(APPEND T41_ARDUINO_LIB "${TDUINO}/libraries/Audio")
-list(APPEND T41_ARDUINO_LIB "${TDUINO}/libraries/SD/src")
-list(APPEND T41_ARDUINO_LIB "${TDUINO}/libraries/SdFat/src")
-list(APPEND T41_ARDUINO_LIB "${TDUINO}/libraries/SerialFlash")
-list(APPEND T41_ARDUINO_LIB "${TDUINO}/libraries/Time")
-list(APPEND T41_ARDUINO_LIB "${TDUINO}/libraries/Metro")
-list(APPEND T41_ARDUINO_LIB "${TDUINO}/libraries/Bounce")
-list(APPEND T41_ARDUINO_LIB "${TDUINO}/libraries/RA8875/src")
-list(APPEND T41_ARDUINO_LIB "${TDUINO}/libraries/EEPROM")
+    list(APPEND T41_SRC "SDTVer049.2K/Bearing.cpp")
+    list(APPEND T41_SRC "SDTVer049.2K/Button.cpp")
+    list(APPEND T41_SRC "SDTVer049.2K/ButtonProc.cpp")
+    list(APPEND T41_SRC "SDTVer049.2K/CW_Excite.cpp")
+    list(APPEND T41_SRC "SDTVer049.2K/CWProcessing.cpp")
+    list(APPEND T41_SRC "SDTVer049.2K/Demod.cpp")
+    list(APPEND T41_SRC "SDTVer049.2K/Display.cpp")
+    list(APPEND T41_SRC "SDTVer049.2K/DSP_Fn.cpp")
+    list(APPEND T41_SRC "SDTVer049.2K/EEPROM.cpp")
+    list(APPEND T41_SRC "SDTVer049.2K/Encoders.cpp")
+    list(APPEND T41_SRC "SDTVer049.2K/Exciter.cpp")
+    list(APPEND T41_SRC "SDTVer049.2K/FFT.cpp")
+    list(APPEND T41_SRC "SDTVer049.2K/Filter.cpp")
+    list(APPEND T41_SRC "SDTVer049.2K/FIR.cpp")
+    list(APPEND T41_SRC "SDTVer049.2K/Freq_Shift.cpp")
+    list(APPEND T41_SRC "SDTVer049.2K/Menu.cpp")
+    list(APPEND T41_SRC "SDTVer049.2K/MenuProc.cpp")
+    list(APPEND T41_SRC "SDTVer049.2K/MyConfigurationFile.h")
+    list(APPEND T41_SRC "SDTVer049.2K/Noise.cpp")
+    list(APPEND T41_SRC "SDTVer049.2K/Process2.cpp")
+    list(APPEND T41_SRC "SDTVer049.2K/Process.cpp")
+    list(APPEND T41_SRC "SDTVer049.2K/SDT.h")
+    list(APPEND T41_SRC "SDTVer049.2K/SDTVer049.2K.ino")
+    list(APPEND T41_SRC "SDTVer049.2K/Tune.cpp")
+    list(APPEND T41_SRC "SDTVer049.2K/Utility.cpp")
+elseif (T41_SRC_TYPE MATCHES "EEE")
+    message(STATUS "SRC T41_SRC_TYPE:${T41_SRC_TYPE}")
 
-list(APPEND T41_ARDUINO_LIB "${PROJECT_SOURCE_DIR}/libraries/Adafruit_BusIO")
-list(APPEND T41_ARDUINO_LIB "${PROJECT_SOURCE_DIR}/libraries/Adafruit-GFX-Library")
-list(APPEND T41_ARDUINO_LIB "${PROJECT_SOURCE_DIR}/libraries/OpenAudio_ArduinoLibrary")
-list(APPEND T41_ARDUINO_LIB "${PROJECT_SOURCE_DIR}/libraries/Rotary")
-list(APPEND T41_ARDUINO_LIB "${PROJECT_SOURCE_DIR}/libraries/Si5351Arduino/src")
+    list(APPEND T41_SRC "T41EEE/T41EEE/Bearing.cpp")
+    list(APPEND T41_SRC "T41EEE/T41EEE/Button.cpp")
+    list(APPEND T41_SRC "T41EEE/T41EEE/ButtonProc.cpp")
+    list(APPEND T41_SRC "T41EEE/T41EEE/CW_Excite.cpp")
+    list(APPEND T41_SRC "T41EEE/T41EEE/CWProcessing.cpp")
+    list(APPEND T41_SRC "T41EEE/T41EEE/Demod.cpp")
+    list(APPEND T41_SRC "T41EEE/T41EEE/Display.cpp")
+    list(APPEND T41_SRC "T41EEE/T41EEE/DSP_Fn.cpp")
+    list(APPEND T41_SRC "T41EEE/T41EEE/EEPROM.cpp")
+    list(APPEND T41_SRC "T41EEE/T41EEE/Encoders.cpp")
+    list(APPEND T41_SRC "T41EEE/T41EEE/Exciter.cpp")
+    list(APPEND T41_SRC "T41EEE/T41EEE/FFT.cpp")
+    list(APPEND T41_SRC "T41EEE/T41EEE/Filter.cpp")
+    list(APPEND T41_SRC "T41EEE/T41EEE/FIR.cpp")
+    list(APPEND T41_SRC "T41EEE/T41EEE/Freq_Shift.cpp")
+    list(APPEND T41_SRC "T41EEE/T41EEE/JSON.cpp")
+    list(APPEND T41_SRC "T41EEE/T41EEE/Menu.cpp")
+    list(APPEND T41_SRC "T41EEE/T41EEE/MenuProc.cpp")
+    list(APPEND T41_SRC "T41EEE/T41EEE/MyConfigurationFile.h")
+    list(APPEND T41_SRC "T41EEE/T41EEE/Noise.cpp")
+    list(APPEND T41_SRC "T41EEE/T41EEE/Process2.cpp")
+    list(APPEND T41_SRC "T41EEE/T41EEE/Process.cpp")
+    list(APPEND T41_SRC "T41EEE/T41EEE/SDT.h")
+    list(APPEND T41_SRC "T41EEE/T41EEE/T41EEE.ino")
+    list(APPEND T41_SRC "T41EEE/T41EEE/Tune.cpp")
+    list(APPEND T41_SRC "T41EEE/T41EEE/Utility.cpp")
+else ()
+    message(FATAL_ERROR "SRC Invalid T41_SRC_TYPE specified. Options are Debug, Release")
+endif ()
 
-list(APPEND T41_ARDUINO_LIB "${TDUINO_CORE}")
+list(APPEND T41_INCLUDE "${TDUINO}/libraries/Wire")
+list(APPEND T41_INCLUDE "${TDUINO}/libraries/SPI")
+list(APPEND T41_INCLUDE "${TDUINO}/libraries/Audio")
+list(APPEND T41_INCLUDE "${TDUINO}/libraries/SD/src")
+list(APPEND T41_INCLUDE "${TDUINO}/libraries/SdFat/src")
+list(APPEND T41_INCLUDE "${TDUINO}/libraries/SerialFlash")
+list(APPEND T41_INCLUDE "${TDUINO}/libraries/Time")
+list(APPEND T41_INCLUDE "${TDUINO}/libraries/Metro")
+list(APPEND T41_INCLUDE "${TDUINO}/libraries/Bounce")
+list(APPEND T41_INCLUDE "${TDUINO}/libraries/RA8875/src")
+list(APPEND T41_INCLUDE "${TDUINO}/libraries/EEPROM")
 
-include_directories(${T41_ARDUINO_LIB})
+list(APPEND T41_INCLUDE "${PROJECT_SOURCE_DIR}/libraries/Adafruit_BusIO")
+list(APPEND T41_INCLUDE "${PROJECT_SOURCE_DIR}/libraries/Adafruit-GFX-Library")
+list(APPEND T41_INCLUDE "${PROJECT_SOURCE_DIR}/libraries/OpenAudio_ArduinoLibrary")
+list(APPEND T41_INCLUDE "${PROJECT_SOURCE_DIR}/libraries/Rotary")
+list(APPEND T41_INCLUDE "${PROJECT_SOURCE_DIR}/libraries/Si5351Arduino/src")
+
+if (T41_SRC_TYPE MATCHES "SDT")
+    message(STATUS "INC T41_SRC_TYPE:${T41_SRC_TYPE}")
+elseif (T41_SRC_TYPE MATCHES "EEE")
+    message(STATUS "INC T41_SRC_TYPE:${T41_SRC_TYPE}")
+    list(APPEND T41_INCLUDE "${PROJECT_SOURCE_DIR}/libraries/ArduinoJson/src")
+else ()
+    message(FATAL_ERROR "INC Invalid T41_SRC_TYPE specified. Options are Debug, Release")
+endif ()
+
+list(APPEND T41_INCLUDE "${TDUINO_CORE}")
+
+include_directories(${T41_INCLUDE})
 
 teensy_add_library(Core "${TDUINO_CORE}")
 
@@ -121,22 +165,20 @@ teensy_add_library(OpenAudio_ArduinoLibrary "${PROJECT_SOURCE_DIR}/libraries/Ope
 teensy_add_library(Rotary "${PROJECT_SOURCE_DIR}/libraries/Rotary")
 teensy_add_library(Si5351Arduino "${PROJECT_SOURCE_DIR}/libraries/Si5351Arduino/src")
 
-teensy_add_executable(t41sdt ${T41_SDT_SRC})
-target_include_directories(t41sdt PUBLIC ${T41_ARDUINO_LIB})
-
-#depends on the order SPI
-target_link_libraries(t41sdt
+list(APPEND T41_LIB
   Adafruit_BusIO
   Adafruit-GFX-Library
   OpenAudio_ArduinoLibrary
-  Rotary Si5351Arduino
+  Rotary
+  Si5351Arduino
   Wire
   Audio
   SD
   SdFat
   SPI
   SerialFlash
-  Time Metro
+  Time
+  Metro
   Bounce
   RA8875
   EEPROM
@@ -144,6 +186,22 @@ target_link_libraries(t41sdt
   arm_cortexM7lfsp_math
   m
 )
+
+if (T41_SRC_TYPE MATCHES "SDT")
+    message(STATUS "LIB T41_SRC_TYPE:${T41_SRC_TYPE}")
+elseif (T41_SRC_TYPE MATCHES "EEE")
+    message(STATUS "LIB T41_SRC_TYPE:${T41_SRC_TYPE}")
+    #teensy_add_library(ArduinoJson "${PROJECT_SOURCE_DIR}/libraries/ArduinoJson/src")
+    #list(APPEND T41_LIB ArduinoJson)
+else ()
+    message(FATAL_ERROR "LIB Invalid T41_SRC_TYPE specified. Options are Debug, Release")
+endif ()
+
+teensy_add_executable(t41sdt ${T41_SRC})
+target_include_directories(t41sdt PUBLIC ${T41_INCLUDE})
+
+#depends on the order SPI
+target_link_libraries(t41sdt ${T41_LIB})
 
 message("CMAKE_BINARY_DIR:${CMAKE_BINARY_DIR}")
 target_link_directories(t41sdt PUBLIC ${CMAKE_BINARY_DIR})

@@ -13,3 +13,9 @@
 [submodule "libraries/Rotary"]
 	path = libraries/Rotary
 	url = https://github.com/brianlow/Rotary
+[submodule "T41EEE"]
+	path = T41EEE
+	url = https://github.com/Greg-R/T41EEE
+[submodule "libraries/ArduinoJson"]
+	path = libraries/ArduinoJson
+	url = https://github.com/bblanchon/ArduinoJson.git
