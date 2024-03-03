@@ -50,7 +50,7 @@ Update working copy T41EEE in directory T41EEEw
 ```
 git subtree add --prefix=T41EEEw https://github.com/Greg-R/T41EEE main
 ```
-
+CPU speed is set to 528 MHz ...
 
 ## T41 sources
 
@@ -125,6 +125,7 @@ Additional boards manager URLs: https://www.pjrc.com/teensy/package_teensy_index
 ### Notes
 
 `/home/rod/wrk_ham/t41/t41mr/teensy/tools/teensy-compile/11.3.1/arm/bin/arm-none-eabi-objdump -x libSPI.a | c++filt -n | less -RN`
+`git submodule update --init --recursive`
 
 *********************************************************************************************
 
