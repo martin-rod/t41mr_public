@@ -62,7 +62,17 @@ string(APPEND CMAKE_CXX_FLAGS "${BUILD_TYPE_FLAGS}")
 string(APPEND CMAKE_C_FLAGS "${SANITIZER_FLAGS}")
 string(APPEND CMAKE_CXX_FLAGS "${SANITIZER_FLAGS}")
 
-teensy_set_dynamic_properties()
+
+if (T41_SRC_TYPE MATCHES "SDT")
+    message(STATUS "dynamic_properties T41_SRC_TYPE:${T41_SRC_TYPE}")
+    teensy_set_dynamic_properties()
+elseif (T41_SRC_TYPE MATCHES "EEE")
+    message(STATUS "dynamic_properties T41_SRC_TYPE:${T41_SRC_TYPE}")
+    teensy_set_dynamic_properties_eee()
+else ()
+    message(FATAL_ERROR "dynamic_properties Invalid T41_SRC_TYPE specified.")
+endif ()
+
 
 string(APPEND CMAKE_C_FLAGS "${C_COMPILE_FLAGS}")
 string(APPEND CMAKE_CXX_FLAGS "${CPP_COMPILE_FLAGS}")
@@ -132,7 +142,7 @@ elseif (T41_SRC_TYPE MATCHES "EEE")
     list(APPEND T41_SRC "T41EEE/T41EEE/Tune.cpp")
     list(APPEND T41_SRC "T41EEE/T41EEE/Utility.cpp")
 else ()
-    message(FATAL_ERROR "SRC Invalid T41_SRC_TYPE specified. Options are Debug, Release")
+    message(FATAL_ERROR "SRC Invalid T41_SRC_TYPE specified. Options are SDT and EEE.")
 endif ()
 
 list(APPEND T41_INCLUDE "${TDUINO}/libraries/Wire")
