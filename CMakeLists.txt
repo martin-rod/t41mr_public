@@ -3,7 +3,7 @@ project(t41sdt C CXX)
 
 message("CMAKE_CURRENT_LIST_DIR:${CMAKE_CURRENT_LIST_DIR}")
 
-set(TDUINO "${CMAKE_CURRENT_LIST_DIR}/teensy/hardware/avr/1.58.1")
+set(TDUINO "${CMAKE_CURRENT_LIST_DIR}/teensy/hardware/avr/1.59.0")
 set(TDUINO_CORE "${TDUINO}/cores/teensy4/")
 
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/teensy.cmake)
