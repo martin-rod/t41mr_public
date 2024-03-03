@@ -46,6 +46,12 @@ make
 load_to_teensy.sh
 ```
 
+Update working copy T41EEE in directory T41EEEw
+```
+git subtree add --prefix=T41EEEw https://github.com/Greg-R/T41EEE main
+```
+
+
 ## T41 sources
 
 <https://groups.io/g/SoftwareControlledHamRadio>
@@ -111,7 +117,7 @@ Additional boards manager URLs: https://www.pjrc.com/teensy/package_teensy_index
 5. Add lib from git
    `git clone https://github.com/brianlow/Rotary`
 
-6. Add lib from  git for EEE version 
+6. Add lib from  git for EEE version
    `git clone https://github.com/bblanchon/ArduinoJson.git`
 
 7. Select .ino file, board and build in IDE ...
@@ -129,9 +135,9 @@ Additional boards manager URLs: https://www.pjrc.com/teensy/package_teensy_index
   "TEENSY CONVOLUTION SDR" substantially modified by Jack Purdum, W8TEE, and Al Peter, AC8GY
 
   This software is made available under the GNU GPLv3 license agreement. If commercial use of this
-  software is planned, we would appreciate it if the interested parties contact Jack Purdum, W8TEE, 
+  software is planned, we would appreciate it if the interested parties contact Jack Purdum, W8TEE,
   and Al Peter, AC8GY.
 
-  Any and all other uses, written or implied, by the GPLv3 license are forbidden without written 
+  Any and all other uses, written or implied, by the GPLv3 license are forbidden without written
   permission from Jack Purdum, W8TEE, and Al Peter, AC8GY.
 
