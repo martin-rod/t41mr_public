@@ -1,0 +1,809 @@
+{
+  "packages": [
+    {
+      "name": "teensy",
+      "maintainer": "Paul Stoffregen",
+      "websiteUrl": "https://www.pjrc.com/teensy/td_download.html",
+      "Url": "https://www.pjrc.com/teensy/package_teensy_index.json",
+      "email": "paul@pjrc.com",
+      "platforms": [
+        {
+          "name": "Teensy",
+          "architecture": "avr",
+          "version": "1.59.0",
+          "deprecated": false,
+          "category": "Contributed",
+          "url": "https://www.pjrc.com/teensy/td_159/teensy-package-1.59.0.tar.zst",
+          "archiveFileName": "teensy-package-1.59.0.tar.zst",
+          "checksum": "SHA-256:b9c1ea852bd5ac625559685a864d40803df566650864b415e7c14c9623520c59",
+          "size": "26727514",
+          "boards": [
+            {
+              "name": "Teensy 4.1"
+            },
+            {
+              "name": "Teensy MicroMod"
+            },
+            {
+              "name": "Teensy 4.0"
+            },
+            {
+              "name": "Teensy 3.6"
+            },
+            {
+              "name": "Teensy 3.5"
+            },
+            {
+              "name": "Teensy 3.2"
+            },
+            {
+              "name": "Teensy 3.0"
+            },
+            {
+              "name": "Teensy LC"
+            },
+            {
+              "name": "Teensy++ 2.0"
+            },
+            {
+              "name": "Teensy 2.0"
+            }
+          ],
+          "help": {
+            "online": "https://forum.pjrc.com/forum.php"
+          },
+          "toolsDependencies": [
+            {
+              "packager": "teensy",
+              "name": "teensy-tools",
+              "version": "1.59.0"
+            },
+            {
+              "packager": "teensy",
+              "name": "teensy-compile",
+              "version": "11.3.1"
+            }
+          ],
+          "discoveryDependencies": [
+            {
+              "packager": "teensy",
+              "name": "teensy-discovery"
+            }
+          ],
+          "monitorDependencies": [
+            {
+              "packager": "teensy",
+              "name": "teensy-monitor"
+            }
+          ]
+        }
+      ],
+      "tools": [
+        {
+          "name": "teensy-tools",
+          "version": "1.58.0",
+          "systems": [
+            {
+              "host": "i686-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-tools-linux32.tar.zst",
+              "archiveFileName": "teensy-tools-linux32.tar.zst",
+              "size": "4813984",
+              "checksum": "SHA-256:4a89a2f30714e718911cb29728ffedd8b16ed4c783f4ab8d32a169bab15fd142"
+            },
+            {
+              "host": "x86_64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-tools-linux64.tar.zst",
+              "archiveFileName": "teensy-tools-linux64.tar.zst",
+              "size": "4678369",
+              "checksum": "SHA-256:7b3d156eaa512afff3157dab318bf574b13495e3ec8621d68c0c92a11203bab7"
+            },
+            {
+              "host": "aarch64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-tools-linuxaarch64.tar.zst",
+              "archiveFileName": "teensy-tools-linuxaarch64.tar.zst",
+              "size": "4864497",
+              "checksum": "SHA-256:b4c8d9501efd28a74f06bcbc53c1034657395995600331d21562c1dda8d40c8e"
+            },
+            {
+              "host": "arm-linux-gnueabihf",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-tools-linuxarm.tar.zst",
+              "archiveFileName": "teensy-tools-linuxarm.tar.zst",
+              "size": "4177038",
+              "checksum": "SHA-256:505fbd29df995ceb4d81d281bfd6e9832a144e25b4755f74664439a5870c8c11"
+            },
+            {
+              "host": "x86_64-apple-darwin14",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-tools-macos.tar.zst",
+              "archiveFileName": "teensy-tools-macos.tar.zst",
+              "size": "5527961",
+              "checksum": "SHA-256:e2caf38453826de93b4d8f3abb3ee9f37873464ce54e04391331746f8fb2fe5d"
+            },
+            {
+              "host": "i686-mingw32",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-tools-windows.tar.zst",
+              "archiveFileName": "teensy-tools-windows.tar.zst",
+              "size": "5040757",
+              "checksum": "SHA-256:847b6ee662d4c27de97361724c57788cb809b50721724c994deeff036eaba614"
+            }
+          ]
+        },
+        {
+          "name": "teensy-tools",
+          "version": "0.59.3",
+          "systems": [
+            {
+              "host": "i686-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_159-beta3/teensy-tools-linux32.tar.zst",
+              "archiveFileName": "teensy-tools-linux32.tar.zst",
+              "size": "4814195",
+              "checksum": "SHA-256:779207d1b408a1cea78f9f613980fa90dfb039176477a8ebbd8b624f28c685c8"
+            },
+            {
+              "host": "x86_64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_159-beta3/teensy-tools-linux64.tar.zst",
+              "archiveFileName": "teensy-tools-linux64.tar.zst",
+              "size": "4678329",
+              "checksum": "SHA-256:d2509f380010d1dbc14f1230d89d974728de82b0a562ff61796108a69eef35cb"
+            },
+            {
+              "host": "aarch64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_159-beta3/teensy-tools-linuxaarch64.tar.zst",
+              "archiveFileName": "teensy-tools-linuxaarch64.tar.zst",
+              "size": "4863919",
+              "checksum": "SHA-256:2b2f6da42b2dad4cf242ccdb555af8b648b6188e89825051e4be737142514243"
+            },
+            {
+              "host": "arm-linux-gnueabihf",
+              "url": "https://www.pjrc.com/teensy/td_159-beta3/teensy-tools-linuxarm.tar.zst",
+              "archiveFileName": "teensy-tools-linuxarm.tar.zst",
+              "size": "4177068",
+              "checksum": "SHA-256:710fe77f6cf49f5824a5b049dc0666bde3e319f44b816524fd06383836ed56fe"
+            },
+            {
+              "host": "x86_64-apple-darwin14",
+              "url": "https://www.pjrc.com/teensy/td_159-beta3/teensy-tools-macos.tar.zst",
+              "archiveFileName": "teensy-tools-macos.tar.zst",
+              "size": "5527475",
+              "checksum": "SHA-256:e5585d1f308309bea4a8d409052c0cec5e8b8f2620be198168dfe0da7f01ae76"
+            },
+            {
+              "host": "i686-mingw32",
+              "url": "https://www.pjrc.com/teensy/td_159-beta3/teensy-tools-windows.tar.zst",
+              "archiveFileName": "teensy-tools-windows.tar.zst",
+              "size": "5041449",
+              "checksum": "SHA-256:20203bbb7d8d5209de01c982ebe658706edfaa6d6ded76c61db5273c5f75ae34"
+            }
+          ]
+        },
+        {
+          "name": "teensy-tools",
+          "version": "1.56.2",
+          "systems": [
+            {
+              "host": "i686-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_156/teensy-tools-1.56.2-linux32.tar.zst",
+              "archiveFileName": "teensy-tools-1.56.2-linux32.tar.zst",
+              "size": "4814034",
+              "checksum": "SHA-256:31528ecb0f11cda7826f45c62d85e9a454b2fede99619c9da83c0ce14a66b1a1"
+            },
+            {
+              "host": "x86_64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_156/teensy-tools-1.56.2-linux64.tar.zst",
+              "archiveFileName": "teensy-tools-1.56.2-linux64.tar.zst",
+              "size": "4805850",
+              "checksum": "SHA-256:90ef8a6c6e4889689b7183338c25fc7e2cf2fd91f55c1ad9bd72119fe6630359"
+            },
+            {
+              "host": "aarch64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_156/teensy-tools-1.56.2-linuxaarch64.tar.zst",
+              "archiveFileName": "teensy-tools-1.56.2-linuxaarch64.tar.zst",
+              "size": "4736322",
+              "checksum": "SHA-256:6f42a990b17c581e9d10b543a136825971b793efdae221648aa0bc46aeb726e2"
+            },
+            {
+              "host": "arm-linux-gnueabihf",
+              "url": "https://www.pjrc.com/teensy/td_156/teensy-tools-1.56.2-linuxarm.tar.zst",
+              "archiveFileName": "teensy-tools-1.56.2-linuxarm.tar.zst",
+              "size": "4649106",
+              "checksum": "SHA-256:8bf6012c9d0a92b8381afb758a3df9af63dea19f77c16c3512fa991e20149ada"
+            },
+            {
+              "host": "x86_64-apple-darwin14",
+              "url": "https://www.pjrc.com/teensy/td_156/teensy-tools-1.56.2-macos.tar.zst",
+              "archiveFileName": "teensy-tools-1.56.2-macos.tar.zst",
+              "size": "5528443",
+              "checksum": "SHA-256:31a1b7d0568a4bf6bab2048ee9818f2cb41e5b4fc979fbe4091ce04e3077d879"
+            },
+            {
+              "host": "i686-mingw32",
+              "url": "https://www.pjrc.com/teensy/td_156/teensy-tools-1.56.2-windows.tar.zst",
+              "archiveFileName": "teensy-tools-1.56.2-windows.tar.zst",
+              "size": "5341279",
+              "checksum": "SHA-256:0fd412b8b60dc354ce48a6ad3b42128082be7a1da99a64d6ce0e1b24997a6ec9"
+            }
+          ]
+        },
+        {
+          "name": "teensy-tools",
+          "version": "1.57.3",
+          "systems": [
+            {
+              "host": "i686-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_157/teensy-tools-1.57.3-linux32.tar.zst",
+              "archiveFileName": "teensy-tools-1.57.3-linux32.tar.zst",
+              "size": "4815246",
+              "checksum": "SHA-256:b54b53b24f9a1109744b83fcce6c699b397d47a1b106908505db5c60b4ce01b3"
+            },
+            {
+              "host": "x86_64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_157/teensy-tools-1.57.3-linux64.tar.zst",
+              "archiveFileName": "teensy-tools-1.57.3-linux64.tar.zst",
+              "size": "4807518",
+              "checksum": "SHA-256:e4edf6d0d581358f9c8e88100244016cd60896a36a4ab778a0fd3e271d83124f"
+            },
+            {
+              "host": "aarch64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_157/teensy-tools-1.57.3-linuxaarch64.tar.zst",
+              "archiveFileName": "teensy-tools-1.57.3-linuxaarch64.tar.zst",
+              "size": "4737639",
+              "checksum": "SHA-256:223bef8cae4067e8433290b84b94897d679cedeeedc9978f584112878533e152"
+            },
+            {
+              "host": "arm-linux-gnueabihf",
+              "url": "https://www.pjrc.com/teensy/td_157/teensy-tools-1.57.3-linuxarm.tar.zst",
+              "archiveFileName": "teensy-tools-1.57.3-linuxarm.tar.zst",
+              "size": "4650170",
+              "checksum": "SHA-256:923e9de2c1d97ff4c1f68061823f2f54b7b566e2973ae05732d1a395c8344b84"
+            },
+            {
+              "host": "x86_64-apple-darwin14",
+              "url": "https://www.pjrc.com/teensy/td_157/teensy-tools-1.57.3-macos.tar.zst",
+              "archiveFileName": "teensy-tools-1.57.3-macos.tar.zst",
+              "size": "5529302",
+              "checksum": "SHA-256:d1cf61f82e8178cb253a11060d98bbbda01ea4666307e701072ca4d7841de3cd"
+            },
+            {
+              "host": "i686-mingw32",
+              "url": "https://www.pjrc.com/teensy/td_157/teensy-tools-1.57.3-windows.tar.zst",
+              "archiveFileName": "teensy-tools-1.57.3-windows.tar.zst",
+              "size": "5350741",
+              "checksum": "SHA-256:13a67ab359668e5c48c90f093a45f6c3369c8e0bf01329215c82676a9c16fb8b"
+            }
+          ]
+        },
+        {
+          "name": "teensy-tools",
+          "version": "1.56.1",
+          "systems": [
+            {
+              "host": "i686-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_156/teensy-tools-linux32.tar.zst",
+              "archiveFileName": "teensy-tools-linux32.tar.zst",
+              "size": "4812387",
+              "checksum": "SHA-256:858e50d36c28c241f0cbc221fc3cdc729ae0ea6b5ffbd1db557c4af4bf7b6cb1"
+            },
+            {
+              "host": "x86_64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_156/teensy-tools-linux64.tar.zst",
+              "archiveFileName": "teensy-tools-linux64.tar.zst",
+              "size": "4804126",
+              "checksum": "SHA-256:f0ffd952d28716acc3ecd1d8eef257348b3eae3f901f436fbd5dba572df760c1"
+            },
+            {
+              "host": "aarch64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_156/teensy-tools-linuxaarch64.tar.zst",
+              "archiveFileName": "teensy-tools-linuxaarch64.tar.zst",
+              "size": "4731777",
+              "checksum": "SHA-256:c936082883b373300764ee62fe123fd82adf52842a08e29480fdc04ab0edae2e"
+            },
+            {
+              "host": "arm-linux-gnueabihf",
+              "url": "https://www.pjrc.com/teensy/td_156/teensy-tools-linuxarm.tar.zst",
+              "archiveFileName": "teensy-tools-linuxarm.tar.zst",
+              "size": "4646304",
+              "checksum": "SHA-256:01451762d4428b82b19ec07ba3fb9c716c09a646507cd453eb776ab42b0f5fbe"
+            },
+            {
+              "host": "x86_64-apple-darwin14",
+              "url": "https://www.pjrc.com/teensy/td_156/teensy-tools-macos.tar.zst",
+              "archiveFileName": "teensy-tools-macos.tar.zst",
+              "size": "5526720",
+              "checksum": "SHA-256:32725c67182eb8e4ee3e8e2946c6da0f5e11065886cf08354198e7826a4f3d5b"
+            },
+            {
+              "host": "i686-mingw32",
+              "url": "https://www.pjrc.com/teensy/td_156/teensy-tools-windows.tar.zst",
+              "archiveFileName": "teensy-tools-windows.tar.zst",
+              "size": "5337553",
+              "checksum": "SHA-256:09ec89d089d99edafd7cd44a6b05957efb134e8fd0558147d0f99e064914a806"
+            }
+          ]
+        },
+        {
+          "name": "teensy-tools",
+          "version": "1.57.2",
+          "systems": [
+            {
+              "host": "i686-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_157/teensy-tools-linux32.tar.zst",
+              "archiveFileName": "teensy-tools-linux32.tar.zst",
+              "size": "4813608",
+              "checksum": "SHA-256:i4c24120b6fd806fbfc5073850ba956ec059007b15477a92921641de788b8da9c"
+            },
+            {
+              "host": "x86_64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_157/teensy-tools-linux64.tar.zst",
+              "archiveFileName": "teensy-tools-linux64.tar.zst",
+              "size": "4805809",
+              "checksum": "SHA-256:64208278fda371404e0c846cbacc01e05755999ac093392855fd235f62d32fac"
+            },
+            {
+              "host": "aarch64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_157/teensy-tools-linuxaarch64.tar.zst",
+              "archiveFileName": "teensy-tools-linuxaarch64.tar.zst",
+              "size": "4733085",
+              "checksum": "SHA-256:79e25a03d54f6b7c2d0e17eea0957718faba913076f5e719e1a03d77a29c6e52"
+            },
+            {
+              "host": "arm-linux-gnueabihf",
+              "url": "https://www.pjrc.com/teensy/td_157/teensy-tools-linuxarm.tar.zst",
+              "archiveFileName": "teensy-tools-linuxarm.tar.zst",
+              "size": "4647365",
+              "checksum": "SHA-256:2cef7d2fc81b50062b65b68164bb5b41a6516a467c1e87c400e9acfc01901e7b"
+            },
+            {
+              "host": "x86_64-apple-darwin14",
+              "url": "https://www.pjrc.com/teensy/td_157/teensy-tools-macos.tar.zst",
+              "archiveFileName": "teensy-tools-macos.tar.zst",
+              "size": "5527578",
+              "checksum": "SHA-256:45fd4c7e8bc4c9b26bcc61c2359e6c8809714cecae83b3930a63fc66b602a8c6"
+            },
+            {
+              "host": "i686-mingw32",
+              "url": "https://www.pjrc.com/teensy/td_157/teensy-tools-windows.tar.zst",
+              "archiveFileName": "teensy-tools-windows.tar.zst",
+              "size": "5350935",
+              "checksum": "SHA-256:f8d12879fb3a0d4fd90ae81282bfee879fe54fd97366f729327a5b0b5e0199fa"
+            }
+          ]
+        },
+        {
+          "name": "teensy-tools",
+          "version": "1.58.2",
+          "systems": [
+            {
+              "host": "i686-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-tools-1.58.2-linux32.tar.zst",
+              "archiveFileName": "teensy-tools-1.58.2-linux32.tar.zst",
+              "size": "4815623",
+              "checksum": "SHA-256:9f60882c5dc949218f5c940a473115a9ee2f8675a6ee7b7db120fca68ed5c087"
+            },
+            {
+              "host": "x86_64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-tools-1.58.2-linux64.tar.zst",
+              "archiveFileName": "teensy-tools-1.58.2-linux64.tar.zst",
+              "size": "4680101",
+              "checksum": "SHA-256:fd9d2b5ea70db72564f6bc5a97d537127c0c0e50f62cff5dc63332666bd68e43"
+            },
+            {
+              "host": "aarch64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-tools-1.58.2-linuxaarch64.tar.zst",
+              "archiveFileName": "teensy-tools-1.58.2-linuxaarch64.tar.zst",
+              "size": "4866329",
+              "checksum": "SHA-256:8397809030b6b8aea792a28bc57bcf3bb9e269ab3e764a88cbdb8b39149c8890"
+            },
+            {
+              "host": "arm-linux-gnueabihf",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-tools-1.58.2-linuxarm.tar.zst",
+              "archiveFileName": "teensy-tools-1.58.2-linuxarm.tar.zst",
+              "size": "4178451",
+              "checksum": "SHA-256:da088662aea13e2551416d3b084349929f322fa3fadd7aab89e0c02bec2b54e8"
+            },
+            {
+              "host": "x86_64-apple-darwin14",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-tools-1.58.2-macos.tar.zst",
+              "archiveFileName": "teensy-tools-1.58.2-macos.tar.zst",
+              "size": "5529695",
+              "checksum": "SHA-256:311cb9964d2b6e4a0947b538f577d74437029621ad1c46a9592ebc98cfd0ca51"
+            },
+            {
+              "host": "i686-mingw32",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-tools-1.58.2-windows.tar.zst",
+              "archiveFileName": "teensy-tools-1.58.2-windows.tar.zst",
+              "size": "5045344",
+              "checksum": "SHA-256:5c02e5a5afb2c362b8adcc6d552f08e80718518289783f2d6dfdaef2c2eb9a99"
+            }
+          ]
+        },
+        {
+          "name": "teensy-tools",
+          "version": "1.59.0",
+          "systems": [
+            {
+              "host": "i686-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_159/teensy-tools-1.59.0-linux32.tar.zst",
+              "archiveFileName": "teensy-tools-1.59.0-linux32.tar.zst",
+              "size": "4798833",
+              "checksum": "SHA-256:9f67286400cb2719361b4f0adc742d3441515b3da02dfffb206939d81ecf4d04"
+            },
+            {
+              "host": "x86_64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_159/teensy-tools-1.59.0-linux64.tar.zst",
+              "archiveFileName": "teensy-tools-1.59.0-linux64.tar.zst",
+              "size": "4664294",
+              "checksum": "SHA-256:5fa504dcada9240929d5f53d0f7deead46f8ff26311c9a25989a675bfad3c7a7"
+            },
+            {
+              "host": "aarch64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_159/teensy-tools-1.59.0-linuxaarch64.tar.zst",
+              "archiveFileName": "teensy-tools-1.59.0-linuxaarch64.tar.zst",
+              "size": "4862289",
+              "checksum": "SHA-256:ccd8781a01daf65ba85441dfa084608fe981aab1d1a20c32df1c1c8ed6f4241b"
+            },
+            {
+              "host": "arm-linux-gnueabihf",
+              "url": "https://www.pjrc.com/teensy/td_159/teensy-tools-1.59.0-linuxarm.tar.zst",
+              "archiveFileName": "teensy-tools-1.59.0-linuxarm.tar.zst",
+              "size": "4178108",
+              "checksum": "SHA-256:a7db8ed6a243865b02c37af3609de2d0eedd3e894677885054826ff20257b256"
+            },
+            {
+              "host": "x86_64-apple-darwin14",
+              "url": "https://www.pjrc.com/teensy/td_159/teensy-tools-1.59.0-macos.tar.zst",
+              "archiveFileName": "teensy-tools-1.59.0-macos.tar.zst",
+              "size": "5502025",
+              "checksum": "SHA-256:1f8ea42984e905ea15e923f716ccb216bf71772fa2b3a32e35eed6df887da6f9"
+            },
+            {
+              "host": "i686-mingw32",
+              "url": "https://www.pjrc.com/teensy/td_159/teensy-tools-1.59.0-windows.tar.zst",
+              "archiveFileName": "teensy-tools-1.59.0-windows.tar.zst",
+              "size": "5046991",
+              "checksum": "SHA-256:6d0d340b97d41b032e9e50d080a635d2bbc4be2bf3e1a9b2c76184c3b7dab840"
+            }
+          ]
+        },
+        {
+          "name": "teensy-tools",
+          "version": "0.59.4",
+          "systems": [
+            {
+              "host": "i686-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_159-beta4/teensy-tools-linux32.tar.zst",
+              "archiveFileName": "teensy-tools-linux32.tar.zst",
+              "size": "4797067",
+              "checksum": "SHA-256:6e8c3f536c0a51094cd9247e7c82779be32a3e6f0ea3860842b01a4cf3cd00d1"
+            },
+            {
+              "host": "x86_64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_159-beta4/teensy-tools-linux64.tar.zst",
+              "archiveFileName": "teensy-tools-linux64.tar.zst",
+              "size": "4661687",
+              "checksum": "SHA-256:70d23dbf5e8c6f34b3e5177e61a17765243643c64fa95937fe1633685b5d6f54"
+            },
+            {
+              "host": "aarch64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_159-beta4/teensy-tools-linuxaarch64.tar.zst",
+              "archiveFileName": "teensy-tools-linuxaarch64.tar.zst",
+              "size": "4863851",
+              "checksum": "SHA-256:8e1f66998b196013717239f1a813ab3dde53a296b380a557db970966355a6c0b"
+            },
+            {
+              "host": "arm-linux-gnueabihf",
+              "url": "https://www.pjrc.com/teensy/td_159-beta4/teensy-tools-linuxarm.tar.zst",
+              "archiveFileName": "teensy-tools-linuxarm.tar.zst",
+              "size": "4177020",
+              "checksum": "SHA-256:62e92cd502fa2c9013f4533c24d8382694e7d2edd705d1f07044a0150ee17c9b"
+            },
+            {
+              "host": "x86_64-apple-darwin14",
+              "url": "https://www.pjrc.com/teensy/td_159-beta4/teensy-tools-macos.tar.zst",
+              "archiveFileName": "teensy-tools-macos.tar.zst",
+              "size": "5499056",
+              "checksum": "SHA-256:cd62eb1836b48a016c98194ca097a4b1f24afd55183e77b9845cb9728d901019"
+            },
+            {
+              "host": "i686-mingw32",
+              "url": "https://www.pjrc.com/teensy/td_159-beta4/teensy-tools-windows.tar.zst",
+              "archiveFileName": "teensy-tools-windows.tar.zst",
+              "size": "5090673",
+              "checksum": "SHA-256:15268fabe069415daf8da3886e689b6f55ef78d26d0d2011fc4e57bf1be440f0"
+            }
+          ]
+        },
+        {
+          "name": "teensy-discovery",
+          "version": "1.59.0",
+          "systems": [
+            {
+              "host": "i686-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_159/teensy-discovery-1.59.0-linux32.tar.zst",
+              "archiveFileName": "teensy-discovery-1.59.0-linux32.tar.zst",
+              "size": "8289",
+              "checksum": "SHA-256:48a7db10618c2beee97e0a820bf5280b07693e2c682fbbff5cfe23f97d65ff1e"
+            },
+            {
+              "host": "x86_64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_159/teensy-discovery-1.59.0-linux64.tar.zst",
+              "archiveFileName": "teensy-discovery-1.59.0-linux64.tar.zst",
+              "size": "8349",
+              "checksum": "SHA-256:524a3a158d883c78d458fd8156086e1fc66775d9811e43c2cfa5ac42654cea96"
+            },
+            {
+              "host": "aarch64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_159/teensy-discovery-1.59.0-linuxaarch64.tar.zst",
+              "archiveFileName": "teensy-discovery-1.59.0-linuxaarch64.tar.zst",
+              "size": "8709",
+              "checksum": "SHA-256:b6e5adb8b3bf2c4f3fa80dae6ed777e505b0b42297d937d26c0463fb2467ab73"
+            },
+            {
+              "host": "arm-linux-gnueabihf",
+              "url": "https://www.pjrc.com/teensy/td_159/teensy-discovery-1.59.0-linuxarm.tar.zst",
+              "archiveFileName": "teensy-discovery-1.59.0-linuxarm.tar.zst",
+              "size": "7464",
+              "checksum": "SHA-256:38c7a92e4688e13c99deb9044674af0d86fc431be06fb23f42d56725e5aacc75"
+            },
+            {
+              "host": "x86_64-apple-darwin14",
+              "url": "https://www.pjrc.com/teensy/td_159/teensy-discovery-1.59.0-macos.tar.zst",
+              "archiveFileName": "teensy-discovery-1.59.0-macos.tar.zst",
+              "size": "9079",
+              "checksum": "SHA-256:d1d862b3c8591303d24f7c7f754cc45d581cd3d68151b9ce3918fd3cbb94c0b4"
+            },
+            {
+              "host": "i686-mingw32",
+              "url": "https://www.pjrc.com/teensy/td_159/teensy-discovery-1.59.0-windows.tar.zst",
+              "archiveFileName": "teensy-discovery-1.59.0-windows.tar.zst",
+              "size": "24301",
+              "checksum": "SHA-256:4336d09451fa79e3df16994189eca84267a103c8fe3c98016cb5198f8943a4b6"
+            }
+          ]
+        },
+        {
+          "name": "teensy-discovery",
+          "version": "1.58.0",
+          "systems": [
+            {
+              "host": "i686-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-discovery-linux32.tar.zst",
+              "archiveFileName": "teensy-discovery-linux32.tar.zst",
+              "size": "8302",
+              "checksum": "SHA-256:4809f9bb38587760427d5ade2417b2c8804b812872f011357131577747a7b2f0"
+            },
+            {
+              "host": "x86_64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-discovery-linux64.tar.zst",
+              "archiveFileName": "teensy-discovery-linux64.tar.zst",
+              "size": "8470",
+              "checksum": "SHA-256:9ac353bdc7ca7b1d1a892980bb458a8c93c43349d213d22ba3320ec1379910a5"
+            },
+            {
+              "host": "aarch64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-discovery-linuxaarch64.tar.zst",
+              "archiveFileName": "teensy-discovery-linuxaarch64.tar.zst",
+              "size": "8699",
+              "checksum": "SHA-256:234f06699393dfcd1df9f639881e600a4b4e2703b956b000bc86b21ed30297ef"
+            },
+            {
+              "host": "arm-linux-gnueabihf",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-discovery-linuxarm.tar.zst",
+              "archiveFileName": "teensy-discovery-linuxarm.tar.zst",
+              "size": "7470",
+              "checksum": "SHA-256:770ae930b07ef08efe0b466dacf7b068bb8b5b43fe1ae178b320b88353f7ffe5"
+            },
+            {
+              "host": "x86_64-apple-darwin14",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-discovery-macos.tar.zst",
+              "archiveFileName": "teensy-discovery-macos.tar.zst",
+              "size": "9099",
+              "checksum": "SHA-256:9ba4543f5b1820ec7a78ca9a804d23761973706d6ca5b902f2a0ebac7021af94"
+            },
+            {
+              "host": "i686-mingw32",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-discovery-windows.tar.zst",
+              "archiveFileName": "teensy-discovery-windows.tar.zst",
+              "size": "24442",
+              "checksum": "SHA-256:3b8a44c2aea698a1df8e944ff4b7bb3701718e8c566c573e33622240ef6ea7d4"
+            }
+          ]
+        },
+        {
+          "name": "teensy-monitor",
+          "version": "1.59.0",
+          "systems": [
+            {
+              "host": "i686-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_159/teensy-monitor-1.59.0-linux32.tar.zst",
+              "archiveFileName": "teensy-monitor-1.59.0-linux32.tar.zst",
+              "size": "9116",
+              "checksum": "SHA-256:b250c2806bf51d9d84168509f873aa08d35f8fc27a8a1ad819da747760e29c67"
+            },
+            {
+              "host": "x86_64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_159/teensy-monitor-1.59.0-linux64.tar.zst",
+              "archiveFileName": "teensy-monitor-1.59.0-linux64.tar.zst",
+              "size": "9174",
+              "checksum": "SHA-256:05ddef82a9a5d60f2eab49052c16762547ddf4fd7046de203add5cee26a25a77"
+            },
+            {
+              "host": "aarch64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_159/teensy-monitor-1.59.0-linuxaarch64.tar.zst",
+              "archiveFileName": "teensy-monitor-1.59.0-linuxaarch64.tar.zst",
+              "size": "9653",
+              "checksum": "SHA-256:4dda0621ba6c1214eee81be33a07f5b86174ab264db9b765007708b1e5eb2277"
+            },
+            {
+              "host": "arm-linux-gnueabihf",
+              "url": "https://www.pjrc.com/teensy/td_159/teensy-monitor-1.59.0-linuxarm.tar.zst",
+              "archiveFileName": "teensy-monitor-1.59.0-linuxarm.tar.zst",
+              "size": "8247",
+              "checksum": "SHA-256:e0508fd8523ef20ca65e63918b89a0a0194ca2bf6499a2cfb671f9e0b0ed91d4"
+            },
+            {
+              "host": "x86_64-apple-darwin14",
+              "url": "https://www.pjrc.com/teensy/td_159/teensy-monitor-1.59.0-macos.tar.zst",
+              "archiveFileName": "teensy-monitor-1.59.0-macos.tar.zst",
+              "size": "10567",
+              "checksum": "SHA-256:1b058a33e5044e360e6fb4b4bfa8c4563dbe13b74fd17ffd67bd7abf65ebf7c3"
+            },
+            {
+              "host": "i686-mingw32",
+              "url": "https://www.pjrc.com/teensy/td_159/teensy-monitor-1.59.0-windows.tar.zst",
+              "archiveFileName": "teensy-monitor-1.59.0-windows.tar.zst",
+              "size": "25795",
+              "checksum": "SHA-256:d1da38caf424453ea75b6993f7de3a10c5855466cca19add0b77534bb81fbc5a"
+            }
+          ]
+        },
+        {
+          "name": "teensy-monitor",
+          "version": "1.58.0",
+          "systems": [
+            {
+              "host": "i686-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-monitor-linux32.tar.zst",
+              "archiveFileName": "teensy-monitor-linux32.tar.zst",
+              "size": "9128",
+              "checksum": "SHA-256:fcbb9d1d4547be90f5a3e63eeb8455d713ad1900237ced2b7e7a55cab8319328"
+            },
+            {
+              "host": "x86_64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-monitor-linux64.tar.zst",
+              "archiveFileName": "teensy-monitor-linux64.tar.zst",
+              "size": "9218",
+              "checksum": "SHA-256:019bc0840be5da9e98d8d990148216c6fe6500217e7ed955ad51fa3e110efcbc"
+            },
+            {
+              "host": "aarch64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-monitor-linuxaarch64.tar.zst",
+              "archiveFileName": "teensy-monitor-linuxaarch64.tar.zst",
+              "size": "9653",
+              "checksum": "SHA-256:82258f62ebf8504590d393a0d62d12643d9a489b565b93255de52d5624a87861"
+            },
+            {
+              "host": "arm-linux-gnueabihf",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-monitor-linuxarm.tar.zst",
+              "archiveFileName": "teensy-monitor-linuxarm.tar.zst",
+              "size": "8254",
+              "checksum": "SHA-256:adc894dea9386f23f000bdb007fa6ddad4631c6b118264b7dac68f67a7433e26"
+            },
+            {
+              "host": "x86_64-apple-darwin14",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-monitor-macos.tar.zst",
+              "archiveFileName": "teensy-monitor-macos.tar.zst",
+              "size": "10594",
+              "checksum": "SHA-256:82ca2ce4f8a7de707caac68493874ef6a9dbef74225fdad25f25791a5493c5c0"
+            },
+            {
+              "host": "i686-mingw32",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-monitor-windows.tar.zst",
+              "archiveFileName": "teensy-monitor-windows.tar.zst",
+              "size": "25706",
+              "checksum": "SHA-256:7df517f2f369ee34e7ebd80d39b93782e055c1da39c924420483081b80878e52"
+            }
+          ]
+        },
+        {
+          "name": "teensy-compile",
+          "version": "5.4.1",
+          "systems": [
+            {
+              "host": "i686-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_156/teensy-compile-linux32.tar.zst",
+              "archiveFileName": "teensy-compile-linux32.tar.zst",
+              "size": "52425001",
+              "checksum": "SHA-256:e508cce39b4ec87463c5b7dd71818381282ce5ffffc3d385994d07719a6facbc"
+            },
+            {
+              "host": "x86_64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_156/teensy-compile-linux64.tar.zst",
+              "archiveFileName": "teensy-compile-linux64.tar.zst",
+              "size": "53028689",
+              "checksum": "SHA-256:1d94a1e7d2f850dc983dac7e6f755b73bac50454dce8a477b6409b3bcdf551c7"
+            },
+            {
+              "host": "aarch64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_156/teensy-compile-linuxaarch64.tar.zst",
+              "archiveFileName": "teensy-compile-linuxaarch64.tar.zst",
+              "size": "53407194",
+              "checksum": "SHA-256:1d1b35b3f4e3ef9562307324a8be19c93575e10ff8283437f3931f1a69b7da14"
+            },
+            {
+              "host": "arm-linux-gnueabihf",
+              "url": "https://www.pjrc.com/teensy/td_156/teensy-compile-linuxarm.tar.zst",
+              "archiveFileName": "teensy-compile-linuxarm.tar.zst",
+              "size": "48580104",
+              "checksum": "SHA-256:dff8eab1a08d00eb9ddf63a73e244f277941e64cf89dff29873b396a4f771828"
+            },
+            {
+              "host": "x86_64-apple-darwin14",
+              "url": "https://www.pjrc.com/teensy/td_156/teensy-compile-macos.tar.zst",
+              "archiveFileName": "teensy-compile-macos.tar.zst",
+              "size": "53721586",
+              "checksum": "SHA-256:3ec42dde3bb5482ed6b44f149a83d1b7c1e6cca2497407802cb95a4341663fc9"
+            },
+            {
+              "host": "i686-mingw32",
+              "url": "https://www.pjrc.com/teensy/td_156/teensy-compile-windows.tar.zst",
+              "archiveFileName": "teensy-compile-windows.tar.zst",
+              "size": "53015557",
+              "checksum": "SHA-256:4f3f69c1d85aed74970765a55b4757667c64ee60800ad6e482dd5447b0dc4686"
+            }
+          ]
+        },
+        {
+          "name": "teensy-compile",
+          "version": "11.3.1",
+          "systems": [
+            {
+              "host": "i686-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-compile-linux32.tar.zst",
+              "archiveFileName": "teensy-compile-linux32.tar.zst",
+              "size": "87622072",
+              "checksum": "SHA-256:dcae9f835c5cf4466708ab2fcaf8f3889f863f0603f6159a45cb905e92ae1a29"
+            },
+            {
+              "host": "x86_64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-compile-linux64.tar.zst",
+              "archiveFileName": "teensy-compile-linux64.tar.zst",
+              "size": "88549060",
+              "checksum": "SHA-256:9553a7d83b251717c94eb43318de6ca997cb461b19bc73a8c6ca10e9b83cccd4"
+            },
+            {
+              "host": "aarch64-linux-gnu",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-compile-linuxaarch64.tar.zst",
+              "archiveFileName": "teensy-compile-linuxaarch64.tar.zst",
+              "size": "77693444",
+              "checksum": "SHA-256:e78db67a8afeaa46152b6f24e8d626d6dea133450533fefa756be1f5d4541cf1"
+            },
+            {
+              "host": "arm-linux-gnueabihf",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-compile-linuxarm.tar.zst",
+              "archiveFileName": "teensy-compile-linuxarm.tar.zst",
+              "size": "68868767",
+              "checksum": "SHA-256:71650df322a6dba365484a636f4507f4f665b9f8b3c754318cc046a728609af5"
+            },
+            {
+              "host": "x86_64-apple-darwin14",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-compile-macos.tar.zst",
+              "archiveFileName": "teensy-compile-macos.tar.zst",
+              "size": "87075805",
+              "checksum": "SHA-256:40cfbe36c32fab580738ed870e36b5a85dac44706d19b7c023106f3ad552f7a6"
+            },
+            {
+              "host": "i686-mingw32",
+              "url": "https://www.pjrc.com/teensy/td_158/teensy-compile-windows.tar.zst",
+              "archiveFileName": "teensy-compile-windows.tar.zst",
+              "size": "84779746",
+              "checksum": "SHA-256:8a8101b7329cb9c32ab0de9db6ba8e5635e8c8559ed0a99b6738d1323a52233a"
+            }
+          ]
+        }
+      ],
+      "help": {
+        "online": "https://forum.pjrc.com/forum.php"
+      }
+    }
+  ],
+  "IsTrusted": false
+}
