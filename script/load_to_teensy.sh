@@ -4,7 +4,7 @@ set -x
 BUILD_DIR=$(pwd)
 
 PRJ_DIR='..'
-TOOLS_PATH="${PRJ_DIR}/teensy/tools/teensy-tools/1.58.0"
+TOOLS_PATH="${PRJ_DIR}/teensy/tools/teensy-tools/1.59.0"
 COMPILER_PATH="${PRJ_DIR}/teensy/tools/teensy-compile/11.3.1/arm/bin"
 LOADER_PATH="${PRJ_DIR}/teensy_loader_cli"
 
