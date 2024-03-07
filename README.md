@@ -46,10 +46,16 @@ make
 load_to_teensy.sh
 ```
 
-Update working copy T41EEE in directory T41EEEw
+Add working copy of T41EEE to the directory T41EEEw
 ```
 git subtree add --prefix=T41EEEw https://github.com/Greg-R/T41EEE main
 ```
+
+Update working copy of T41EEE to the directory T41EEEw
+```
+git subtree pull --prefix=T41EEEw https://github.com/Greg-R/T41EEE main
+```
+
 CPU speed is set to 528 MHz ...
 
 ## T41 sources
