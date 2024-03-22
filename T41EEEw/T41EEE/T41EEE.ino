@@ -976,6 +976,7 @@ void SetAudioOperatingState(int operatingState) {
 #endif
   switch (operatingState) {
     case SSB_RECEIVE_STATE:
+    case AM_RECEIVE_STATE:
     case CW_RECEIVE_STATE:
       // Disconnect and deactivate microphone audio.
       patchCord1.disconnect();
@@ -1186,14 +1187,10 @@ FLASHMEM void setup() {
 
   Splash();
 
-  EEPROMData.sdCardPresent = InitializeSDCard();  // Is there an SD card that can be initialized?
-
   // =============== EEPROM section =================
-  EnableButtonInterrupts();
-  EEPROMStartup();
+  EEPROMData.sdCardPresent = InitializeSDCard();  // Initialize mandatory SD card.
   // Push and hold a button at power up to activate switch matrix calibration.
-  // Uncomment this code block to enable this feature.  Len KD0RC
-  /* Remove this line and the matching block comment line below to activate.
+#ifdef DEBUG_SWITCH_CAL
   if (analogRead(BUSY_ANALOG_PIN) < NOTHING_TO_SEE_HERE) {
     tft.fillWindow(RA8875_BLACK);
     tft.setFontScale(1);
@@ -1201,12 +1198,15 @@ FLASHMEM void setup() {
     tft.setCursor(10, 10);
     tft.print("Release button to start calibration.");
     delay(2000);
-//    EnableButtonInterrupts();
+    EnableButtonInterrupts();
     SaveAnalogSwitchValues();
-    delay(3000);
-    EEPROMRead();  // Call to reset switch matrix values
+    EEPROMWrite();  // Call to reset switch matrix values
   }                // KD0RC end
-  Remove this line and the matching block comment line above to activate. */
+#else
+  EnableButtonInterrupts();
+  EEPROMStartup();
+#endif
+
   h = 135;
   Q_in_L.begin();  //Initialize receive input buffers
   Q_in_R.begin();
@@ -1292,6 +1292,11 @@ void loop()  // Replaced entire loop() with Greg's code  JJP  7/14/23
   if (EEPROMData.xmtMode == CW_MODE && (digitalRead(EEPROMData.paddleDit) == HIGH && digitalRead(EEPROMData.paddleDah) == HIGH)) radioState = CW_RECEIVE_STATE;  // Was using symbolic constants. Also changed in code below.  KF5N August 8, 2023
   if (EEPROMData.xmtMode == CW_MODE && (digitalRead(EEPROMData.paddleDit) == LOW && EEPROMData.xmtMode == CW_MODE && EEPROMData.keyType == 0)) radioState = CW_TRANSMIT_STRAIGHT_STATE;
   if (EEPROMData.xmtMode == CW_MODE && (keyPressedOn == 1 && EEPROMData.xmtMode == CW_MODE && EEPROMData.keyType == 1)) radioState = CW_TRANSMIT_KEYER_STATE;
+  if (bands[EEPROMData.currentBand].mode > 1) {
+  radioState = AM_RECEIVE_STATE;  // Inhibit transmit in AM demod modes.  KF5N March 21, 2024
+  keyPressedOn = 0;
+  }
+
   if (lastState != radioState) {
     SetFreq();  // Update frequencies if the radio state has changed.
     SetAudioOperatingState(radioState);
@@ -1302,7 +1307,8 @@ void loop()  // Replaced entire loop() with Greg's code  JJP  7/14/23
   //  Begin SSB Mode state machine
 
   switch (radioState) {
-    case (SSB_RECEIVE_STATE):
+    case AM_RECEIVE_STATE:
+    case SSB_RECEIVE_STATE:
       if (lastState != radioState) {  // G0ORX 01092023
         digitalWrite(MUTE, LOW);      // Audio Mute off
         digitalWrite(RXTX, LOW);      //xmit off
@@ -1345,6 +1351,7 @@ void loop()  // Replaced entire loop() with Greg's code  JJP  7/14/23
   // Begin CW Mode state machine
 
   switch (radioState) {
+//    case AM_RECEIVE_STATE:
     case CW_RECEIVE_STATE:
       if (lastState != radioState) {  // G0ORX 01092023
         digitalWrite(MUTE, LOW);      //turn off mute

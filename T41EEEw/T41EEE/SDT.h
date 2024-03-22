@@ -2,7 +2,7 @@
 
 //======================================== User section that might need to be changed ===================================
 #include "MyConfigurationFile.h"  // This file name should remain unchanged
-#define VERSION "T41EEE.5"        // Change this for updates. If you make this longer than 9 characters, brace yourself for surprises
+#define VERSION "T41EEE.5"        // Change this for updates. If you make this longer than 9 characters, brace yourself for surprises.  Use quotes!
 
 struct maps {
   char mapNames[50];
@@ -267,6 +267,7 @@ extern struct maps myMapFiles[];
 #define SSB_RECEIVE_STATE 0
 #define SSB_TRANSMIT_STATE 1
 #define CW_RECEIVE_STATE 2
+#define AM_RECEIVE_STATE 5
 #define CW_TRANSMIT_STRAIGHT_STATE 3
 #define CW_TRANSMIT_KEYER_STATE 4
 #define SPECTRUM_ZOOM_1 0
