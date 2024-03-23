@@ -16,8 +16,17 @@ extern struct maps myMapFiles[];
 #include <ArduinoJson.h>
 #include "Fonts/FreeMonoBold24pt7b.h"
 #include "Fonts/FreeMonoBold18pt7b.h"
-#include "Fonts/FreeMono24pt7b.h"
+
 #include "Fonts/FreeMono9pt7b.h"
+// #include "Fonts/FreeMono12pt7b.h"
+// #include "Fonts/FreeMono18pt7b.h"
+// #include "Fonts/FreeMono24pt7b.h"
+
+// #include "Fonts/FreeSans9pt7b.h"
+#include "Fonts/FreeSans12pt7b.h"
+#include "Fonts/FreeSans18pt7b.h"
+// #include "Fonts/FreeSans24pt7b.h"
+
 #include <Audio.h>                     //https://github.com/chipaudette/OpenAudio_ArduinoLibrary
 #include <OpenAudio_ArduinoLibrary.h>  // AFP 11-01-22
 #include <TimeLib.h>                   // Part of Teensy Time library
@@ -1126,6 +1135,8 @@ void SpectralNoiseReduction(void);
 void SpectralNoiseReductionInit();
 void Splash();
 int SubmenuSelect(const char *options[], int numberOfChoices, int defaultStart);
+
+int WarningWindow(const char lines[]);
 
 void T4_rtc_set(unsigned long t);
 float TGetTemp();
