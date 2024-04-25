@@ -210,9 +210,30 @@ list(APPEND T41_LIB
   RA8875
   EEPROM
   Core
-  arm_cortexM7lfsp_math
   m
 )
+
+if (CMSIS_TYPE MATCHES "LIB_V4_PJRC")
+  message(STATUS "LIB CMSIS_TYPE:${CMSIS_TYPE}")
+  list(APPEND T41_LIB ${CMAKE_CURRENT_SOURCE_DIR}/teensy/tools/teensy-compile/11.3.1/arm/arm-none-eabi/lib/libarm_cortexM7lfsp_math.a)
+elseif (CMSIS_TYPE MATCHES "LIB_V4_ARM")
+  message(STATUS "LIB CMSIS_TYPE:${CMSIS_TYPE}")
+  list(APPEND T41_LIB ${CMAKE_CURRENT_SOURCE_DIR}/CMSIS_4/CMSIS/Lib/GCC/libarm_cortexM7lfsp_math.a)
+elseif (CMSIS_TYPE MATCHES "SRC_V4")
+  message(STATUS "LIB CMSIS_TYPE:${CMSIS_TYPE}")
+elseif (CMSIS_TYPE MATCHES "SRC_V6")
+  message(STATUS "LIB CMSIS_TYPE:${CMSIS_TYPE}")
+  set(CMSISDSP ${CMAKE_CURRENT_SOURCE_DIR}/CMSIS-DSP)
+  set(CMSISCORE ${CMAKE_CURRENT_SOURCE_DIR}/CMSIS_6/CMSIS/Core)
+  message(STATUS "CMSISDSP:${CMSISDSP}")
+  message(STATUS "CMSISCORE:${CMSISCORE}")
+  add_subdirectory(${CMSISDSP}/Source bin_dsp)
+  list(APPEND T41_LIB CMSISDSP)
+  target_compile_options(CMSISDSP PRIVATE -mthumb -mcpu=cortex-m7 -mfloat-abi=hard -mfpu=fpv5-d16 )
+else ()
+  message(STATUS "LIB CMSIS_TYPE:${CMSIS_TYPE}")
+  list(APPEND T41_LIB arm_cortexM7lfsp_math)
+endif ()
 
 if (T41_SRC_TYPE MATCHES "SDT")
     message(STATUS "LIB T41_SRC_TYPE:${T41_SRC_TYPE}")
