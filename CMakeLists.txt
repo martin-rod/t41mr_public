@@ -22,6 +22,7 @@ endif ()
 
 #list(APPEND CODE_QUALITY_FLAGS -pedantic)
 list(APPEND CODE_QUALITY_FLAGS -Wall)
+list(APPEND CODE_QUALITY_FLAGS -Woverloaded-virtual=0)
 #list(APPEND CODE_QUALITY_FLAGS -Wextra)
 #list(APPEND CODE_QUALITY_FLAGS -Wdeprecated)
 #list(APPEND CODE_QUALITY_FLAGS -Wfloat-conversion)
