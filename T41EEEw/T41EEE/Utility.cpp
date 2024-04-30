@@ -709,28 +709,3 @@ FLASHMEM void initUserDefinedStuff() {
   initPowerCoefficients();
   ResetHistograms();  // KF5N February 20, 2024
 }
-
-
-/*****
-  Purpose: Arm function which is not included in the older library included with TeensyDuino.
-  
-  https://www.keil.com/pack/doc/cmsis/dsp/html/arm__clip__f32_8c.html
-
-*****/
-void arm_clip_f32(const float32_t * pSrc, 
-  float32_t * pDst, 
-  float32_t low, 
-  float32_t high, 
-  uint32_t numSamples)
-{
-    uint32_t i;
-    for (i = 0; i < numSamples; i++)
-    {                                        
-        if (pSrc[i] > high)                  
-            pDst[i] = high;                  
-        else if (pSrc[i] < low)              
-            pDst[i] = low;                   
-        else                                 
-            pDst[i] = pSrc[i];               
-    }
-}

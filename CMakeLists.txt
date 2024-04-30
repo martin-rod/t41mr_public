@@ -170,6 +170,9 @@ list(APPEND T41_INCLUDE "${PROJECT_SOURCE_DIR}/libraries/OpenAudio_ArduinoLibrar
 list(APPEND T41_INCLUDE "${PROJECT_SOURCE_DIR}/libraries/Rotary")
 list(APPEND T41_INCLUDE "${PROJECT_SOURCE_DIR}/libraries/Si5351Arduino/src")
 
+list(APPEND T41_INCLUDE "${CMSISDSP}/Include")
+list(APPEND T41_INCLUDE "${CMSISCORE}/Include")
+
 if (T41_SRC_TYPE MATCHES "SDT")
     message(STATUS "INC T41_SRC_TYPE:${T41_SRC_TYPE}")
 elseif (T41_SRC_TYPE MATCHES "EEE")

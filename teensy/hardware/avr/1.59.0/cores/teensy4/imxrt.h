@@ -1,6 +1,8 @@
 #pragma once
 #include <stdint.h>
 
+#include "cmsis_gcc.h"
+
 // Definitions based these documents:
 //   i.MX RT1060 Reference Manual, Rev. 2, 12/2019 - https://www.pjrc.com/teensy/datasheets.html
 //   ARM v7-M Architecture Reference Manual (DDI 0403E.b)
@@ -10070,8 +10072,8 @@ These register are used by the ROM code and should not be used by application so
 #define NVIC_GET_PRIORITY(irqnum) (*((uint8_t *)0xE000E400 + (irqnum)))
 
 
-#define __disable_irq() __asm__ volatile("CPSID i":::"memory");
-#define __enable_irq()  __asm__ volatile("CPSIE i":::"memory");
+//#define __disable_irq() __asm__ volatile("CPSID i":::"memory");
+//#define __enable_irq()  __asm__ volatile("CPSIE i":::"memory");
 
 
 // System Control Space (SCS), ARMv7 ref manual, B3.2, page 708
