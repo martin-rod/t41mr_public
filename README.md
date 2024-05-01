@@ -128,6 +128,31 @@ Additional boards manager URLs: https://www.pjrc.com/teensy/package_teensy_index
 
 7. Select .ino file, board and build in IDE ...
 
+### Libraries modification
+
+Edit .gitmodules
+```
+[submodule "libraries/OpenAudio_ArduinoLibrary"]
+	path = libraries/OpenAudio_ArduinoLibrary
+	url = git@github.com-mr:martin-rod/OpenAudio_ArduinoLibrary.git
+	branch = mr_v6_tst
+[submodule "libraries/Si5351Arduino"]
+	path = libraries/Si5351Arduino
+	url = git@github.com-mr:martin-rod/Si5351Arduino
+	branch = mr_v6_tst
+```
+
+and / or
+
+```
+git config --file=.gitmodules submodule.Submod.url https://github.com/username/ABC.git
+git config --file=.gitmodules submodule.Submod.branch Development
+git submodule sync
+git submodule update --init --recursive --remote
+or
+git submodule update --init --remote libraries/OpenAudio_ArduinoLibrary
+```
+
 ### Notes
 
 `/home/rod/wrk_ham/t41/t41mr/teensy/tools/teensy-compile/11.3.1/arm/bin/arm-none-eabi-objdump -x libSPI.a | c++filt -n | less -RN`
