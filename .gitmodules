@@ -23,7 +23,9 @@
 	url = https://github.com/bblanchon/ArduinoJson.git
 [submodule "CMSIS_6"]
 	path = CMSIS_6
-	url = git@github.com:ARM-software/CMSIS_6.git
+	url = https://github.com/ARM-software/CMSIS_6.git
+#	url = git@github.com:ARM-software/CMSIS_6.git
 [submodule "CMSIS-DSP"]
 	path = CMSIS-DSP
-	url = git@github.com:ARM-software/CMSIS-DSP.git
+	url = https://github.com/ARM-software/CMSIS-DSP.git
+#	url = git@github.com:ARM-software/CMSIS-DSP.git
