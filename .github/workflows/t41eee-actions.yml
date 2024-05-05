@@ -53,7 +53,7 @@ jobs:
       - name: Build t41_sdt
         run: |
           echo "Build t41_sdt"
-          ./create_build_eee.sh
+          ./create_build_eee_arm13.sh
           cd build_eee
           make VERBOSE=1
       - name: Upload t41_sdt artifacts
