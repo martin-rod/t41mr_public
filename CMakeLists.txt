@@ -8,6 +8,9 @@ set(TDUINO_CORE "${TDUINO}/cores/teensy4/")
 
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/teensy.cmake)
 
+# https://sourceware.org/binutils/docs-2.42/as.html#a
+set(CMAKE_C_COMPILE_OBJECT "${CMAKE_C_COMPILE_OBJECT}  -Wa,-alhms=<OBJECT>.lst")
+
 message(STATUS "CMAKE_BUILD_TYPE:${CMAKE_BUILD_TYPE}")
 
 if (CMAKE_BUILD_TYPE MATCHES "Debug")
