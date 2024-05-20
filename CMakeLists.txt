@@ -89,7 +89,7 @@ endif ()
 
 string(APPEND CMAKE_C_FLAGS "${C_COMPILE_FLAGS}")
 string(APPEND CMAKE_CXX_FLAGS "${CPP_COMPILE_FLAGS}")
-string(APPEND CMAKE_EXE_LINKER_FLAGS "-Wl,-Map,t41.map ${LINK_FLAGS}")
+string(APPEND CMAKE_EXE_LINKER_FLAGS "-Wl,-Map,t41.map,--print-memory-usage ${LINK_FLAGS}")
 
 message("CMAKE_C_FLAGS:${CMAKE_C_FLAGS}")
 message("CMAKE_CXX_FLAGS:${CMAKE_CXX_FLAGS}")
@@ -264,7 +264,7 @@ endif ()
 
 teensy_add_executable(t41sdt ${T41_SRC})
 target_include_directories(t41sdt PUBLIC ${T41_INCLUDE})
-target_compile_options(t41sdt PRIVATE ${CODE_QUALITY_FLAGS})
+target_compile_options(t41sdt PRIVATE ${CODE_QUALITY_FLAGS} -fstack-usage -Wstack-usage=1024 -fcallgraph-info)
 
 #depends on the order SPI
 target_link_libraries(t41sdt ${T41_LIB})
