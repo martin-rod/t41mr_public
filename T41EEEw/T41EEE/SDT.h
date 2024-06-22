@@ -38,6 +38,9 @@ extern struct maps myMapFiles[];
 #include <util/crc16.h>        // mdrhere
 #include <utility/imxrt_hw.h>  // for setting I2S freq, Thanks, FrankB!
 #include <EEPROM.h>
+
+#include "Calibrate.h"
+
 //======================================== Symbolic Constants for the T41 ===================================================
 #define RIGNAME "T41-EP SDT"
 #define NUMBER_OF_SWITCHES 18  // Number of push button switches. 16 on older boards
@@ -250,7 +253,6 @@ extern struct maps myMapFiles[];
 #define TMS0_POWER_DOWN_MASK (0x1U)
 #define TMS1_MEASURE_FREQ(x) (((uint32_t)(((uint32_t)(x)) << 0U)) & 0xFFFFU)
 #undef round
-//#undef PI  Try using PI defined in Arduino and/or Teensy.  KF5N March 7, 2024
 #undef HALF_PI
 #undef TWO_PI
 #define HALF_PI 1.5707963267948966192313216916398f
@@ -482,7 +484,9 @@ struct config_t {
   #ifdef QSE2
   q15_t iDCoffset[NUMBER_OF_BANDS] = { 0, 0, 0, 0, 0, 0, 0 };
   q15_t qDCoffset[NUMBER_OF_BANDS] = { 0, 0, 0, 0, 0, 0, 0 };
+  q15_t dacOffset = 1100; // This must be "tuned" for each radio and/or Audio Adapter board.
   #endif
+  bool radioCalComplete = false;
 };
 
 extern struct config_t EEPROMData;
@@ -591,6 +595,8 @@ extern Rotary filterEncoder;    // (14, 15)
 extern Rotary fineTuneEncoder;  // (4,  5);
 
 extern Metro ms_500;
+
+extern Calibrate calibrater;
 
 extern Si5351 si5351;
 
@@ -706,7 +712,6 @@ extern const uint8_t NR_N_frames;
 extern int16_t pixelnew[];
 extern int16_t pixelold[];
 extern int16_t pixelCurrent[];
-//extern int16_t pixelold[];
 extern int16_t y_old, y_new, y1_new, y1_old, y_old2;
 extern const uint16_t gradient[];
 extern const uint32_t IIR_biquad_Zoom_FFT_N_stages;
@@ -772,9 +777,6 @@ extern long TxRxFreq;  // = centerFreq+NCOFreq  NCOFreq from FreqShift2()
 extern unsigned long cwTransmitDelay;  // ms to keep relay on after last atom read
 extern long lastFrequencies[][2];
 extern long int n_clear;
-
-extern unsigned long long Clk2SetFreq;  // AFP 09-27-22
-extern unsigned long long Clk1SetFreq;  // AFP 09-27-22
 
 float ApproxAtan(float z);
 float ApproxAtan2(float y, float x);
@@ -933,6 +935,7 @@ void arm_clip_f32(const float32_t * pSrc,
   float32_t high, 
   uint32_t numSamples);
 int BandOptions();
+void BandSet(int band);  // Used in RadioCal().  Greg KF5N June 4, 2024.
 float BearingHeading(char *dxCallPrefix);
 void BearingMaps();
 void bmpDraw(const char *filename, int x, int y);
@@ -956,7 +959,6 @@ void CalcFIRCoeffs(float *coeffs_I, int numCoeffs, float32_t fc, float32_t Astop
 void CalcCplxFIRCoeffs(float *coeffs_I, float *coeffs_Q, int numCoeffs, float32_t FLoCut, float32_t FHiCut, float SampleRate);
 void CaptureKeystrokes();
 void CalibrateOptions();    // AFP 10-22-22, changed JJP 2/3/23
-//void Codec_gain();
 uint16_t Color565(uint8_t r, uint8_t g, uint8_t b);
 void ControlFilterF();
 int CreateMapList(char ptrMaps[10][50], int *count);
@@ -980,9 +982,11 @@ void DoSignalHistogram(long val);
 void DoGapHistogram(long val);
 int DoSplitVFO();
 void DoPaddleFlip();
-void DoXmitCalibrate(int toneFreqIndex);
-void DoXmitCarrierCalibrate(int toneFreqIndex);
-void DoReceiveCalibrate();
+void DoXmitCalibrate(int toneFreqIndex, bool radioCal, bool refineCal);
+#ifdef QSE2
+void DoXmitCarrierCalibrate(int toneFreqIndex, bool radioCal, bool refineCal);
+#endif
+void DoReceiveCalibrate(bool radioCal, bool refineCal);
 void DrawActiveLetter(int row, int horizontalSpacer, int whichLetterIndex, int keyWidth, int keyHeight);
 void DrawBandWidthIndicatorBar();  // AFP 03-27-22 Layers
 void DrawFrequencyBarValue();
@@ -1010,7 +1014,6 @@ void ErasePrimaryMenu();
 void EraseSpectrumDisplayContainer();
 void EraseSpectrumWindow();
 void ExecuteButtonPress(int val);
-
 void FilterBandwidth();
 void FilterOverlay();
 void FilterSetSSB();
@@ -1020,12 +1023,10 @@ void FreqShift1();
 void FreqShift2();
 float goertzel_mag(int numSamples, int TARGET_FREQUENCY, int SAMPLING_RATE, float *data);
 int GetEncoderValue(int minValue, int maxValue, int startValue, int increment, char prompt[]);
-float GetEncoderValueLive(float minValue, float maxValue, float startValue, float increment, char prompt[]);  //AFP 10-22-22
-int GetEncoderValueLiveQ15t(int minValue, int maxValue, int startValue, int increment, char prompt[]);
+float GetEncoderValueLive(float minValue, float maxValue, float startValue, float increment, char prompt[], bool left);  //AFP 10-22-22
+q15_t GetEncoderValueLiveQ15t(int minValue, int maxValue, int startValue, int increment, char prompt[], bool left);
 void GetFavoriteFrequency();
-
 float HaversineDistance(float dxLat, float dxLon);
-
 int InitializeSDCard();
 void InitFilterMask();
 void InitLMSNoiseReduction();
@@ -1052,16 +1053,14 @@ float MSinc(int m, float fc);
 void NoActiveMenu();
 void NoiseBlanker(float32_t *inputsamples, float32_t *outputsamples);
 void NROptions();
-
 float PlotCalSpectrum(int x1, int cal_bins[3], int capture_bins);
-
 void printFile(const char *filename);
 void EnableButtonInterrupts();
 void playTransmitData();  // KF5N February 23, 2024
 int ProcessButtonPress(int valPin);
 void ProcessEqualizerChoices(int EQType, char *title);
 void ProcessIQData();
-
+void RadioCal(bool refineCal);  // Greg KF5N June 4, 2024.
 uint16_t read16(File &f);
 uint32_t read32(File &f);
 int ReadSelectedPushButton();
@@ -1081,7 +1080,6 @@ void SaveAnalogSwitchValues();
 void SelectCalFreq();   // AFP 10-18-22
 void SelectCWFilter();  // AFP 10-18-22
 void SelectCWOffset();  // KF5N December 13, 2023
-//extern "C" uint32_t set_arm_clock(uint32_t frequency);
 void SetBand();
 void SetBandRelay(int state);
 void SetDecIntFilters();

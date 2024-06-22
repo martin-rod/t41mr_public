@@ -4,7 +4,7 @@
 This is the "T41 Extreme Experimenter's Edition" software for the 
 T41 Software Defined Transceiver.  The T41EEE was "forked" from the V049.2 version
 of the T41-EP software.  T41EEE is fundamentally different from the mainstream T41-EP
-code in that it adopts C++ rather than C.  C++ language features will be gradually
+code in that it adopts C++ rather than C style code.  C++ language features will be gradually
 introduced in the next releases.
 
 Purchase the book "Digital Signal Processing and Software Defined Radio" by
@@ -72,6 +72,53 @@ Remember to save to the SD card via the EEPROM menu EEPROM->SD command prior to 
 14.  Smoother tuning in 16X Zoom.
 15.  Improved accuracy of location of blue tuning bar.
 16.  Higher dynamic range calibration display working.
+17.  AM modes tuning problem is resolved.
+18.  Automated calibration feature is available in the Calibration menu (details below).
+
+## Automated Calibration
+
+Automated calibration is available starting with this version T41EEE.6.
+
+Automated calibration set-up is the same as for manual calibration.  A loop-back path from the
+output of the QSE to the input of the QSD must be connected.  An attenuator, in the value of 
+30 to 50 dB, must be inserted in this path.  The value for optimal calibration must be determined
+empirically.  If a spectrum analyzer is available, it is strongly recommended to view the result
+in a narrow sweep (~10kHz) to determine if the undesired sideband (and carrier in the case of QSE2DC)
+is adequately suppressed.
+
+After the loop-back path is inserted, use the following command from the main function buttons (2 and 5):
+
+Calibrate (select) Radio Cal (select)
+
+The radio will move to the 80 meter band and begin the calibration process.  The process will pause
+for 5 seconds at the conclusion of each individual calibration process.  The process will continue
+through all bands and will exit into regular radio mode after 10 meters is completed.  Calibration
+numbers are saved to non-volatile EEPROM onboard the Teensy.  If desired, save to the SD card as
+follows using the main function buttons:
+
+EEPROM (select) Copy EEPROM->SD (select)
+
+Note that individual band manual tuning remains possible.  Also, it is possible to automatically
+calibrate a single band from the individual menu using button 4 (2nd row, 1st column).  After
+the automatic calibration process completes, manual tuning again becomes available.
+
+A faster, more precise process is possible.  This is also in the Calibrate menu, and is called
+"Refine Cal".  This will calibrate all bands except it will use the current numbers as a starting
+point.  Refine Cal will not proceed until Radio Cal has been completed.  Refine Cal will also work
+in individual bands using button 7 (3rd row, 1st column).
+
+Here are a few tips on using automated calibration modes:
+
+1.  Turn on the radio for about 5 minutes before beginning automatic calibration modes.  This is so the circuitry is thermally stable before calibration begins.
+2.  RF Auto-Gain status does not matter.  Calibration will use the rf gain value assigned to the band which is being calibrated.
+3.  The desired carrier peak should be close to the top of the blue column.  Adjust the loop-back attenuation and/or the rf gain until this looks good.
+4.  "Refine Cal" which uses the previously saved numbers as a starting point.  This runs a little faster.  Refine calibration
+     can be run on the entire radio, all bands, as long as Radio Cal has been completed.  Refine cal can be run on individual band at any time (Filter button).
+5.  Don't try to run Radio Cal or Refine Cal on an unhealthy radio.  If there is a band which is not working, the results may be unpredictable.
+
+A short movie showing the latest automatic calibration features in action:
+
+<https://drive.google.com/file/d/1bSDNnU4UXCL27KUWEFmHZ__9FZ7w2gWG/view?usp=sharing>
 
 *********************************************************************************************
 
@@ -210,6 +257,8 @@ AudioConnection patchCord18(volumeAdjust, 0, i2s_quadOut, 2);
 
 AudioControlSGTL5000 sgtl5000_2;  // This is not a 2nd Audio Adapter.  It is I2S to the PCM1808 (ADC I and Q receiver in) and PCM5102 (DAC audio out).
 // End dataflow code
+
+Calibrate calibrater;  // Instantiate the calibration object.
 
 Rotary volumeEncoder = Rotary(VOLUME_ENCODER_A, VOLUME_ENCODER_B);        //( 2,  3)
 Rotary tuneEncoder = Rotary(TUNE_ENCODER_A, TUNE_ENCODER_B);              //(16, 17)
@@ -480,9 +529,6 @@ uint32_t s_hotCount;   /*!< The value of TEMPMON_TEMPSENSE0[TEMP_VALUE] at the h
 long currentFreq;
 long int n_clear;
 long TxRxFreq;  // = EEPROMData.centerFreq + NCOFreq  NCOFreq from FreqShift2()
-
-unsigned long long Clk2SetFreq;                  // AFP 09-27-22
-unsigned long long Clk1SetFreq = 1000000000ULL;  // AFP 09-27-22
 
 float help;
 float s_hotT_ROOM; /*!< The value of s_hotTemp minus room temperature(25¡æ).*/
@@ -1104,7 +1150,6 @@ FLASHMEM void Splash() {
   tft.fillWindow(RA8875_BLACK);
 }
 
-
 /*****
   Purpose: program entry point that sets the environment for program
 
@@ -1239,11 +1284,15 @@ FLASHMEM void setup() {
      start local oscillator Si5351
   ****************************************************************************************/
   si5351.reset();                                                                           // KF5N.  Moved Si5351 start-up to setup. JJP  7/14/23
-  si5351.init(SI5351_CRYSTAL_LOAD_10PF, Si_5351_crystal, EEPROMData.freqCorrectionFactor);  //JJP  7/14/23
-  si5351.set_ms_source(SI5351_CLK2, SI5351_PLLB);                                           //  Allows CLK1 and CLK2 to exceed 100 MHz simultaneously.
-  si5351.drive_strength(SI5351_CLK1, SI5351_DRIVE_8MA);                                     //AFP 10-13-22
-  si5351.drive_strength(SI5351_CLK2, SI5351_DRIVE_8MA);                                     //CWP AFP 10-13-22
-  // Turn off LOs.
+  si5351.init(SI5351_CRYSTAL_LOAD_10PF, Si_5351_crystal, EEPROMData.freqCorrectionFactor);  // JJP  7/14/23
+  si5351.set_ms_source(SI5351_CLK2, SI5351_PLLB);                                           // Allows CLK1 and CLK2 to exceed 100 MHz simultaneously.
+  #ifdef PLLMODULE
+  si5351.drive_strength(SI5351_CLK0, SI5351_DRIVE_8MA);                                     // AFP 10-13-22
+  #else
+  si5351.drive_strength(SI5351_CLK1, SI5351_DRIVE_8MA);
+  #endif
+  si5351.drive_strength(SI5351_CLK2, SI5351_DRIVE_8MA);                                     // CWP AFP 10-13-22
+  // Turn off LOs.  Should be default state after init, so probably not really necessary here.
   si5351.output_enable(SI5351_CLK2, 0);
   si5351.output_enable(SI5351_CLK1, 0);
 
@@ -1265,7 +1314,6 @@ FLASHMEM void setup() {
   ShowBandwidth();
   FilterBandwidth();
   ShowFrequency();
-  SetFreq();
   zoomIndex = EEPROMData.spectrum_zoom - 1;  // ButtonZoom() increments zoomIndex, so this cancels it so the read from EEPROM is accurately restored.  KF5N August 3, 2023
   ButtonZoom();                              // Restore zoom settings.  KF5N August 3, 2023
   comp_ratio = 5.0;

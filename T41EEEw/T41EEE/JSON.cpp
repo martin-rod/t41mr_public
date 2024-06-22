@@ -107,7 +107,9 @@ FLASHMEM void loadConfiguration(const char *filename, config_t &EEPROMData) {
   #ifdef QSE2
   for (int i = 0; i < 7; i++) EEPROMData.iDCoffset[i] = doc["iDCoffset"][i];
   for (int i = 0; i < 7; i++) EEPROMData.qDCoffset[i] = doc["qDCoffset"][i];
+  EEPROMData.dacOffset = doc["dacOffset"] | 0;
   #endif
+  EEPROMData.radioCalComplete = doc["radioCalComplete"] | false;
 
   // How to copy strings:
   //  strlcpy(EEPROMData.myCall,                  // <- destination
@@ -209,8 +211,9 @@ FLASHMEM void saveConfiguration(const char *filename, const config_t &EEPROMData
   #ifdef QSE2
   for (int i = 0; i < 7; i++) doc["iDCoffset"][i] = EEPROMData.iDCoffset[i];
   for (int i = 0; i < 7; i++) doc["qDCoffset"][i] = EEPROMData.qDCoffset[i];
+  doc["dacOffset"] = EEPROMData.dacOffset;
   #endif
-
+  doc["radioCalComplete"] = EEPROMData.radioCalComplete;
 
   if (toFile) {
     // Delete existing file, otherwise EEPROMData is appended to the file
