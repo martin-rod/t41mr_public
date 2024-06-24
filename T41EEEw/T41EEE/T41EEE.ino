@@ -74,6 +74,13 @@ Remember to save to the SD card via the EEPROM menu EEPROM->SD command prior to 
 16.  Higher dynamic range calibration display working.
 17.  AM modes tuning problem is resolved.
 18.  Automated calibration feature is available in the Calibration menu (details below).
+19.  Audio filter bandwidth selection is indicated by yellow delimiter bar.
+20.  Volume is equalized when adjusting audio bandwidth.
+21.  Noise reduction algorithms are equalized to the same gains.
+22.  MyConfiguration.h includes customizable coarse (center) and fine frequency increments.
+23.  Auto-Spectrum mode optimizes the position of the spectral display without affecting gain.
+     This is activated in the RF Set menu.  The gain setting reverts to manual control, also
+     in the RF Set menu.
 
 ## Automated Calibration
 
@@ -158,7 +165,7 @@ struct maps myMapFiles[10] = {
   { "", 0.0, 0.0 }
 };
 
-struct band bands[NUMBER_OF_BANDS] = {  //AFP Changed 1-30-21 // G0ORX Changed AGC to 20
+struct band bands[NUMBER_OF_BANDS]{  //AFP Changed 1-30-21 // G0ORX Changed AGC to 20
 //freq    band low   band hi   name    mode      Low    Hi  Gain  type    gain  AGC   pixel
 //                                             filter filter             correct     offset
 //DB2OO, 29-AUG-23: take ITU_REGION into account for band limits
@@ -166,20 +173,20 @@ struct band bands[NUMBER_OF_BANDS] = {  //AFP Changed 1-30-21 // G0ORX Changed A
 // Calibration done with TinySA as signal generator with -73dBm levels (S9) at the FT8 frequencies
 // with V010 QSD with the 12V mod of the pre-amp
 #if defined(ITU_REGION) && ITU_REGION == 1
-  3700000, 3500000, 3800000, "80M", DEMOD_LSB, -200, -3000, 15, HAM_BAND, 1.0, 20, 20,
-  7150000, 7000000, 7200000, "40M", DEMOD_LSB, -200, -3000, 15, HAM_BAND, 1.0, 20, 20,
+ { 3700000UL, 3500000, 3800000, "80M", DEMOD_LSB, -200, -3000, 15, HAM_BAND, 1.0, 20, 20},
+ { 7150000, 7000000, 7200000, "40M", DEMOD_LSB, -200, -3000, 15, HAM_BAND, 1.0, 20, 20},
 #elif defined(ITU_REGION) && ITU_REGION == 2
-  3700000, 3500000, 4000000, "80M", DEMOD_LSB, -200, -3000, 15, HAM_BAND, 1.0, 20, 20,
-  7150000, 7000000, 7300000, "40M", DEMOD_LSB, -200, -3000, 15, HAM_BAND, 1.0, 20, 20,
+ {  3700000UL, 3500000, 4000000, "80M", DEMOD_LSB, -200, -3000, 15, HAM_BAND, 1.0, 20, 20},
+ {  7150000, 7000000, 7300000, "40M", DEMOD_LSB, -200, -3000, 15, HAM_BAND, 1.0, 20, 20},
 #elif defined(ITU_REGION) && ITU_REGION == 3
-  3700000, 3500000, 3900000, "80M", DEMOD_LSB, -200, -3000, 15, HAM_BAND, 1.0, 20, 20,
-  7150000, 7000000, 7200000, "40M", DEMOD_LSB, -200, -3000, 15, HAM_BAND, 1.0, 20, 20,
+ {  3700000UL, 3500000, 3900000, "80M", DEMOD_LSB, -200, -3000, 15, HAM_BAND, 1.0, 20, 20},
+ {  7150000, 7000000, 7200000, "40M", DEMOD_LSB, -200, -3000, 15, HAM_BAND, 1.0, 20, 20},
 #endif
-  14200000, 14000000, 14350000, "20M", DEMOD_USB, 3000, 200, 15, HAM_BAND, 1.0, 20, 20,
-  18100000, 18068000, 18168000, "17M", DEMOD_USB, 3000, 200, 15, HAM_BAND, 1.0, 20, 20,
-  21200000, 21000000, 21450000, "15M", DEMOD_USB, 3000, 200, 15, HAM_BAND, 1.0, 20, 20,
-  24920000, 24890000, 24990000, "12M", DEMOD_USB, 3000, 200, 15, HAM_BAND, 1.0, 20, 20,
-  28350000, 28000000, 29700000, "10M", DEMOD_USB, 3000, 200, 15, HAM_BAND, 1.0, 20, 20
+ {  14200000, 14000000, 14350000, "20M", DEMOD_USB, 3000, 200, 15, HAM_BAND, 1.0, 20, 20},
+ {  18100000, 18068000, 18168000, "17M", DEMOD_USB, 3000, 200, 15, HAM_BAND, 1.0, 20, 20},
+ {  21200000, 21000000, 21450000, "15M", DEMOD_USB, 3000, 200, 15, HAM_BAND, 1.0, 20, 20},
+ {  24920000, 24890000, 24990000, "12M", DEMOD_USB, 3000, 200, 15, HAM_BAND, 1.0, 20, 20},
+ {  28350000, 28000000, 29700000, "10M", DEMOD_USB, 3000, 200, 15, HAM_BAND, 1.0, 20, 20}
 };
 
 const char *topMenus[] = { "CW Options", "RF Set", "VFO Select",
@@ -187,17 +194,13 @@ const char *topMenus[] = { "CW Options", "RF Set", "VFO Select",
                            "Noise Floor", "Mic Gain", "Mic Comp",
                            "EQ Rec Set", "EQ Xmt Set", "Calibrate", "Bearing" };
 
+// Button array labels array is located in Utility.cpp.
+
 // Pointers to functions which execute the menu options.  Do these functions used the returned integer???
 void (*functionPtr[])() = { &CWOptions, &RFOptions, &VFOSelect,
                             &EEPROMOptions, &AGCOptions, &SpectrumOptions,
                             &ButtonSetNoiseFloor, &MicGainSet, &MicOptions,
                             &EqualizerRecOptions, &EqualizerXmtOptions, &CalibrateOptions, &BearingMaps };
-const char *labels[] = { "Select", "Menu Up", "Band Up",
-                         "Zoom", "Menu Dn", "Band Dn",
-                         "Filter", "DeMod", "Mode",
-                         "NR", "Notch", "Noise Floor",
-                         "Fine Tune", "Decoder", "Tune Increment",
-                         "Reset Tuning", "Frequ Entry", "User 2" };
 
 uint32_t FFT_length = FFT_LENGTH;
 
@@ -390,7 +393,7 @@ dispSc displayScale[] =  //r *dbText,dBScale, pixelsPerDB, baseOffset, offsetInc
   };
 
 //======================================== Global variables declarations for Quad Oscillator 2 ===============================================
-long NCOFreq;
+int32_t NCOFreq;
 
 //======================================== Global variables declarations ===============================================
 //================== Global CW Correlation and FFT Variables =================
@@ -418,6 +421,7 @@ float32_t pixel_per_khz = ((1 << EEPROMData.spectrum_zoom) * SPECTRUM_RES * 1000
 int pos_left = centerLine - (int)(bands[EEPROMData.currentBand].FLoCut / 1000.0 * pixel_per_khz);
 
 int centerLine = (MAX_WATERFALL_WIDTH + SPECTRUM_LEFT_X) / 2;
+int16_t fftOffset = 0;
 int fLoCutOld;
 int fHiCutOld;
 int filterWidth = (int)((bands[EEPROMData.currentBand].FHiCut - bands[EEPROMData.currentBand].FLoCut) / 1000.0 * pixel_per_khz);
@@ -505,7 +509,7 @@ int n_L;
 int n_R;
 int newCursorPosition = 0;
 int oldCursorPosition = 256;
-int switchFilterSideband = 0;
+bool switchFilterSideband = false;
 int x2 = 0;  //AFP
 
 int zoomIndex = 1;  //AFP 9-26-22
@@ -526,9 +530,9 @@ uint32_t N_BLOCKS = N_B;
 uint32_t s_roomC_hotC; /*!< The value of s_roomCount minus s_hotCount.*/
 uint32_t s_hotTemp;    /*!< The value of TEMPMON_TEMPSENSE0[TEMP_VALUE] at room temperature .*/
 uint32_t s_hotCount;   /*!< The value of TEMPMON_TEMPSENSE0[TEMP_VALUE] at the hot temperature.*/
-long currentFreq;
+uint32_t currentFreq;
 long int n_clear;
-long TxRxFreq;  // = EEPROMData.centerFreq + NCOFreq  NCOFreq from FreqShift2()
+uint32_t TxRxFreq;  // = EEPROMData.centerFreq + NCOFreq  NCOFreq from FreqShift2()
 
 float help;
 float s_hotT_ROOM; /*!< The value of s_hotTemp minus room temperature(25¡æ).*/
@@ -1314,6 +1318,7 @@ FLASHMEM void setup() {
   ShowBandwidth();
   FilterBandwidth();
   ShowFrequency();
+  ShowAutoStatus();
   zoomIndex = EEPROMData.spectrum_zoom - 1;  // ButtonZoom() increments zoomIndex, so this cancels it so the read from EEPROM is accurately restored.  KF5N August 3, 2023
   ButtonZoom();                              // Restore zoom settings.  KF5N August 3, 2023
   comp_ratio = 5.0;
@@ -1343,6 +1348,8 @@ elapsedMicros usec = 0;  // Automatically increases as time passes; no ++ necess
   Return value:
     void
 *****/
+float audioBW{0.0}; 
+int dBoffset{0};
 void loop()  // Replaced entire loop() with Greg's code  JJP  7/14/23
 {
   int pushButtonSwitchIndex = -1;
@@ -1542,7 +1549,14 @@ void loop()  // Replaced entire loop() with Greg's code  JJP  7/14/23
 #endif
 
   if (volumeChangeFlag == true) {
-    volumeAdjust.gain(volumeLog[EEPROMData.audioVolume]);
+  
+    // Compensate for audio filter setting.
+    // Nominal bandwidth is 2.8kHz.  This will be the 0 dB reference.
+    // The upper and lower frequency limits are bands[EEPROMData.currentBand].FLoCut and bands[EEPROMData.currentBand].FHiCut.
+    audioBW = bands[EEPROMData.currentBand].FHiCut - bands[EEPROMData.currentBand].FLoCut;
+    // How many dB between reference and current setting?  Round to integer.
+    dBoffset = static_cast<int>(20.0 * log10f_fast(audioBW/2800.0));
+    volumeAdjust.gain(volumeLog[(EEPROMData.audioVolume - dBoffset)]);
     volumeChangeFlag = false;
     UpdateVolumeField();
   }

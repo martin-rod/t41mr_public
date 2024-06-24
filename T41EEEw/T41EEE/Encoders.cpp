@@ -77,6 +77,7 @@ void FilterSetSSB() {
 //        InitFilterMask();
         break;
     }
+      volumeChangeFlag = true;
   }
     // =============  AFP 10-27-22
 
@@ -95,18 +96,18 @@ void FilterSetSSB() {
         filterHiPositionMarker = map(bands[EEPROMData.currentBand].FHiCut, 0, 6000, 0, 256);
         //Draw Fiter indicator lines on audio plot to Layer 2.
         tft.writeTo(L2);
+        if(not switchFilterSideband) {
         tft.drawLine(BAND_INDICATOR_X - 6 + abs(filterLoPositionMarker), SPECTRUM_BOTTOM - 3, BAND_INDICATOR_X - 6 + abs(filterLoPositionMarker), SPECTRUM_BOTTOM - 112, RA8875_LIGHT_GREY);
+        tft.drawLine(BAND_INDICATOR_X - 7 + abs(filterHiPositionMarker), SPECTRUM_BOTTOM - 3, BAND_INDICATOR_X - 7 + abs(filterHiPositionMarker), SPECTRUM_BOTTOM - 112, RA8875_YELLOW);
+        } else {
+        tft.drawLine(BAND_INDICATOR_X - 6 + abs(filterLoPositionMarker), SPECTRUM_BOTTOM - 3, BAND_INDICATOR_X - 6 + abs(filterLoPositionMarker), SPECTRUM_BOTTOM - 112, RA8875_YELLOW);
         tft.drawLine(BAND_INDICATOR_X - 7 + abs(filterHiPositionMarker), SPECTRUM_BOTTOM - 3, BAND_INDICATOR_X - 7 + abs(filterHiPositionMarker), SPECTRUM_BOTTOM - 112, RA8875_LIGHT_GREY);
+        }
 
     tft.writeTo(L1);    
     DrawFrequencyBarValue();  // This calls ShowBandwidth().  YES, this function is useful here.
     UpdateDecoderField();   // Redraw Morse decoder graphics because they get erased due to filter graphics updates.
     DrawBandWidthIndicatorBar();
-
-//  }
-//    tft.writeTo(L1);  // Exit function in layer 1.  KF5N August 3, 2023
-
-//tft.writeTo(L1);
 }
 
 
@@ -140,7 +141,7 @@ void EncoderCenterTune() {
       break;
   }
 
-  EEPROMData.centerFreq += ((long)EEPROMData.freqIncrement * tuneChange);  // tune the master vfo
+  EEPROMData.centerFreq += (EEPROMData.centerTuneStep * tuneChange);  // tune the master vfo
   if(EEPROMData.centerFreq < 300000) EEPROMData.centerFreq = 300000;
   TxRxFreq = EEPROMData.centerFreq + NCOFreq;
   EEPROMData.lastFrequencies[EEPROMData.currentBand][EEPROMData.activeVFO] = TxRxFreq;
@@ -182,16 +183,6 @@ void EncoderVolume()  //============================== AFP 10-22-22  Begin new
       break;
   }
   EEPROMData.audioVolume += adjustVolEncoder; 
-  // simulate log taper.  As we go higher in volume, the increment increases.
-
-//  if (EEPROMData.audioVolume < (MIN_AUDIO_VOLUME + 10)) increment = 2;
-//  else if (EEPROMData.audioVolume < (MIN_AUDIO_VOLUME + 20)) increment = 3;
-//  else if (EEPROMData.audioVolume < (MIN_AUDIO_VOLUME + 30)) increment = 4;
-//  else if (EEPROMData.audioVolume < (MIN_AUDIO_VOLUME + 40)) increment = 5;
-//  else if (EEPROMData.audioVolume < (MIN_AUDIO_VOLUME + 50)) increment = 6;
-//  else if (EEPROMData.audioVolume < (MIN_AUDIO_VOLUME + 60)) increment = 7;
-//  else increment = 8;
-
 
   if (EEPROMData.audioVolume > 100) {
     EEPROMData.audioVolume = 100;
@@ -201,7 +192,6 @@ void EncoderVolume()  //============================== AFP 10-22-22  Begin new
   }
 
   volumeChangeFlag = true;  // Need this because of unknown timing in display updating.
-
 }  //============================== AFP 10-22-22  End new
 
 
@@ -300,7 +290,6 @@ q15_t GetEncoderValueLiveQ15t(int minValue, int maxValue, int startValue, int in
 }
 
 
-
 /*****
   Purpose: Use the encoder to change the value of a number in some other function
 
@@ -350,6 +339,7 @@ int GetEncoderValue(int minValue, int maxValue, int startValue, int increment, c
     }
   }
 }
+
 
 /*****
   Purpose: Allows quick setting of WPM without going through a menu
@@ -402,6 +392,7 @@ int SetWPM() {
   EraseMenus();
   return EEPROMData.currentWPM;
 }
+
 
 /*****
   Purpose: Determines how long the transmit relay remains on after last CW atom is sent.
@@ -478,7 +469,7 @@ long SetTransmitDelay()  // new function JJP 9/1/22
       fineTuneEncoderMove = -1L;
     }
   }
-  NCOFreq = NCOFreq + EEPROMData.stepFineTune * fineTuneEncoderMove;  // Increment NCOFreq per encoder movement.
+  NCOFreq = NCOFreq + EEPROMData.fineTuneStep * fineTuneEncoderMove;  // Increment NCOFreq per encoder movement.
   centerTuneFlag = 1;   // This is used in Process.cpp.  Greg KF5N May 16, 2024
   // ============  AFP 10-28-22
   if (EEPROMData.activeVFO == VFO_A) {
@@ -490,7 +481,7 @@ long SetTransmitDelay()  // new function JJP 9/1/22
   }
   // ===============  Recentering at band edges ==========
   if (EEPROMData.spectrum_zoom != 0) {
-    if (NCOFreq >= (95000 / (1 << EEPROMData.spectrum_zoom)) || NCOFreq < (-93000 / (1 << EEPROMData.spectrum_zoom))) {  // 47500 with 2x zoom.
+    if (NCOFreq >= static_cast<int32_t>((95000 / (1 << EEPROMData.spectrum_zoom))) || NCOFreq < static_cast<int32_t>((-93000 / (1 << EEPROMData.spectrum_zoom)))) {  // 47500 with 2x zoom.
       centerTuneFlag = 0;
       resetTuningFlag = 1;
       return;
