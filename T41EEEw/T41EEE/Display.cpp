@@ -307,17 +307,17 @@ void ShowBandwidth() {
   tft.writeTo(L2);
   tft.setFontScale((enum RA8875tsize)0);
   tft.setTextColor(RA8875_LIGHT_GREY);
-  if (switchFilterSideband == 0)
+  if (switchFilterSideband == false)
     tft.setTextColor(RA8875_WHITE);
-  else if (switchFilterSideband == 1)
+  else if (switchFilterSideband == true)
     tft.setTextColor(RA8875_LIGHT_GREY);
 
   MyDrawFloat((float)(bands[EEPROMData.currentBand].FLoCut / 1000.0f), 1, FILTER_PARAMETERS_X, FILTER_PARAMETERS_Y, buff);
 
   tft.print("kHz");
-  if (switchFilterSideband == 1)
+  if (switchFilterSideband == true)
     tft.setTextColor(RA8875_WHITE);
-  else if (switchFilterSideband == 0)
+  else if (switchFilterSideband == false)
     tft.setTextColor(RA8875_LIGHT_GREY);
   MyDrawFloat((float)(bands[EEPROMData.currentBand].FHiCut / 1000.0f), 1, FILTER_PARAMETERS_X + 80, FILTER_PARAMETERS_Y, buff);
   tft.print("kHz");
@@ -1151,7 +1151,7 @@ void DisplayIncrementField() {
   tft.setTextColor(RA8875_GREEN);
   tft.print(EEPROMData.fineTuneStep);
 
-  tft.fillRect(INCREMENT_X + 190, INCREMENT_Y, tft.getFontWidth() * 7, tft.getFontHeight(), RA8875_BLACK);
+  tft.fillRect(INCREMENT_X + 188, INCREMENT_Y, tft.getFontWidth() * 7 + 2, tft.getFontHeight(), RA8875_BLACK);
   tft.setCursor(FIELD_OFFSET_X + 95, INCREMENT_Y - 1);
   tft.setTextColor(RA8875_GREEN);
   tft.print(EEPROMData.centerTuneStep);
