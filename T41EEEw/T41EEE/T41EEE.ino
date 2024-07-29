@@ -1,10 +1,10 @@
 /*
-### Version T41EEE.6 T41 Software Defined Transceiver Arduino Sketch
+### Version T41EEE.7 T41 Software Defined Transceiver Arduino Sketch
 
 This is the "T41 Extreme Experimenter's Edition" software for the 
 T41 Software Defined Transceiver.  The T41EEE was "forked" from the V049.2 version
 of the T41-EP software.  T41EEE is fundamentally different from the mainstream T41-EP
-code in that it adopts C++ rather than C style code.  C++ language features will be gradually
+code in that it adopts C++ rather than C.  C++ language features will be gradually
 introduced in the next releases.
 
 Purchase the book "Digital Signal Processing and Software Defined Radio" by
@@ -43,13 +43,13 @@ successful.
 
 ## How to Compile T41EEE
 
-T41EEE.6 was developed and compiled using Arduino IDE version 2.3.2 with the following
+T41EEE.7 was developed and compiled using Arduino IDE version 2.3.2 with the following
 configuration:
 
 1.  Optimize is set to "Smallest Code" (Tools menu).
 2.  CPU speed is set to 528 MHz (Tools menu).
 3.  TeensyDuino version is 1.59.0.
-4.  You will need to install ArduinoJson which is currently version 7.0.4.
+4.  You will need to install ArduinoJson which is currently version 7.1.0.
 
 Completing a FLASH erase of the Teensy is strongly recommended before uploading this new version. 
 Remember to save to the SD card via the EEPROM menu EEPROM->SD command prior to erasing.
@@ -59,37 +59,80 @@ The instructions for performing a FLASH erase of the Teensy are here:
 
 The bullet "Memory Wipe & LED Blink Restore" has the instructions.
 
-## Highlight of Changes included in T41EEE.6
+## Highlight of Changes included in T41EEE.7
 
- 1.  Fixed CW sidetone problem.
- 2.  Fixed ordering of button interrupt enabling and EEPROM startup function calls in setup().
- 3.  Added #define DEBUG_SWITCH_CAL and .ino code.
- 4.  Fixed version not updating in SD file.  CW filter shown rather than default in menu.
- 5.  Fixed switch matrix debug mode not saving to EEPROM.
- 6.  Inhibit transmit in AM demod modes.
- 7.  Changed Serial speed from 9600 to 115200, a modern speed.
- 8.  Boosted QSE2DC transmit gain, which increases power by about 3 dB.
- 9.  Corrected comment in the ResetFlipFlops() function.
-10.  Fixed strange filter band limit behavior and moved graphics to FilterSetSSB() function.
-11.  Updated README with new link to book and compile configuration.
-12.  Removed unused variables and code, formerly used for audio bandwidth delimiters.
-13.  Fixed bug in FilterSetSSB() which caused audio filter bandwidth to change inadvertently.
-14.  Smoother tuning in 16X Zoom.
-15.  Improved accuracy of location of blue tuning bar.
-16.  Higher dynamic range calibration display working.
-17.  AM modes tuning problem is resolved.
-18.  Automated calibration feature is available in the Calibration menu (details below).
-19.  Audio filter bandwidth selection is indicated by yellow delimiter bar.
-20.  Volume is equalized when adjusting audio bandwidth.
-21.  Noise reduction algorithms are equalized to the same gains.
-22.  MyConfiguration.h includes customizable coarse (center) and fine frequency increments.
-23.  Auto-Spectrum mode optimizes the position of the spectral display without affecting gain.
-     This is activated in the RF Set menu.  The gain setting reverts to manual control, also
-     in the RF Set menu.
+1.  Audio bandwidth equalized.  Noise reductions equalized.
+2.  Changed audio filter delimiter line color to red.
+3.  Reduced Spectral noise filter amplitude.
+4.  Fixed problem with audio delimiters and reset tuning, also was not saving AutoSpectrum to SD.
+5.  Added SSB calibration.
+6.  Added audio adapter equalizer to transmit signal chain.
+7.  CESSB modulation from Open Audio Library replaces conventional phasing SSB.
+8.  Added working SSB options menu specific to CESSB.  Mic gain and compression menu removed.
+
+## Controlled Envelope Single Side Band (CESSB)
+
+Controlled Envelope Single Side Band is employed in T41EEE.7.  This web page has an excellent description of
+CESSB technology:
+
+<https://www.janbob.com/electron/CESSB_Teensy/CESSB_Teensy.html>
+
+T41EEE.7 uses the Open Audio CESSB class as well as the type 2 Compressor class.
+
+<https://github.com/chipaudette/OpenAudio_ArduinoLibrary/blob/master/radioCESSB_Z_transmit_F32.h>
+
+<https://github.com/chipaudette/OpenAudio_ArduinoLibrary/blob/master/AudioEffectCompressor2_F32.h>
+
+The Audio Adapter's hardware-based equalization filter is included in the CESSB transmit chain to provide
+high-pass filtering of the microphone audio.
+
+### CESSB Automatic Calibration
+
+Automated calibration of the CESSB transmit signal chain is included in the Calibration menu.
+Similar to the previously deployed automatic calibration, SSB Radio Cal and SSB Radio Refine Cal
+commands will run the automatic calibration routines on all bands.  The automated calibrations can
+also be run on a per-band basis.
+
+Successful completion of either manual or automated calibration is required before proceeding with CESSB
+transmitter alignments.  It is recommended to calibrate with SSB PA Cal set as high as possible.
+If you have access to a spectrum analyzer, look at the transmitted spectrum from the output of the QSE
+filter.  You should see a minimum of spurious outputs close to the desired carrier.
+
+### CESSB Transmitter Alignment
+
+It will help to understand the CESSB transmit signal chain as deployed in this firmware.
+Nice block diagrams will be added to this in the near future.  For now, it is textual description.
+
+Transmit Signal Chain
+1.  Electret microphone biased via the Audio Adapter.  Assumed ~20 mV audio output from the electret.
+2.  Microphone amplifier/attenuator stage.  The default gain is 0 dB.  This gain is user-adjustable.
+3.  Open Audio Compressor 2.  Compression threshold and compression ratio is user adjustable.
+4.  CESSB processing.  The input is the compressed audio, and the output is I and Q to the QSE modulator.
+5.  QSE direct IQ modulator.  The I and Q channel amplitudes are user-adjustable via SSB PA Cal.
+
+So what does the user have to adjust?:
+
+1.  Microphone gain.
+2.  Compression threshold.
+3.  Compression ratio.
+4.  SSB PA Cal.
+
+OK, so now we will attempt to juggle the above four parameters to get a decent transmitted output.
+Of the above four items, it is probably best to leave the compression ratio set to default for now.
+Also, if you are using a typical electret microphone biased by the Audio Adapter, don't adjust the
+microphone gain at first.  Leave it alone, and then maybe come back to it later for further optimization.
+
+CESSB processes the voice audio in such a way that the peak-to-average power of the modulation is
+significantly reduced.  So we will use that fact and a single-tone signal to adjust the transmitter
+parameters.  The transmit signal chain is cascaded gain stages, and we don't won't overdrive to happen
+at any node of the chain.  Overdrive will result in a distorted output and will cause adjacent-channel
+splatter (increased bandwidth of the transmit energy).
+
+To be continued ...
 
 ## Automated Calibration
 
-Automated calibration is available starting with this version T41EEE.6.
+Automated calibration is available starting with version T41EEE.6.
 
 Automated calibration set-up is the same as for manual calibration.  A loop-back path from the
 output of the QSE to the input of the QSD must be connected.  An attenuator, in the value of 
@@ -149,7 +192,6 @@ A short movie showing the latest automatic calibration features in action:
 
 Please refer to the included file T41_Change_Log.txt which includes the description of changes made
 to prior versions.
-
 */
 
 // setup() and loop() at the bottom of this file
@@ -196,16 +238,16 @@ struct band bands[NUMBER_OF_BANDS]{  //AFP Changed 1-30-21 // G0ORX Changed AGC 
 
 const char *topMenus[] = { "CW Options", "RF Set", "VFO Select",
                            "EEPROM", "AGC", "Spectrum Options",
-                           "Noise Floor", "Mic Gain", "Mic Comp",
-                           "EQ Rec Set", "EQ Xmt Set", "Calibrate", "Bearing" };
+                           "Noise Floor", "SSB Options",
+                           "EQ Rec Set", "Calibrate", "Bearing" };
 
 // Button array labels array is located in Utility.cpp.
 
 // Pointers to functions which execute the menu options.  Do these functions used the returned integer???
 void (*functionPtr[])() = { &CWOptions, &RFOptions, &VFOSelect,
                             &EEPROMOptions, &AGCOptions, &SpectrumOptions,
-                            &ButtonSetNoiseFloor, &MicGainSet, &MicOptions,
-                            &EqualizerRecOptions, &EqualizerXmtOptions, &CalibrateOptions, &BearingMaps };
+                            &ButtonSetNoiseFloor, &SSBOptions,
+                            &EqualizerRecOptions, &CalibrateOptions, &BearingMaps };
 
 uint32_t FFT_length = FFT_LENGTH;
 
@@ -215,8 +257,8 @@ uint32_t FFT_length = FFT_LENGTH;
 // ===========================  AFP 08-22-22
 bool agc_action = false;
 // Teensy and OpenAudio dataflow code.
-
-// Common to Transmitter and Receiver
+#include "AudioSignal.h"
+/* Common to Transmitter and Receiver
 AudioInputI2SQuad i2s_quadIn;
 AudioOutputI2SQuad i2s_quadOut;
 
@@ -264,9 +306,11 @@ AudioConnection patchCord17(Q_out_L, 0, volumeAdjust, 0);
 AudioConnection patchCord18(volumeAdjust, 0, i2s_quadOut, 2);
 
 AudioControlSGTL5000 sgtl5000_2;  // This is not a 2nd Audio Adapter.  It is I2S to the PCM1808 (ADC I and Q receiver in) and PCM5102 (DAC audio out).
-// End dataflow code
+*/ 
+//End dataflow code
 
 Calibrate calibrater;  // Instantiate the calibration object.
+SSBCalibrate ssbcalibrater;
 
 Rotary volumeEncoder = Rotary(VOLUME_ENCODER_A, VOLUME_ENCODER_B);        //( 2,  3)
 Rotary tuneEncoder = Rotary(TUNE_ENCODER_A, TUNE_ENCODER_B);              //(16, 17)
@@ -297,10 +341,10 @@ float32_t HP_DC_Butter_state2[2] = { 0, 0 };                                    
 arm_biquad_cascade_df2T_instance_f32 s1_Receive = { 3, HP_DC_Butter_state, HP_DC_Filter_Coeffs };     //AFP 09-23-22
 arm_biquad_cascade_df2T_instance_f32 s1_Receive2 = { 1, HP_DC_Butter_state2, HP_DC_Filter_Coeffs2 };  //AFP 11-04-22
 //Hilbert FIR Filters
-float32_t DMAMEM FIR_Hilbert_state_L[100 + 256 - 1];
-float32_t DMAMEM FIR_Hilbert_state_R[100 + 256 - 1];
-arm_fir_instance_f32 FIR_Hilbert_L;
-arm_fir_instance_f32 FIR_Hilbert_R;
+//float32_t DMAMEM FIR_Hilbert_state_L[100 + 256 - 1];
+// DMAMEM FIR_Hilbert_state_R[100 + 256 - 1];
+//arm_fir_instance_f32 FIR_Hilbert_L;
+//arm_fir_instance_f32 FIR_Hilbert_R;
 
 // CW decode Filters
 arm_fir_instance_f32 FIR_CW_DecodeL;  //AFP 10-25-22
@@ -437,7 +481,9 @@ uint8_t display_S_meter_or_spectrum_state = 0;
 uint8_t keyPressedOn = 0;
 uint8_t NR_first_time = 1;
 uint8_t NR_Kim;
+
 uint8_t SampleRate = SAMPLE_RATE_192K;
+
 uint8_t sch = 0;
 uint8_t state = 0;
 uint8_t T41State = 1;
@@ -1023,7 +1069,7 @@ FLASHMEM void InitializeDataArrays() {
   initTempMon(temp_check_frequency, lowAlarmTemp, highAlarmTemp, panicAlarmTemp);
   // this starts the measurements
   TEMPMON_TEMPSENSE0 |= 0x2U;
-}
+}  // end InitializeDataArrays()
 
 
 /*****
@@ -1037,7 +1083,7 @@ FLASHMEM void InitializeDataArrays() {
   Return value:
     void
 
-*****/
+*****
 void SetAudioOperatingState(int operatingState) {
 #ifdef DEBUG
   Serial.printf("lastState=%d radioState=%d memory_used=%d memory_used_max=%d f32_memory_used=%d f32_memory_used_max=%d\n",
@@ -1110,7 +1156,7 @@ void SetAudioOperatingState(int operatingState) {
       break;
   }
 }
-
+*/
 
 /*****
   Purpose: The initial screen display on startup. Expect this to be customized.
@@ -1176,6 +1222,7 @@ FLASHMEM void setup() {
   Teensy3Clock.set(now());  // set the RTC
   T4_rtc_set(Teensy3Clock.get());
 
+/*
   sgtl5000_1.setAddress(LOW);  // This is not documented.  See QuadChannelOutput example.
   sgtl5000_1.enable();
   AudioMemory(500);  //  Increased to 450 from 400.  Memory was hitting max.  KF5N August 31, 2023
@@ -1195,6 +1242,44 @@ FLASHMEM void setup() {
   sgtl5000_2.inputSelect(AUDIO_INPUT_LINEIN);  // Why is a second sgtl5000 device used???  This is the receiver ADCs, PCM1808?
   sgtl5000_2.muteHeadphone();                  // KF5N March 11, 2024
                                                //  sgtl5000_2.volume(0.5);   //  Headphone volume???  Not required as headphone is muted.
+*/
+
+  sgtl5000_1.setAddress(LOW);  // This is not documented.  See QuadChannelOutput example.
+  sgtl5000_1.enable();
+//  sgtl5000_1.audioPreProcessorEnable();
+//  sgtl5000_1.audioPostProcessorEnable();
+  sgtl5000_1.audioPreProcessorEnable();  // Need to use one of the equalizers.
+  sgtl5000_1.eqSelect(3);
+  sgtl5000_1.eqBands(-1.0, 0.0, 1.0, 1.0, -1.0);
+  AudioMemory(500);  //  Increased to 450 from 400.  Memory was hitting max.  KF5N August 31, 2023
+  AudioMemory_F32(10);
+  sgtl5000_1.inputSelect(AUDIO_INPUT_MIC);
+  sgtl5000_1.muteHeadphone();  // KF5N March 11, 2024
+  sgtl5000_1.micGain(0);
+  sgtl5000_1.lineInLevel(0);
+#ifdef QSE2
+  sgtl5000_1.lineOutLevel(13);  // Setting of 13 limits line-out level to 3.15 volts p-p (maximum).
+#else
+  sgtl5000_1.lineOutLevel(20);  // Setting of 20 limits line-out level to 2.14 volts p-p.
+#endif
+sgtl5000_1.adcHighPassFilterEnable();  
+//sgtl5000_1.adcHighPassFilterDisable();  //reduces noise.  https://forum.pjrc.com/threads/27215-24-bit-audio-boards?p=78831&viewfull=1#post78831
+//sgtl5000_1.adcHighPassFilterFreeze();
+  sgtl5000_2.setAddress(HIGH);            // T41 has only a single Audio Adaptor.  This is being used essentially as a 2nd I2S port.
+  sgtl5000_2.enable();
+  sgtl5000_2.inputSelect(AUDIO_INPUT_LINEIN);  // Why is a second sgtl5000 device used???  This is the receiver ADCs, PCM1808?
+  sgtl5000_2.muteHeadphone();                  // KF5N March 11, 2024
+                                               //  sgtl5000_2.volume(0.5);   //  Headphone volume???  Not required as headphone is muted.
+
+  updateMic();  // This updates the transmit signal chain settings.
+
+   cessb1.setSampleRate_Hz(48000);
+   cessb1.setGains(1.5f, 1.4f, 0.5f);
+   cessb1.setSideband(false);
+
+// Turn off microphone and 1 kHz test tone.
+   mixer1.gain(0, 0);
+   mixer1.gain(1, 0);
 
   pinMode(FILTERPIN15M, OUTPUT);
   pinMode(FILTERPIN20M, OUTPUT);
@@ -1217,8 +1302,6 @@ FLASHMEM void setup() {
   pinMode(TFT_CS, OUTPUT);
   digitalWrite(TFT_CS, HIGH);
 
-  arm_fir_init_f32(&FIR_Hilbert_L, 100, FIR_Hilbert_coeffs_45, FIR_Hilbert_state_L, 256);  //AFP01-16-22
-  arm_fir_init_f32(&FIR_Hilbert_R, 100, FIR_Hilbert_coeffs_neg45, FIR_Hilbert_state_R, 256);
   arm_fir_init_f32(&FIR_CW_DecodeL, 64, CW_Filter_Coeffs2, FIR_CW_DecodeL_state, 256);  //AFP 10-25-22
   arm_fir_init_f32(&FIR_CW_DecodeR, 64, CW_Filter_Coeffs2, FIR_CW_DecodeR_state, 256);
   arm_fir_decimate_init_f32(&FIR_dec1_EX_I, 48, 4, coeffs192K_10K_LPF_FIR, FIR_dec1_EX_I_state, 2048);
@@ -1329,7 +1412,7 @@ FLASHMEM void setup() {
   comp_ratio = 5.0;
   attack_sec = .1;
   release_sec = 2.0;
-  comp1.setPreGain_dB(-10);  // Set the gain of the microphone audio gain processor.
+//  comp1.setPreGain_dB(-10);  // Set the gain of the microphone audio gain processor.
 
   EEPROMData.sdCardPresent = SDPresentCheck();  // JJP 7/18/23
   lastState = 1111;                             // To make sure the receiver will be configured on the first pass through.  KF5N September 3, 2023
@@ -1381,8 +1464,8 @@ void loop()  // Replaced entire loop() with Greg's code  JJP  7/14/23
   }
 
   if (lastState != radioState) {
-    SetFreq();  // Update frequencies if the radio state has changed.
     SetAudioOperatingState(radioState);
+    SetFreq();  // Update frequencies if the radio state has changed.
   }
 
   //  Begin radio state machines
@@ -1405,15 +1488,23 @@ void loop()  // Replaced entire loop() with Greg's code  JJP  7/14/23
       ShowSpectrum();
       break;
     case SSB_TRANSMIT_STATE:
-      comp1.setPreGain_dB(EEPROMData.currentMicGain);
+//    SampleRate = SAMPLE_RATE_48K;
+//    SetI2SFreq(SR[SampleRate].rate);
+// Start the audio dataflow.
+//      tone1kHz.end();
+//      mixer1.gain(0, 1.0);   // Connect microphone audio to transmit chain.
+//mixer1.gain(1, 0.0);   // Disconnect 1 kHz test tone. 
+//      Q_in_L_Ex.begin();  // I channel Microphone audio
+//      Q_in_R_Ex.begin();  // Q channel Microphone audio
+//      comp1.setPreGain_dB(EEPROMData.currentMicGain);
       //      comp2.setPreGain_dB(EEPROMData.currentMicGain);
-      if (EEPROMData.compressorFlag == 1) {
-        SetupMyCompressors(use_HP_filter, (float)EEPROMData.currentMicThreshold, comp_ratio, attack_sec, release_sec);  // Cast EEPROMData.currentMicThreshold to float.  KF5N, October 31, 2023
-      } else {
-        if (EEPROMData.compressorFlag == 0) {
-          SetupMyCompressors(use_HP_filter, 0.0, comp_ratio, 0.01, 0.01);
-        }
-      }
+//      if (EEPROMData.compressorFlag == 1) {
+//        SetupMyCompressors(use_HP_filter, (float)EEPROMData.currentMicThreshold, comp_ratio, attack_sec, release_sec);  // Cast EEPROMData.currentMicThreshold to float.  KF5N, October 31, 2023
+//      } else {
+//        if (EEPROMData.compressorFlag == 0) {
+//          SetupMyCompressors(use_HP_filter, 0.0, comp_ratio, 0.01, 0.01);
+//        }
+//      }
       xrState = TRANSMIT_STATE;
       digitalWrite(MUTE, HIGH);  //  Mute Audio  (HIGH=Mute)
       digitalWrite(RXTX, HIGH);  //xmit on
@@ -1562,6 +1653,7 @@ void loop()  // Replaced entire loop() with Greg's code  JJP  7/14/23
     // How many dB between reference and current setting?  Round to integer.
     dBoffset = static_cast<int>(20.0 * log10f_fast(audioBW/2800.0));
     volumeAdjust.gain(volumeLog[(EEPROMData.audioVolume - dBoffset)]);
+//    volumeAdjust.gain(volumeLog[(EEPROMData.audioVolume)]);
     volumeChangeFlag = false;
     UpdateVolumeField();
   }

@@ -1,5 +1,7 @@
 #include "SDT.h"
 
+#define TOP_MENU_COUNT 11      // Menus to process AFP 09-27-22, JJP 7-8-23
+
 bool save_last_frequency = false;
 int directFreqFlag = 0;
 int32_t subMenuMaxOptions;  // Holds the number of submenu options.
@@ -16,10 +18,10 @@ long TxRxFreqOld;
     void
 *****/
 void ButtonMenuIncrease() {
-    mainMenuIndex++;
-    if (mainMenuIndex == TOP_MENU_COUNT) {  // At last menu option, so...
-      mainMenuIndex = 0;                    // ...wrap around to first menu option
-    }
+  mainMenuIndex++;
+  if (mainMenuIndex == TOP_MENU_COUNT) {  // At last menu option, so...
+    mainMenuIndex = 0;                    // ...wrap around to first menu option
+  }
 }
 
 
@@ -33,10 +35,10 @@ void ButtonMenuIncrease() {
     void
 *****/
 void ButtonMenuDecrease() {
-   mainMenuIndex--;
-    if (mainMenuIndex < 0) {               // At last menu option, so...
-      mainMenuIndex = TOP_MENU_COUNT - 1;  // ...wrap around to first menu option
-    }
+  mainMenuIndex--;
+  if (mainMenuIndex < 0) {               // At last menu option, so...
+    mainMenuIndex = TOP_MENU_COUNT - 1;  // ...wrap around to first menu option
+  }
 }
 
 
@@ -364,7 +366,7 @@ void ButtonZoom() {
     void
 *****/
 void ButtonFilter() {
-  switchFilterSideband =  not switchFilterSideband;
+  switchFilterSideband = not switchFilterSideband;
   FilterSetSSB();  // Call this so the delimiter is set to the correct color.
   ControlFilterF();
   FilterBandwidth();
@@ -396,7 +398,7 @@ void ButtonDemodMode() {
   DrawBandWidthIndicatorBar();  // Restory the bandwidth indicator bar.  KF5N July 30, 2023
   FilterBandwidth();
   DrawSMeterContainer();
-//  ShowAnalogGain();
+  //  ShowAnalogGain();
   AudioInterrupts();
   SetFreq();                                                                                   // Must update frequency, for example moving from SSB to CW, the RX LO is shifted.  KF5N
   if ((EEPROMData.xmtMode == CW_MODE) && (EEPROMData.decoderFlag == 1)) UpdateDecoderField();  // KF5N December 28 2023.
@@ -465,7 +467,7 @@ void ButtonNR()  //AFP 09-19-22 update
     EEPROMData.nrOptionSelect = 0;
   }
   if (EEPROMData.nrOptionSelect == 3) ANR_notch = false;  // Turn off AutoNotch if LMS NR is selected.
-  NROptions();                                        //AFP 09-19-22
+  NROptions();                                            //AFP 09-19-22
   UpdateNoiseField();
 }
 
