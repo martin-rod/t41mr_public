@@ -432,13 +432,10 @@ const DEMOD_Descriptor DEMOD[3] = {
   { DEMOD_AM, "(AM)" },  //AFP09-22-22
 };
 
-dispSc displayScale[] =  //r *dbText,dBScale, pixelsPerDB, baseOffset, offsetIncrement
+dispSc displayScale[] =  //r *dbText,dBScale, baseOffset
   {
-    { "20 dB/", 10.0, 2, 24, 1.00 },
-    { "10 dB/", 20.0, 4, 10, 0.50 },  //  JJP 7/14/23
-    { "5 dB/", 40.0, 8, 58, 0.25 },
-    { "2 dB/", 100.0, 20, 120, 0.10 },
-    { "1 dB/", 200.0, 40, 200, 0.05 }
+    { "20 dB/", 10.0, 24},
+    { "10 dB/", 20.0, 10}  //  1,2, and 5 dB removed.  Greg KF5N July 30, 2024.
   };
 
 //======================================== Global variables declarations for Quad Oscillator 2 ===============================================
@@ -1225,7 +1222,7 @@ FLASHMEM void setup() {
 /*
   sgtl5000_1.setAddress(LOW);  // This is not documented.  See QuadChannelOutput example.
   sgtl5000_1.enable();
-  AudioMemory(500);  //  Increased to 450 from 400.  Memory was hitting max.  KF5N August 31, 2023
+  AudioMemory(200);  //  Increased to 450 from 400.  Memory was hitting max.  KF5N August 31, 2023
   AudioMemory_F32(10);
   sgtl5000_1.inputSelect(AUDIO_INPUT_MIC);
   sgtl5000_1.muteHeadphone();  // KF5N March 11, 2024
@@ -1365,11 +1362,10 @@ sgtl5000_1.adcHighPassFilterEnable();
   EEPROMStartup();
 #endif
 
-  h = 135;
-  Q_in_L.begin();  //Initialize receive input buffers
-  Q_in_R.begin();
-
   // ========================  End set up of Parameters from EEPROM data ===============
+  Q_out_L_Ex.setMaxBuffers(32);  // Put a constraint on the number of blockss to decrease audio memory.  Greg KF5N August 15, 2024
+  Q_out_R_Ex.setMaxBuffers(32);
+  h = 135;
   NCOFreq = 0;
 
   /****************************************************************************************
@@ -1651,7 +1647,7 @@ void loop()  // Replaced entire loop() with Greg's code  JJP  7/14/23
     // The upper and lower frequency limits are bands[EEPROMData.currentBand].FLoCut and bands[EEPROMData.currentBand].FHiCut.
     audioBW = bands[EEPROMData.currentBand].FHiCut - bands[EEPROMData.currentBand].FLoCut;
     // How many dB between reference and current setting?  Round to integer.
-    dBoffset = static_cast<int>(20.0 * log10f_fast(audioBW/2800.0));
+    dBoffset = static_cast<int>(40.0 * log10f_fast(audioBW/2800.0));
     volumeAdjust.gain(volumeLog[(EEPROMData.audioVolume - dBoffset)]);
 //    volumeAdjust.gain(volumeLog[(EEPROMData.audioVolume)]);
     volumeChangeFlag = false;

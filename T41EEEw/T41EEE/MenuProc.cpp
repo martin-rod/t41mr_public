@@ -401,19 +401,16 @@ void CWOptions()  // new option for Sidetone and Delay JJP 9/1/22
     int           an index into displayScale[] array, or -1 on cancel
 *****/
 void SpectrumOptions() { /*
-  dispSc displayScale[] =  //r *dbText,dBScale, pixelsPerDB, baseOffset, offsetIncrement
+  dispSc displayScale[] =  //r *dbText,dBScale, baseOffset
   {
-    {"20 dB/", 10.0,   2,  24, 1.00},
-    {"10 dB/", 20.0,   4,  10, 0.50},  // JJP 7/14/23
-    {"5 dB/",  40.0,   8,  58, 0.25},
-    {"2 dB/",  100.0, 20, 120, 0.10},
-    {"1 dB/",  200.0, 40, 200, 0.05}
+    {"20 dB/", 10.0, 24},
+    {"10 dB/", 20.0, 10}
   };
   */
-  const char *spectrumChoices[] = { "20 dB/unit", "10 dB/unit", "5 dB/unit", "2 dB/unit", "1 dB/unit", "Cancel" };
+  const char *spectrumChoices[] = { "20 dB/unit", "10 dB/unit", "Cancel" };
   int spectrumSet = EEPROMData.currentScale;  // JJP 7/14/23
 
-  spectrumSet = SubmenuSelect(spectrumChoices, 6, spectrumSet);
+  spectrumSet = SubmenuSelect(spectrumChoices, 3, spectrumSet);
   if (strcmp(spectrumChoices[spectrumSet], "Cancel") == 0) {
     return;
   }
