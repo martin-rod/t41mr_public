@@ -6,9 +6,10 @@
 	url = https://github.com/adafruit/Adafruit_BusIO.git
 [submodule "libraries/OpenAudio_ArduinoLibrary"]
 	path = libraries/OpenAudio_ArduinoLibrary
-	url = https://github.com/martin-rod/OpenAudio_ArduinoLibrary.git
+	url = https://github.com/chipaudette/OpenAudio_ArduinoLibrary.git
+#	url = https://github.com/martin-rod/OpenAudio_ArduinoLibrary.git
 #	url = git@github.com-mr:martin-rod/OpenAudio_ArduinoLibrary.git
-	branch = mr_v6_tst
+#	branch = mr_v6_tst
 [submodule "libraries/Si5351Arduino"]
 	path = libraries/Si5351Arduino
     url = https://github.com/martin-rod/Si5351Arduino.git
