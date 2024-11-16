@@ -6,6 +6,7 @@
 //#define DEBUG_SWITCH_CAL                                                  // Uncomment to run switch cal by pushing and holding a button at power-up.
                                                                             // Debug switch cal must be disabled for normal radio operation!
 //#define DEBUG_CESSB                                                       // Uncomment to get CESSB operating parameters printed to the serial monitor.
+//#define FAST_TUNE                                                         // Uncomment to activate variable speed fast tune by Harry GM3RVL.                             
 #define DEFAULT_KEYER_WPM   			15                                        // Startup value for keyer wpm
 #define FREQ_SEP_CHARACTER  			'.'					                              // Some may prefer period, space, or combo
 #define MAP_FILE_NAME   					"Cincinnati.bmp"                          // Name you gave to BMP map file. Max is 50 chars
@@ -75,6 +76,7 @@
 
 // If using an external amplifier, the gain may need to be adjusted for the best volume range.
 #define AUDIOSCALE  20    // A typical value is 20.  Increase or decrease this value depending on your amplifier gain.
-
+#define DSPGAINSCALE 10.0  // A typical value for V10/V11 is in the range of 5.0 to 15.
+                           // Adjust this parameter for visible noise in the audio spectrum with an antenna connected.
 
 
