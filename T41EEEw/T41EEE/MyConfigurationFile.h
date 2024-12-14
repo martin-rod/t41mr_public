@@ -76,7 +76,9 @@
 
 // If using an external amplifier, the gain may need to be adjusted for the best volume range.
 #define AUDIOSCALE  20    // A typical value is 20.  Increase or decrease this value depending on your amplifier gain.
-#define DSPGAINSCALE 10.0  // A typical value for V10/V11 is in the range of 5.0 to 15.
-                           // Adjust this parameter for visible noise in the audio spectrum with an antenna connected.
+#define DSPGAINSCALE 10.0  // A typical value for a V10/V11 radio is in the range of 5 to 15.
+                           // Adjust this value for visible noise in the audio spectrum window with antenna connected
+                           // and RF Gain set to 0 dB.
+
 
 

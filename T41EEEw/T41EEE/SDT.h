@@ -537,7 +537,7 @@ extern AudioControlSGTL5000_Extended sgtl5000_1;  // F32 controller for the Teen
 extern AudioConvert_I16toF32 int2Float1;          // Converts Int16 to Float.  See class in AudioStream_F32.h
 extern AudioEffectGain_F32 micGain;               // Added with CESSB.  Greg KF5N July 24, 2024.
 extern AudioConvert_F32toI16 float2Int1;          // Converts Float to Int16.  See class in AudioStream_F32.h
-extern AudioSynthWaveformSine_F32 tone1kHz;
+extern AudioSynthWaveformSine_F32 toneSSBCal;
 extern AudioMixer4_F32 mixer1;
 extern AudioEffectCompressor2_F32  compressor1;   // Open Audio Compressor 2
 extern radioCESSB_Z_transmit_F32 cessb1;
@@ -700,8 +700,6 @@ extern int updateDisplayCounter;
 extern const int DEC2STATESIZE;
 extern const int INT1_STATE_SIZE;
 extern const int INT2_STATE_SIZE;
-extern long long freqCorrectionFactor;
-extern long long freqCorrectionFactorOld;  //AFP 09-21-22
 extern int32_t mainMenuIndex;
 extern const uint32_t N_B;
 extern const uint32_t N_DEC_B;
