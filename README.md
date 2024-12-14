@@ -153,6 +153,15 @@ or
 git submodule update --init --remote libraries/OpenAudio_ArduinoLibrary
 ```
 
+### T41 flash erase
+
+<https://groups.io/g/SoftwareControlledHamRadio/topic/how_to_complete_flash_erase/104720544>
+
+1. Press and hold the button on the Teensy (near the orange LED)
+2. Release the button after the first flash of the red LED (the red LED is under the Audio Adapter on the Teensy)
+3. The red LED stays on for about 30 seconds
+4. The orange LED flashes and the Teensy is in factory settings
+
 ### Notes
 
 `/home/rod/wrk_ham/t41/t41mr/teensy/tools/teensy-compile/11.3.1/arm/bin/arm-none-eabi-objdump -x libSPI.a | c++filt -n | less -RN`
