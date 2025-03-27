@@ -131,15 +131,13 @@ elseif (T41_SRC_TYPE MATCHES "EEE")
     set(T41_SRC_DIR "T41EEEw/T41EEE")
     list(APPEND T41_SRC "${T41_SRC_DIR}/Bearing.cpp")
     list(APPEND T41_SRC "${T41_SRC_DIR}/Button.cpp")
-    list(APPEND T41_SRC "${T41_SRC_DIR}/ButtonProc.cpp")
+    list(APPEND T41_SRC "${T41_SRC_DIR}/CWCalibrate.cpp")
     list(APPEND T41_SRC "${T41_SRC_DIR}/CW_Exciter.cpp")
     list(APPEND T41_SRC "${T41_SRC_DIR}/CWProcessing.cpp")
     list(APPEND T41_SRC "${T41_SRC_DIR}/Demod.cpp")
     list(APPEND T41_SRC "${T41_SRC_DIR}/Display.cpp")
-    list(APPEND T41_SRC "${T41_SRC_DIR}/DSP_Fn.cpp")
     list(APPEND T41_SRC "${T41_SRC_DIR}/Eeprom.cpp")
     list(APPEND T41_SRC "${T41_SRC_DIR}/Encoders.cpp")
-    list(APPEND T41_SRC "${T41_SRC_DIR}/SSB_Exciter.cpp")
     list(APPEND T41_SRC "${T41_SRC_DIR}/FFT.cpp")
     list(APPEND T41_SRC "${T41_SRC_DIR}/Filter.cpp")
     list(APPEND T41_SRC "${T41_SRC_DIR}/FIR.cpp")
@@ -148,9 +146,9 @@ elseif (T41_SRC_TYPE MATCHES "EEE")
     list(APPEND T41_SRC "${T41_SRC_DIR}/MenuProc.cpp")
     list(APPEND T41_SRC "${T41_SRC_DIR}/MyConfigurationFile.h")
     list(APPEND T41_SRC "${T41_SRC_DIR}/Noise.cpp")
-    list(APPEND T41_SRC "${T41_SRC_DIR}/CWCalibrate.cpp")
-    list(APPEND T41_SRC "${T41_SRC_DIR}/SSBCalibrate.cpp")
     list(APPEND T41_SRC "${T41_SRC_DIR}/Process.cpp")
+    list(APPEND T41_SRC "${T41_SRC_DIR}/SSBCalibrate.cpp")
+    list(APPEND T41_SRC "${T41_SRC_DIR}/SSB_Exciter.cpp")
     list(APPEND T41_SRC "${T41_SRC_DIR}/SDT.h")
     list(APPEND T41_SRC "${T41_SRC_DIR}/T41EEE.ino")
     list(APPEND T41_SRC "${T41_SRC_DIR}/Tune.cpp")
@@ -232,7 +230,9 @@ list(APPEND T41_LIB
   EEPROM
   Core
   m
+  stdc++
 )
+# m stdc++ duplicitne ...?
 
 if (CMSIS_TYPE MATCHES "LIB_V4_PJRC")
   message(STATUS "LIB CMSIS_TYPE:${CMSIS_TYPE}")
