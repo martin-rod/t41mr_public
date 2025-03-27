@@ -6,18 +6,19 @@
            Skip 4 bytes to allow for the struct size variable.
 
   Parameter list:
-    struct EEPROMData       pointer to the EEPROM structure
+    none
 
   Return value;
     void
 *****/
-void Eeprom::EEPROMWrite() {
-  EEPROM.put(EEPROM_BASE_ADDRESS + 4, EEPROMData);
+void Eeprom::ConfigDataWrite() {
+  EEPROM.put(EEPROM_BASE_ADDRESS + 4, ConfigData);
+  Serial.printf("config write!\n");
 }
 
 
 /*****
-  Purpose: This is nothing more than an alias for EEPROM.get(EEPROM_BASE_ADDRESS + 4, EEPROMData).
+  Purpose: This is nothing more than an alias for EEPROM.get(EEPROM_BASE_ADDRESS + 4, ConfigData).
 
   Parameter list:
   None
@@ -25,8 +26,8 @@ void Eeprom::EEPROMWrite() {
   Return value;
     void
 *****/
-void Eeprom::EEPROMRead() {
-  EEPROM.get(EEPROM_BASE_ADDRESS + 4, EEPROMData);  // Read as one large chunk
+void Eeprom::ConfigDataRead() {
+  EEPROM.get(EEPROM_BASE_ADDRESS + 4, ConfigData);  // Read as one large chunk
 }
 
 
@@ -39,13 +40,29 @@ void Eeprom::EEPROMRead() {
   Return value;
     void
 *****/
-void Eeprom::EEPROMWriteSize(int structSize) {
+void Eeprom::ConfigDataWriteSize(int structSize) {
   EEPROM.put(EEPROM_BASE_ADDRESS, structSize);  // Read as one large chunk
 }
 
 
 /*****
-  Purpose: Read the struct size stored in the EEPROM.
+  Purpose: To save the configuration data (working variables) to EEPROM.
+           Skip 4 bytes to allow for the struct size variable.
+
+  Parameter list:
+   none
+
+  Return value;
+    void
+*****/
+void Eeprom::CalDataWrite() {
+  EEPROM.put(CAL_BASE_ADDRESS + 4, CalData);
+    Serial.printf("cal write!\n");
+}
+
+
+/*****
+  Purpose: This is nothing more than an alias for EEPROM.get(CAL_BASE_ADDRESS + 4, ConfigData).
 
   Parameter list:
   None
@@ -53,9 +70,81 @@ void Eeprom::EEPROMWriteSize(int structSize) {
   Return value;
     void
 *****/
-int Eeprom::EEPROMReadSize() {
+void Eeprom::CalDataRead() {
+  EEPROM.get(CAL_BASE_ADDRESS + 4, CalData);  // Read as one large chunk
+}
+
+
+/*****
+  Purpose: Write the struct size stored to the EEPROM.
+
+  Parameter list:
+  None
+
+  Return value;
+    void
+*****/
+void Eeprom::CalDataWriteSize(int structSize) {
+  EEPROM.put(CAL_BASE_ADDRESS, structSize);  // Read as one large chunk
+}
+
+
+/*****
+  Purpose: To save the bands array to EEPROM.
+           Skip 4 bytes to allow for the struct size variable.
+
+  Parameter list:
+    none
+
+  Return value;
+    void
+*****/
+void Eeprom::BandsWrite() {
+  EEPROM.put(BANDS_BASE_ADDRESS + 4, bands);
+  Serial.printf("bands write!\n");
+}
+
+
+/*****
+  Purpose: This is nothing more than an alias for EEPROM.get(BANDS_BASE_ADDRESS + 4, bands.bands[NUMBER_OF_BANDS]).
+
+  Parameter list:
+  None
+
+  Return value;
+    void
+*****/
+void Eeprom::BandsRead() {
+  EEPROM.get(BANDS_BASE_ADDRESS + 4, bands);  // Read as one large chunk
+}
+
+
+/*****
+  Purpose: Write the struct size stored to the EEPROM.
+
+  Parameter list:
+  None
+
+  Return value;
+    void
+*****/
+void Eeprom::BandsWriteSize(int structSize) {
+  EEPROM.put(BANDS_BASE_ADDRESS, structSize);  // Read as one large chunk
+}
+
+
+/*****
+  Purpose: Read the struct size stored in the EEPROM at the specified address.
+           The ConfigData structure size is stored at 0.
+  Parameter list:
+  uint32_t address
+
+  Return value;
+    void
+*****/
+int Eeprom::EEPROMReadSize(uint32_t address ) {
   int structSize;
-  EEPROM.get(EEPROM_BASE_ADDRESS, structSize);  // Read as one large chunk
+  EEPROM.get(address, structSize);  // Read as one large chunk
   return structSize;
 }
 
@@ -72,7 +161,7 @@ int Eeprom::EEPROMReadSize() {
 void Eeprom::EEPROMStuffFavorites(unsigned long current[]) {
   int i;
   for (i = 0; i < MAX_FAVORITES; i++) {
-    current[i] = EEPROMData.favoriteFreqs[i];
+    current[i] = ConfigData.favoriteFreqs[i];
   }
 }
 
@@ -99,7 +188,7 @@ void Eeprom::SetFavoriteFrequency() {
   tft.setTextColor(RA8875_WHITE);
   tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT, RA8875_MAGENTA);
   tft.setCursor(SECONDARY_MENU_X, MENUS_Y);
-  tft.print(EEPROMData.favoriteFreqs[index]);
+  tft.print(ConfigData.favoriteFreqs[index]);
   while (true) {
     if (filterEncoderMove != 0) {  // Changed encoder?
       index += filterEncoderMove;  // Yep
@@ -111,7 +200,7 @@ void Eeprom::SetFavoriteFrequency() {
       }
       tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT, RA8875_MAGENTA);
       tft.setCursor(SECONDARY_MENU_X, MENUS_Y);
-      tft.print(EEPROMData.favoriteFreqs[index]);
+      tft.print(ConfigData.favoriteFreqs[index]);
       filterEncoderMove = 0;
     }
 
@@ -121,17 +210,17 @@ menu = readButton();
     delay(150L);
     if (menu == MenuSelect::MENU_OPTION_SELECT) {  // Make a choice??
       EraseMenus();
-      EEPROMData.favoriteFreqs[index] = TxRxFreq;
+      ConfigData.favoriteFreqs[index] = TxRxFreq;
       //UpdateEEPROMSyncIndicator(0);       //  JJP 7/25/23
-      if (EEPROMData.activeVFO == VFO_A) {
-        EEPROMData.currentFreqA = TxRxFreq;
+      if (ConfigData.activeVFO == VFO_A) {
+        ConfigData.currentFreqA = TxRxFreq;
       } else {
-        EEPROMData.currentFreqB = TxRxFreq;
+        ConfigData.currentFreqB = TxRxFreq;
       }
       //      EEPROMWrite();
       SetFreq();
       BandInformation();
-      ShowBandwidth();
+//      ShowBandwidth();
       FilterBandwidth();
       ShowFrequency();
       break;
@@ -158,7 +247,7 @@ MenuSelect menu = MenuSelect::DEFAULT;
   tft.setTextColor(RA8875_WHITE);
   tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT, RA8875_MAGENTA);
   tft.setCursor(SECONDARY_MENU_X, MENUS_Y);
-  tft.print(EEPROMData.favoriteFreqs[index]);
+  tft.print(ConfigData.favoriteFreqs[index]);
   while (true) {
     if (filterEncoderMove != 0) {  // Changed encoder?
       index += filterEncoderMove;  // Yep
@@ -170,7 +259,7 @@ MenuSelect menu = MenuSelect::DEFAULT;
       }
       tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT, RA8875_MAGENTA);
       tft.setCursor(SECONDARY_MENU_X, MENUS_Y);
-      tft.print(EEPROMData.favoriteFreqs[index]);
+      tft.print(ConfigData.favoriteFreqs[index]);
       filterEncoderMove = 0;
     }
 
@@ -179,56 +268,56 @@ MenuSelect menu = MenuSelect::DEFAULT;
 //    delay(150L);
     menu = readButton();
 
-    if (EEPROMData.centerFreq >= bands[BAND_80M].fBandLow && EEPROMData.centerFreq <= bands[BAND_80M].fBandHigh) {
+    if (ConfigData.centerFreq >= bands.bands[BAND_80M].fBandLow && ConfigData.centerFreq <= bands.bands[BAND_80M].fBandHigh) {
       currentBand2 = BAND_80M;
-    } else if (EEPROMData.centerFreq >= bands[BAND_80M].fBandHigh && EEPROMData.centerFreq <= 7000000L) {  // covers 5MHz WWV AFP 11-03-22
+    } else if (ConfigData.centerFreq >= bands.bands[BAND_80M].fBandHigh && ConfigData.centerFreq <= 7000000L) {  // covers 5MHz WWV AFP 11-03-22
       currentBand2 = BAND_80M;
-    } else if (EEPROMData.centerFreq >= bands[BAND_40M].fBandLow && EEPROMData.centerFreq <= bands[BAND_40M].fBandHigh) {
+    } else if (ConfigData.centerFreq >= bands.bands[BAND_40M].fBandLow && ConfigData.centerFreq <= bands.bands[BAND_40M].fBandHigh) {
       currentBand2 = BAND_40M;
-    } else if (EEPROMData.centerFreq >= bands[BAND_40M].fBandHigh && EEPROMData.centerFreq <= 14000000L) {  // covers 10MHz WWV AFP 11-03-22
+    } else if (ConfigData.centerFreq >= bands.bands[BAND_40M].fBandHigh && ConfigData.centerFreq <= 14000000L) {  // covers 10MHz WWV AFP 11-03-22
       currentBand2 = BAND_40M;
-    } else if (EEPROMData.centerFreq >= bands[BAND_20M].fBandLow && EEPROMData.centerFreq <= bands[BAND_20M].fBandHigh) {
+    } else if (ConfigData.centerFreq >= bands.bands[BAND_20M].fBandLow && ConfigData.centerFreq <= bands.bands[BAND_20M].fBandHigh) {
       currentBand2 = BAND_20M;
-    } else if (EEPROMData.centerFreq >= 14000000L && EEPROMData.centerFreq <= 18000000L) {  // covers 15MHz WWV AFP 11-03-22
+    } else if (ConfigData.centerFreq >= 14000000L && ConfigData.centerFreq <= 18000000L) {  // covers 15MHz WWV AFP 11-03-22
       currentBand2 = BAND_20M;
-    } else if (EEPROMData.centerFreq >= bands[BAND_17M].fBandLow && EEPROMData.centerFreq <= bands[BAND_17M].fBandHigh) {
+    } else if (ConfigData.centerFreq >= bands.bands[BAND_17M].fBandLow && ConfigData.centerFreq <= bands.bands[BAND_17M].fBandHigh) {
       currentBand2 = BAND_17M;
-    } else if (EEPROMData.centerFreq >= bands[BAND_15M].fBandLow && EEPROMData.centerFreq <= bands[BAND_15M].fBandHigh) {
+    } else if (ConfigData.centerFreq >= bands.bands[BAND_15M].fBandLow && ConfigData.centerFreq <= bands.bands[BAND_15M].fBandHigh) {
       currentBand2 = BAND_15M;
-    } else if (EEPROMData.centerFreq >= bands[BAND_12M].fBandLow && EEPROMData.centerFreq <= bands[BAND_12M].fBandHigh) {
+    } else if (ConfigData.centerFreq >= bands.bands[BAND_12M].fBandLow && ConfigData.centerFreq <= bands.bands[BAND_12M].fBandHigh) {
       currentBand2 = BAND_12M;
-    } else if (EEPROMData.centerFreq >= bands[BAND_10M].fBandLow && EEPROMData.centerFreq <= bands[BAND_10M].fBandHigh) {
+    } else if (ConfigData.centerFreq >= bands.bands[BAND_10M].fBandLow && ConfigData.centerFreq <= bands.bands[BAND_10M].fBandHigh) {
       currentBand2 = BAND_10M;
     }
-    EEPROMData.currentBand = currentBand2;
+    ConfigData.currentBand = currentBand2;
 
     if (menu == MenuSelect::MENU_OPTION_SELECT) {  // Make a choice??
-      switch (EEPROMData.activeVFO) {
+      switch (ConfigData.activeVFO) {
         case VFO_A:
-          if (EEPROMData.currentBandA == NUMBER_OF_BANDS) {  // Incremented too far?
-            EEPROMData.currentBandA = 0;                     // Yep. Roll to list front.
+          if (ConfigData.currentBandA == NUMBER_OF_BANDS) {  // Incremented too far?
+            ConfigData.currentBandA = 0;                     // Yep. Roll to list front.
           }
-          EEPROMData.currentBandA = currentBand2;
-          TxRxFreq = EEPROMData.centerFreq + NCOFreq;
-          EEPROMData.lastFrequencies[EEPROMData.currentBand][VFO_A] = TxRxFreq;
+          ConfigData.currentBandA = currentBand2;
+          TxRxFreq = ConfigData.centerFreq + NCOFreq;
+          ConfigData.lastFrequencies[ConfigData.currentBand][VFO_A] = TxRxFreq;
           break;
 
         case VFO_B:
-          if (EEPROMData.currentBandB == NUMBER_OF_BANDS) {  // Incremented too far?
-            EEPROMData.currentBandB = 0;                     // Yep. Roll to list front.
+          if (ConfigData.currentBandB == NUMBER_OF_BANDS) {  // Incremented too far?
+            ConfigData.currentBandB = 0;                     // Yep. Roll to list front.
           }                                                  // Same for VFO B
-          EEPROMData.currentBandB = currentBand2;
-          TxRxFreq = EEPROMData.centerFreq + NCOFreq;
-          EEPROMData.lastFrequencies[EEPROMData.currentBand][VFO_B] = TxRxFreq;
+          ConfigData.currentBandB = currentBand2;
+          TxRxFreq = ConfigData.centerFreq + NCOFreq;
+          ConfigData.lastFrequencies[ConfigData.currentBand][VFO_B] = TxRxFreq;
           break;
       }
     }
     if (menu == MenuSelect::MENU_OPTION_SELECT) {
       EraseSpectrumDisplayContainer();
-//      currentMode = bands[EEPROMData.currentBand].mode;
+//      currentMode = bands.bands[ConfigData.currentBand].mode;
       DrawSpectrumDisplayContainer();
       DrawFrequencyBarValue();
-      SetBand();
+//      SetBandRelay();
       SetFreq();
       ShowFrequency();
       ShowSpectrumdBScale();
@@ -238,11 +327,11 @@ MenuSelect menu = MenuSelect::DEFAULT;
       BandInformation();
       NCOFreq = 0L;
       DrawBandWidthIndicatorBar();  // AFP 10-20-22
-      digitalWrite(bandswitchPins[EEPROMData.currentBand], LOW);
+//      digitalWrite(bandswitchPins[ConfigData.currentBand], LOW);
       SetFreq();
       ShowSpectrumdBScale();
       ShowSpectrum();
-      //bands[currentBand].mode = currentBand;
+      //bands.bands[currentBand].mode = currentBand;
       return;
     }
   }
@@ -259,12 +348,31 @@ MenuSelect menu = MenuSelect::DEFAULT;
     void
 *****/
 
-void Eeprom::EEPROMDataDefaults() {
+void Eeprom::ConfigDataDefaults() {
   struct config_t* defaultConfig = new config_t;  // Create a copy of the default configuration.
-  EEPROMData = *defaultConfig;                    // Copy the defaults to EEPROMData struct.
+  ConfigData = *defaultConfig;                    // Copy the defaults to ConfigData struct.
   // Initialize the frequency setting based on the last used frequency stored to EEPROM.
-  TxRxFreq = EEPROMData.centerFreq = EEPROMData.lastFrequencies[EEPROMData.currentBand][EEPROMData.activeVFO];
-  RedrawDisplayScreen();  //  Need to refresh display here.
+  TxRxFreq = ConfigData.centerFreq = ConfigData.lastFrequencies[ConfigData.currentBand][ConfigData.activeVFO];
+////  RedrawDisplayScreen();  //  Need to refresh display here.
+}
+
+
+/*****
+  Purpose: To load into active memory the default settings for EEPROM variables.
+
+  Parameter list:
+    none
+
+  Return value;
+    void
+*****/
+
+void Eeprom::CalDataDefaults() {
+  struct calibration_t* defaultCal = new calibration_t;  // Create a copy of the default configuration.
+  CalData = *defaultCal;                    // Copy the defaults to ConfigData struct.
+  // Initialize the frequency setting based on the last used frequency stored to EEPROM.
+  TxRxFreq = ConfigData.centerFreq = ConfigData.lastFrequencies[ConfigData.currentBand][ConfigData.activeVFO];
+////  RedrawDisplayScreen();  //  Need to refresh display here.
 }
 
 
@@ -278,32 +386,54 @@ void Eeprom::EEPROMDataDefaults() {
     void
 *****/
 void Eeprom::EEPROMStartup() {
-  int eepromStructSize;
-  int stackStructSize;
-  //  Determine if the struct EEPROMData is compatible (same size) with the one stored in EEPROM.
+  int ConfigDataEEPROMSize;
+  int ConfigDataStackSize;
+  int CalDataEEPROMSize;
+  int CalDataStackSize;
+  int BandsEEPROMSize;
+  int BandsStackSize;
 
-  eepromStructSize = EEPROMReadSize();
-  stackStructSize = sizeof(EEPROMData);
+  //  Determine if the struct ConfigData is compatible (same size) with the one stored in EEPROM.
+
+  ConfigDataEEPROMSize = EEPROMReadSize(EEPROM_BASE_ADDRESS);
+  ConfigDataStackSize = sizeof(ConfigData);
+
+  CalDataEEPROMSize = EEPROMReadSize(CAL_BASE_ADDRESS);
+  CalDataStackSize = sizeof(CalData);
+
+  BandsEEPROMSize = EEPROMReadSize(BANDS_BASE_ADDRESS);
+  BandsStackSize = sizeof(bands);
+//  Serial.printf("BandsStackSize = %d\n", BandsStackSize);
 
   // For minor revisions to the code, we don't want to overwrite the EEPROM.
-  // We will assume the switch matrix and other items are calibrated by the user, and not to be lost.
-  // However, if the EEPROMData struct changes, it is necessary to overwrite the EEPROM with the new struct.
+  // We will assume the switch matrix and other items are calibrated or configured by the user, and are not to be lost.
+  // However, if the ConfigData or the CalData struct changes, it is necessary to overwrite the EEPROM with the new struct.
   // This decision is made by using a simple size comparison.  This is not fool-proof, but it will probably
-  // work most of the time.  The users should be instructed to always save the EEPROM to SD for later recovery
-  // of their calibration and custom settings.
-  // If all else fails, then the user should execute a FLASH erase.
+  // work most of the time.  The users should be instructed to always save the EEPROM (ConfigData and CalData) to SD for later recovery
+  // of their calibration and configuration settings.
+  // If all else fails, then the user should execute a FLASH erase.  The configuration and calibration can then be read from the SD card.
 
   // The case where struct sizes are the same, indicating no changes to the struct.  Nothing more to do, return.
-  if (eepromStructSize == stackStructSize) {
-    EEPROMRead();  // Read the EEPROM data into active memory.
+  if (ConfigDataEEPROMSize == ConfigDataStackSize and CalDataEEPROMSize == CalDataStackSize and BandsEEPROMSize == BandsStackSize) {
+//    Serial.printf("Got to stack versus EEPROM comparison\n");
+//    Serial.printf("ConfigDataEEPROMSize = %d ConfigDataStackSize = %d\n", ConfigDataEEPROMSize, ConfigDataStackSize);
+//    Serial.printf("CalDataEEPROMSize = %d CalDataStackSize = %d\n", CalDataEEPROMSize, CalDataStackSize);
+    ConfigDataRead();  // Read the ConfigData into active memory.
+    CalDataRead();  // Read the CalData into active memory.
+    BandsRead();    // Read the bands array into active memory.
     return;        // Done, begin radio operation.
   }
 
   // If the flow proceeds here, it is time to initialize some things.
-  // The rest of the code will require a switch matrix calibration, and will write the EEPROMData struct to EEPROM.
+  // The rest of the code will require a switch matrix calibration, and will write the ConfigData struct to EEPROM.
 
   SaveAnalogSwitchValues();          // Calibrate the switch matrix.
-  EEPROMWriteSize(stackStructSize);  // Write the size of the struct to EEPROM.
+  ConfigDataWriteSize(ConfigDataStackSize);  // Write the size of the struct to EEPROM.
+  ConfigDataWrite();  // Write the ConfigData struct to non-volatile memory.
+  CalDataWriteSize(CalDataStackSize);  // Write the size of the struct to EEPROM.
+  CalDataWrite();  // Write the ConfigData struct to non-volatile memory.
+  BandsWriteSize(BandsStackSize);  // Write the size of the bands array to EEPROM.
+  BandsWrite();  // Write the bands array to non-volatile memory.
 
-  EEPROMWrite();  // Write the EEPROMData struct to non-volatile memory.
+//  Serial.printf("")
 }

@@ -5,13 +5,13 @@ float32_t DMAMEM float_buffer_L_3[2048];
 float32_t DMAMEM float_buffer_R_3[2048];
 
 float32_t NCO_INC;
-double OSC_COS;
-double OSC_SIN;
-double Osc_Vect_Q = 1.0;
-double Osc_Vect_I = 0.0;
-double Osc_Gain = 0.0;
-double Osc_Q = 0.0;
-double Osc_I = 0.0;
+float64_t OSC_COS;
+float64_t OSC_SIN;
+float64_t Osc_Vect_Q = 1.0;
+float64_t Osc_Vect_I = 0.0;
+float64_t Osc_Gain = 0.0;
+float64_t Osc_Q = 0.0;
+float64_t Osc_I = 0.0;
 int encoderStepOld;
 float32_t hh1 = 0.0;
 float32_t hh2 = 0.0;
@@ -103,33 +103,29 @@ void FreqShift2()
     if (NCOFreq > 40000L) {
       NCOFreq = 40000L;
     }
-    // EEPROMData.centerFreq += EEPROMData.freqIncrement;
-    currentFreq = EEPROMData.centerFreq + NCOFreq;
+    // ConfigData.centerFreq += ConfigData.freqIncrement;
+    currentFreq = ConfigData.centerFreq + NCOFreq;
     //SetFreq(); //AFP 10-04-22
     //ShowFrequency();
   }
 
   encoderStepOld = fineTuneEncoderMove;
   //currentFreqAOld = TxRxFreq;
-  TxRxFreq = EEPROMData.centerFreq + NCOFreq;
-  //if (abs(currentFreqAOld - TxRxFreq) < 9 * EEPROMData.stepFineTune && currentFreqAOld != TxRxFreq) {  // AFP 10-30-22
+  TxRxFreq = ConfigData.centerFreq + NCOFreq;
+  //if (abs(currentFreqAOld - TxRxFreq) < 9 * ConfigData.stepFineTune && currentFreqAOld != TxRxFreq) {  // AFP 10-30-22
   //  ShowFrequency();
   //  DrawBandWidthIndicatorBar();
   //}
-  if (EEPROMData.xmtMode == RadioMode::SSB_MODE ) {
+  if (bands.bands[ConfigData.currentBand].mode == RadioMode::SSB_MODE ) {
     sideToneShift = 0;
-  } else {
-    if (EEPROMData.xmtMode == RadioMode::CW_MODE ) {
-      cwFreqOffset = (EEPROMData.CWOffset + 6) * 24000 / 256;
-      if (bands[EEPROMData.currentBand].mode == 1) {
-        sideToneShift = cwFreqOffset;  // KF5N experiment
-      } else {
-        if (bands[EEPROMData.currentBand].mode == 0) {
-          sideToneShift = -cwFreqOffset;  // KF5N experiment
+  } 
+  
+    if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE ) {
+      cwFreqOffset = (ConfigData.CWOffset + 6) * 24000 / 256;
+        if (bands.bands[ConfigData.currentBand].sideband == Sideband::UPPER) sideToneShift = -cwFreqOffset;
+        if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER) sideToneShift =  cwFreqOffset;
         }
-      }
-    }
-  }
+
   NCO_INC = 2.0 * PI * (NCOFreq + sideToneShift) / SR[SampleRate].rate; // 192000 SPS is the actual sample rate used in the Receive ADC
 
   OSC_COS = cos (NCO_INC);

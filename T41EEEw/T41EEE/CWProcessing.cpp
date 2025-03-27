@@ -1,9 +1,11 @@
+// Morse decode and other Morse related utilities.
+
 
 #include "SDT.h"
 
 #define HISTOGRAM_ELEMENTS 750
-#define MAX_DECODE_CHARS 32       // Max chars that can appear on decoder line.  Increased to 32.  KF5N October 29, 2023
-#define DECODER_BUFFER_SIZE 128   // Max chars in binary search string with , . ?
+#define MAX_DECODE_CHARS 32      // Max chars that can appear on decoder line.  Increased to 32.  KF5N October 29, 2023
+#define DECODER_BUFFER_SIZE 128  // Max chars in binary search string with , . ?
 
 byte currentDashJump = DECODER_BUFFER_SIZE;
 byte currentDecoderIndex = 0;
@@ -53,9 +55,56 @@ enum states { state0,
               state6 };
 states decodeStates = state0;
 
+
+/*****
+  Purpose: This function replaces the arm_max_float32() function that finds the maximum element in an array.
+           The histograms are "fuzzy" in the sense that dits and dahs "cluster" around a maximum value rather
+           than having a single max value. This algorithm looks at a given cell and the adds in the previous
+           (index - 1) and next (index + 1) cells to get the total for that index.
+
+  Parameter list:
+    int32_t *array         the base address of the array to search
+    int32_t elements       the number of elements of the array to examine
+    int32_t *maxCount      the largest clustered value found
+    int32_t *maxIndex      the index of the center of the cluster
+    int32_t *firstNonZero  the first cell that has a non-zero value
+    int32_t clusterSpread  tells how far previous and ahead elements are to be included in the measure.
+                            Must be an odd integer > 1.
+
+  Return value;
+    void
+*****/
+void JackClusteredArrayMax(int32_t *array, int32_t elements, int32_t *maxCount, int32_t *maxIndex, int32_t *firstNonZero, int32_t spread) {
+  int32_t i, j, clusteredIndex;
+  int32_t clusteredMax, temp;
+
+  *maxCount = '\0';  // Reset to empty
+  *maxIndex = '\0';
+
+  clusteredMax = 0;
+  clusteredIndex = -1;  // Now we can check for an error
+
+  for (i = spread; i < elements - spread; i++) {  // Start with 1 so we can look at the previous element's value
+    temp = 0;
+    for (j = i - spread; j <= i + spread; j++) {
+      temp += array[j];
+    }
+
+    if (temp >= clusteredMax) {
+      clusteredMax = temp;
+      clusteredIndex = i;
+    }
+  }
+  if (clusteredIndex > 0) {
+    *maxCount = array[clusteredIndex];
+    *maxIndex = clusteredIndex;
+  }
+}
+
+
 //=================  AFP10-18-22 ================
 /*****
-  Purpose: Select CW Filter. EEPROMData.CWFilterIndex has these values:
+  Purpose: Select CW Filter. ConfigData.CWFilterIndex has these values:
            0 = 840Hz
            1 = 1kHz
            2 = 1.3kHz
@@ -70,15 +119,14 @@ states decodeStates = state0;
     void
 *****/
 FLASHMEM void SelectCWFilter() {
-  const char *CWFilter[] = { "0.8kHz", "1.0kHz", "1.3kHz", "1.8kHz", "2.0kHz", " Off " };
-  EEPROMData.CWFilterIndex = SubmenuSelect(CWFilter, 6, EEPROMData.CWFilterIndex);  // CWFilter is an array of strings.
+  const std::string CWFilter[] = { "0.8kHz", "1.0kHz", "1.3kHz", "1.8kHz", "2.0kHz", " Off " };
+  ConfigData.CWFilterIndex = SubmenuSelect(CWFilter, 6, ConfigData.CWFilterIndex);  // CWFilter is an array of strings.
   // Clear the current CW filter graphics and then restore the bandwidth indicator bar.  KF5N July 30, 2023
   tft.writeTo(L2);
   tft.clearMemory();
   BandInformation();
   DrawBandWidthIndicatorBar();
-  UpdateDecoderField();
-  eeprom.EEPROMWrite();
+  eeprom.ConfigDataWrite();
 }
 
 
@@ -92,16 +140,25 @@ FLASHMEM void SelectCWFilter() {
     void
 *****/
 FLASHMEM void SelectCWOffset() {
-  const char *CWOffsets[] = { "562.5 Hz", "656.5 Hz", "750 Hz", "843.75 Hz", " Cancel " };
+  bool tempDecoderFlag;
+  int tempCWOffset;
+  const std::string CWOffsets[] = { "562.5 Hz", "656.5 Hz", "750 Hz", "843.75 Hz", " Cancel " };
   const int numCycles[4] = { 6, 7, 8, 9 };
-  EEPROMData.CWOffset = SubmenuSelect(CWOffsets, 5, EEPROMData.CWOffset);  // CWFilter is an array of strings.
+
+  tempCWOffset = ConfigData.CWOffset;
+  tempDecoderFlag = ConfigData.decoderFlag;                                // Remember current status of decoder.
+  ConfigData.decoderFlag = false;                                          // Set to false to erase decoder delimiters.
+  UpdateDecoderField();                                                    // Erase graphics if they exist.
+  ConfigData.decoderFlag = tempDecoderFlag;                                // Restore the decoder flag value.
+  ConfigData.CWOffset = SubmenuSelect(CWOffsets, 5, ConfigData.CWOffset);  // CWFilter is an array of strings.
+
+  //  If user selects cancel, CWOffset will be set to the bogus value of 4.  So keep the old value.
+  if (ConfigData.CWOffset == 4) ConfigData.CWOffset = tempCWOffset;
+
   // Now generate the values for the buffer which is used to create the CW tone.  The values are discrete because there must be whole cycles.
-  if (EEPROMData.CWOffset < 4) sineTone(numCycles[EEPROMData.CWOffset]);
-  eeprom.EEPROMWrite();  // Save to EEPROM.
-  // Clear the current CW filter graphics and then restore the bandwidth indicator bar.  KF5N July 30, 2023
-  tft.writeTo(L2);
-  tft.clearMemory();
-  RedrawDisplayScreen();
+  if (ConfigData.CWOffset < 4) sineTone(numCycles[ConfigData.CWOffset]);
+  UpdateDecoderField();
+  eeprom.ConfigDataWrite();  // Save to EEPROM.
 }
 
 
@@ -127,10 +184,10 @@ void DoCWReceiveProcessing() {  // All New AFP 09-19-22
   float32_t combinedCoeff;  //AFP 02-06-22
   int audioTemp;            // KF5N
 
-  if (EEPROMData.decoderFlag) {  // JJP 7/20/23
+  if (ConfigData.decoderFlag) {  // JJP 7/20/23
 
-  arm_fir_f32(&FIR_CW_DecodeL, float_buffer_L, float_buffer_L_CW, 256);  // AFP 10-25-22  Park McClellan FIR filter const Group delay
-  arm_fir_f32(&FIR_CW_DecodeR, float_buffer_R, float_buffer_R_CW, 256);  // AFP 10-25-22
+    arm_fir_f32(&FIR_CW_DecodeL, float_buffer_L, float_buffer_L_CW, 256);  // AFP 10-25-22  Park McClellan FIR filter const Group delay
+    arm_fir_f32(&FIR_CW_DecodeR, float_buffer_R, float_buffer_R_CW, 256);  // AFP 10-25-22
 
     // ----------------------  Correlation calculation  AFP 02-04-22 -------------------------
     //Calculate correlation between calc sine and incoming signal
@@ -146,13 +203,13 @@ void DoCWReceiveProcessing() {  // All New AFP 09-19-22
     aveCorrResultL = .7 * corrResultL + .3 * aveCorrResultL;
     aveCorrResult = (corrResultR + corrResultL) / 2;
     // Calculate Goertzel Mahnitude of incomming signal
-    goertzelMagnitude1 = goertzel_mag(256, freq[EEPROMData.CWOffset], 24000, float_buffer_L_CW);  //AFP 10-25-22
-    goertzelMagnitude2 = goertzel_mag(256, freq[EEPROMData.CWOffset], 24000, float_buffer_R_CW);  //AFP 10-25-22
+    goertzelMagnitude1 = goertzel_mag(256, freq[ConfigData.CWOffset], 24000, float_buffer_L_CW);  //AFP 10-25-22
+    goertzelMagnitude2 = goertzel_mag(256, freq[ConfigData.CWOffset], 24000, float_buffer_R_CW);  //AFP 10-25-22
     goertzelMagnitude = (goertzelMagnitude1 + goertzelMagnitude2) / 2;
-    //Combine Correlation and Gowetzel Coefficients
-    combinedCoeff = 200 * aveCorrResult * goertzelMagnitude;
+    //Combine Correlation and Gowetzel Coefficients.  Tuning coefficient added.  Greg KF5N March 9, 2025
+    combinedCoeff = static_cast<float32_t>(ConfigData.morseDecodeSensitivity) * aveCorrResult * goertzelMagnitude;
     //    Serial.printf("combinedCoeff = %f\n", combinedCoeff);  // Use this to tune decoder.
-    // ==========  Changed CW decode "lock" indicator
+    //  Changed CW decode "lock" indicator
     if (combinedCoeff > 50) {  // AFP 10-26-22
       tft.fillRect(700, 442, 15, 15, RA8875_GREEN);
     } else if (combinedCoeff < 50) {  // AFP 10-26-22
@@ -186,6 +243,7 @@ void DoCWReceiveProcessing() {  // All New AFP 09-19-22
 void SetDitLength(int wpm) {
   ditLength = 1200 / wpm;
 }
+
 
 /*****
   Purpose: establish the dit length for code transmission. Crucial since
@@ -223,16 +281,16 @@ void SetTransmitDitLength(int wpm) {
     void
 *****/
 void SetKeyType() {
-  const char *keyChoice[] = { "Straight Key", "Keyer" };
+  const std::string keyChoice[] = { "Straight Key", "Keyer" };
 
-  EEPROMData.keyType = SubmenuSelect(keyChoice, 2, EEPROMData.keyType);
-  // Make sure the EEPROMData.paddleDit and EEPROMData.paddleDah variables are set correctly for straight key.
+  ConfigData.keyType = SubmenuSelect(keyChoice, 2, ConfigData.keyType);
+  // Make sure the ConfigData.paddleDit and ConfigData.paddleDah variables are set correctly for straight key.
   // Paddle flip can reverse these, making the straight key inoperative.  KF5N August 9, 2023
-  if (EEPROMData.keyType == 0) {
-    EEPROMData.paddleDit = KEYER_DIT_INPUT_TIP;
-    EEPROMData.paddleDah = KEYER_DAH_INPUT_RING;
+  if (ConfigData.keyType == 0) {
+    ConfigData.paddleDit = KEYER_DIT_INPUT_TIP;
+    ConfigData.paddleDah = KEYER_DAH_INPUT_RING;
   }
-  eeprom.EEPROMWrite();
+  eeprom.ConfigDataWrite();
 }
 
 
@@ -246,17 +304,17 @@ void SetKeyType() {
     void
 *****/
 FLASHMEM void SetKeyPowerUp() {
-  if (EEPROMData.keyType == 0) {
-    EEPROMData.paddleDit = KEYER_DIT_INPUT_TIP;
-    EEPROMData.paddleDah = KEYER_DAH_INPUT_RING;
+  if (ConfigData.keyType == 0) {
+    ConfigData.paddleDit = KEYER_DIT_INPUT_TIP;
+    ConfigData.paddleDah = KEYER_DAH_INPUT_RING;
     return;
   }
-  if (EEPROMData.paddleFlip) {  // Means right-paddle dit
-    EEPROMData.paddleDit = KEYER_DAH_INPUT_RING;
-    EEPROMData.paddleDah = KEYER_DIT_INPUT_TIP;
+  if (ConfigData.paddleFlip) {  // Means right-paddle dit
+    ConfigData.paddleDit = KEYER_DAH_INPUT_RING;
+    ConfigData.paddleDah = KEYER_DIT_INPUT_TIP;
   } else {
-    EEPROMData.paddleDit = KEYER_DIT_INPUT_TIP;
-    EEPROMData.paddleDah = KEYER_DAH_INPUT_RING;
+    ConfigData.paddleDit = KEYER_DIT_INPUT_TIP;
+    ConfigData.paddleDah = KEYER_DAH_INPUT_RING;
   }
 }
 
@@ -265,12 +323,12 @@ FLASHMEM void SetKeyPowerUp() {
   Purpose: Allow user to set the sidetone volume.  KF5N August 31, 2023
 
   Parameter list:
-    void
+    bool speaker (true for speaker, false for headphone)
 
   Return value;
     void
 *****/
-void SetSideToneVolume() {
+void SetSideToneVolume(bool speaker) {
   int sidetoneDisplay;
   bool keyDown;
   MenuSelect menu;
@@ -282,14 +340,13 @@ void SetSideToneVolume() {
   tft.setCursor(SECONDARY_MENU_X - 48, MENUS_Y + 1);
   tft.print("Sidetone Volume:");
   tft.setCursor(SECONDARY_MENU_X + 220, MENUS_Y + 1);
-  sidetoneDisplay = EEPROMData.sidetoneVolume;
+  if (speaker) sidetoneDisplay = ConfigData.sidetoneSpeaker;
+  else sidetoneDisplay = ConfigData.sidetoneHeadphone;
   keyDown = false;
   tft.print(sidetoneDisplay);  // Display in range of 0 to 100.
 
-  digitalWrite(MUTE, UNMUTEAUDIO);  // unmutes audio
-
   while (true) {
-    if (digitalRead(EEPROMData.paddleDit) == LOW || digitalRead(EEPROMData.paddleDah) == LOW) {
+    if (digitalRead(ConfigData.paddleDit) == LOW || digitalRead(ConfigData.paddleDah) == LOW) {
       if (keyDown) {
         CW_ExciterIQData(CW_SHAPING_NONE);
       } else {
@@ -304,26 +361,25 @@ void SetSideToneVolume() {
     }
 
     if (filterEncoderMove != 0) {
-      //      EEPROMData.sidetoneVolume = EEPROMData.sidetoneVolume + (float)filterEncoderMove * 0.001;  // EEPROMData.sidetoneVolume range is 0.0 to 1.0 in 0.001 steps.  KF5N August 29, 2023
-      sidetoneDisplay = sidetoneDisplay + filterEncoderMove;  // * 0.001;  // EEPROMData.sidetoneVolume range is 0.0 to 1.0 in 0.001 steps.  KF5N August 29, 2023
+      sidetoneDisplay = sidetoneDisplay + filterEncoderMove;  // * 0.001;  // ConfigData.sidetoneVolume range is 0.0 to 1.0 in 0.001 steps.  KF5N August 29, 2023
       if (sidetoneDisplay < 0)
         sidetoneDisplay = 0;
       else if (sidetoneDisplay > 100)  // 100% max
         sidetoneDisplay = 100;
       tft.fillRect(SECONDARY_MENU_X + 200, MENUS_Y, 70, CHAR_HEIGHT, RA8875_MAGENTA);
       tft.setCursor(SECONDARY_MENU_X + 220, MENUS_Y + 1);
-      EEPROMData.sidetoneVolume = sidetoneDisplay;
+      if (speaker) ConfigData.sidetoneSpeaker = sidetoneDisplay;
+      else ConfigData.sidetoneHeadphone = sidetoneDisplay;
       tft.setTextColor(RA8875_WHITE);
       tft.print(sidetoneDisplay);
       filterEncoderMove = 0;
     }
-    volumeAdjust.gain(volumeLog[EEPROMData.sidetoneVolume]);  // Sidetone  AFP 10-01-22
-                                                              //    modeSelectOutR.gain(1, volumeLog[(int)EEPROMData.sidetoneVolume]);  // Right side not used.  KF5N September 1, 2023
-//    val = ReadSelectedPushButton();                           // Read pin that controls all switches
+    speakerVolume.setGain(volumeLog[ConfigData.sidetoneSpeaker]);
+    sgtl5000_1.volume(static_cast<float32_t>(ConfigData.sidetoneHeadphone) / 100.0);  // This control has a range of 0.0 to 1.0.
     menu = readButton();
     if (menu == MenuSelect::MENU_OPTION_SELECT) {  // Make a choice??
-                                      // EEPROMData.EEPROMData.sidetoneVolume = EEPROMData.sidetoneVolume;
-      eeprom.EEPROMWrite();
+                                                   // ConfigData.ConfigData.sidetoneVolume = ConfigData.sidetoneVolume;
+      eeprom.ConfigDataWrite();
       break;
     }
   }
@@ -350,6 +406,7 @@ void MorseCharacterClear(void) {
   col = 0;
   decodeBuffer[col] = '\0';  // Make it a string
 }
+
 
 /*****
   Purpose: This function displays the decoded Morse code below waterfall. Arranged as:
@@ -425,7 +482,7 @@ void ResetHistograms() {
 bool charProcessFlag, blankFlag;
 int currentTime, interElementGap, noSignalTimeStamp;
 char *bigMorseCodeTree = (char *)"-EISH5--4--V---3--UF--------?-2--ARL---------.--.WP------J---1--TNDB6--.--X/-----KC------Y------MGZ7----,Q------O-8------9--0----";
-FASTRUN void DoCWDecoding(int audioValue) {
+void DoCWDecoding(int audioValue) {
 
   for (int i = 0; i < 2; i = i + 1) {
     switch (decodeStates) {
@@ -439,14 +496,11 @@ FASTRUN void DoCWDecoding(int audioValue) {
           if (gapLength > LOWEST_ATOM_TIME && gapLength < (uint32_t)(thresholdGeometricMean * 3)) {  // range  LOWEST_ATOM_TIME = 20
             DoGapHistogram(gapLength);                                                               // Map the gap in the signal
           }
-          //        Serial.printf("gapLength = %d gapChar = %d gapAtom = %d\n", gapLength, gapChar, gapAtom);
           decodeStates = state1;  // Go to "signalStart" state.
           break;                  // Go to state1;
         }
-        // audioValue = 0, no signal:
         noSignalTimeStamp = millis();
         interElementGap = noSignalTimeStamp - signalEnd;
-        //      if ((interElementGap > ditLength * 1.5) && charProcessFlag) {  // use thresholdGeometricMean??? was ditLength. End of character!  65 * 2
         if ((interElementGap > (gapAtom * 2)) && charProcessFlag) {  // use thresholdGeometricMean??? was ditLength. End of character!  65 * 2
           decodeStates = state3;                                     // Character ended, print it!
           break;
@@ -513,7 +567,6 @@ FASTRUN void DoCWDecoding(int audioValue) {
         //        tft.print(" WPM)");
         tft.setTextColor(RA8875_WHITE);
         tft.setFontScale((enum RA8875tsize)3);
-        //Serial.printf("gapLength = %d thresholdGeometricMean = %f interElementGap = %d\n", gapLength, thresholdGeometricMean, interElementGap);
         blankFlag = true;
         decodeStates = state0;  // Start process for next incoming character.
         break;
@@ -536,9 +589,8 @@ FASTRUN void DoCWDecoding(int audioValue) {
 
   Return value;
     void
-
 *****/
-FASTRUN void DoGapHistogram(long gapLen) {
+void DoGapHistogram(long gapLen) {
   int32_t tempAtom, tempChar;
   int32_t atomIndex, charIndex, firstDit, temp;
   uint32_t offset;
@@ -584,52 +636,6 @@ FASTRUN void DoGapHistogram(long gapLen) {
   }
 }
 
-/*****
-  Purpose: This function replaces the arm_max_float32() function that finds the maximum element in an array.
-           The histograms are "fuzzy" in the sense that dits and dahs "cluster" around a maximum value rather
-           than having a single max value. This algorithm looks at a given cell and the adds in the previous
-           (index - 1) and next (index + 1) cells to get the total for that index.
-
-  Parameter list:
-    int32_t *array         the base address of the array to search
-    int32_t elements       the number of elements of the array to examine
-    int32_t *maxCount      the largest clustered value found
-    int32_t *maxIndex      the index of the center of the cluster
-    int32_t *firstNonZero  the first cell that has a non-zero value
-    int32_t clusterSpread  tells how far previous and ahead elements are to be included in the measure.
-                            Must be an odd integer > 1.
-
-  Return value;
-    void
-*****/
-void JackClusteredArrayMax(int32_t *array, int32_t elements, int32_t *maxCount, int32_t *maxIndex, int32_t *firstNonZero, int32_t spread) {
-  int32_t i, j, clusteredIndex;
-  int32_t clusteredMax, temp;
-
-  *maxCount = '\0';  // Reset to empty
-  *maxIndex = '\0';
-
-  clusteredMax = 0;
-  clusteredIndex = -1;  // Now we can check for an error
-
-  for (i = spread; i < elements - spread; i++) {  // Start with 1 so we can look at the previous element's value
-    temp = 0;
-    for (j = i - spread; j <= i + spread; j++) {
-      temp += array[j];
-      ;  // Include adjacent elements
-    }
-
-    if (temp >= clusteredMax) {
-      clusteredMax = temp;
-      clusteredIndex = i;
-    }
-  }
-  if (clusteredIndex > 0) {
-    *maxCount = array[clusteredIndex];
-    *maxIndex = clusteredIndex;
-  }
-}
-
 
 /*****
   Purpose: This function creates a distribution of the dit and dahs lengths, expressed in
@@ -644,7 +650,7 @@ void JackClusteredArrayMax(int32_t *array, int32_t elements, int32_t *maxCount, 
   void
 
 *****/
-FASTRUN void DoSignalHistogram(long val) {
+void DoSignalHistogram(long val) {
   float compareFactor = 2.0;
   int32_t firstNonEmpty;
   int32_t tempDit, tempDah;

@@ -6,7 +6,7 @@
 //#define DEBUG_SWITCH_CAL                                                  // Uncomment to run switch cal by pushing and holding a button at power-up.
                                                                             // Debug switch cal must be disabled for normal radio operation!
 //#define DEBUG_CESSB                                                       // Uncomment to get CESSB operating parameters printed to the serial monitor.
-//#define FAST_TUNE                                                         // Uncomment to activate variable speed fast tune by Harry GM3RVL.                             
+#define FAST_TUNE                                                         // Uncomment to activate variable speed fast tune by Harry GM3RVL.                             
 #define DEFAULT_KEYER_WPM   			15                                        // Startup value for keyer wpm
 #define FREQ_SEP_CHARACTER  			'.'					                              // Some may prefer period, space, or combo
 #define MAP_FILE_NAME   					"Cincinnati.bmp"                          // Name you gave to BMP map file. Max is 50 chars
@@ -25,7 +25,7 @@
 //#define HW_SMETER              33
 // DB2OO, 30-AUG-23: with TCVSDR_SMETER (TCVSDR=Teensy Convolution SDR) defined the S-Meter bar will be consistent with the dBm value and it will not go over the box for S9+40+
 #define TCVSDR_SMETER             1
-//DB2OO, 10-SEP-23: TCXO_25MHZ defined sets the default EEPROMData.EEPROMData.freqCorrectionFactor = 0, as the TCXO is supposed to deliver 25.00000MHz
+//DB2OO, 10-SEP-23: TCXO_25MHZ defined sets the default ConfigData.ConfigData.freqCorrectionFactor = 0, as the TCXO is supposed to deliver 25.00000MHz
 //#define TCXO_25MHZ                1
 
 #define PADDLE_FLIP								0						                              // 0 = right paddle = DAH, 1 = DIT
@@ -51,7 +51,7 @@
 #define                           NORM_ENCODER
 //#define                           FOURSQRP
 
-// Set multiplication factors for your QSD and QSE boards.
+// Set multiplication factors for your QSD and QSE boards.  Default values here and below are for V10/V11 boards.
 #define MASTER_CLK_MULT_RX 4
 #define MASTER_CLK_MULT_TX 4
 
@@ -74,11 +74,13 @@
 //#define UNMUTEAUDIO HIGH
 //#define MUTEAUDIO   LOW
 
-// If using an external amplifier, the gain may need to be adjusted for the best volume range.
-#define AUDIOSCALE  20    // A typical value is 20.  Increase or decrease this value depending on your amplifier gain.
-#define DSPGAINSCALE 10.0  // A typical value for a V10/V11 radio is in the range of 5 to 15.
-                           // Adjust this value for visible noise in the audio spectrum window with antenna connected
-                           // and RF Gain set to 0 dB.
+// The audio amplifier gain may need to be adjusted for the best volume range.
+#define SPEAKERSCALE   5.0     // Increase or decrease this value depending on your amplifier gain.
+#define HEADPHONESCALE 10.0    // Same as for the speaker.  Adjust to your preference for volume range.
 
+#define RFGAINSCALE 3000.0   // This adjusts for RF gain differences in the QSD.  QSD should use a value of 3000.  QSD2 should use a value of 1000.0.
+
+#define FREQUENCYCAL 100000  // The nominal frequency calibration.  This can be set here permanently after determining
+                             // the unique value for your radio.
 
 

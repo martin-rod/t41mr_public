@@ -12,7 +12,7 @@ void ZoomFFTPrep() {  // take value of spectrum_zoom and initialize FIR decimati
      Zoom FFT: Initiate decimation FIR filters
   ****************************************************************************************/
   // Two-stage decimation.  These are decimation factors.
-  switch (EEPROMData.spectrum_zoom) {
+  switch (ConfigData.spectrum_zoom) {
     case SPECTRUM_ZOOM_1:
       Zoom_FFT_M1 = 1;
       Zoom_FFT_M2 = 1;
@@ -39,7 +39,7 @@ void ZoomFFTPrep() {  // take value of spectrum_zoom and initialize FIR decimati
       break;
   }
   // init 1st stage
-  float32_t Fstop_Zoom = 0.5 * (float32_t)SR[SampleRate].rate / (1 << EEPROMData.spectrum_zoom);  // Fstop should be the stop band at the final sample rate
+  float32_t Fstop_Zoom = 0.5 * (float32_t)SR[SampleRate].rate / (1 << ConfigData.spectrum_zoom);  // Fstop should be the stop band at the final sample rate
 
 #define Zoom_FFT_no_coeff1 12
 #define Zoom_FFT_no_coeff2 8
@@ -97,16 +97,11 @@ void ZoomFFTExe(uint32_t blockSize) {
   static float32_t FFT_ring_buffer_x[fftWidth * 2];
   static float32_t FFT_ring_buffer_y[fftWidth * 2];
 
-//  static int32_t flag_2nd_decimation = 0;
-  //static uint32_t high_Zoom_buffer_ptr = 0;
-//  uint8_t high_Zoom = 0;
-  //uint32_t high_Zoom_2nd_dec_rounds = (1 << (EEPROMData.spectrum_zoom - 11));
-  //Serial.print("2nd dec rounds"); Serial.println(high_Zoom_2nd_dec_rounds);
   int sample_no = 256;
   // sample_no is 256, in high magnify modes it is smaller!
   // but it must never be > 256
 
-  sample_no = BUFFER_SIZE * N_BLOCKS / (1 << EEPROMData.spectrum_zoom);
+  sample_no = BUFFER_SIZE * N_BLOCKS / (1 << ConfigData.spectrum_zoom);
 
   if (sample_no > fftWidth) {
     sample_no = fftWidth;
@@ -146,7 +141,7 @@ void ZoomFFTExe(uint32_t blockSize) {
   // Nuttall window
   // zoom_sample_ptr points to the oldest sample now
 
-  float32_t multiplier = (float32_t)EEPROMData.spectrum_zoom * (float32_t)EEPROMData.spectrum_zoom;
+  float32_t multiplier = static_cast<float32_t>(ConfigData.spectrum_zoom) * static_cast<float32_t>(ConfigData.spectrum_zoom);
 
   for (int idx = 0; idx < fftWidth; idx++) {
     //   buffer_spec_FFT[idx * 2 + 0] =  multiplier * FFT_ring_buffer_x[zoom_sample_ptr] * nuttallWindow256[idx];
@@ -170,11 +165,12 @@ void ZoomFFTExe(uint32_t blockSize) {
   // The rest of the function is activated when the buffers are full and ready.
   // Save old pixels for lowpass filter.
   if (updateDisplayFlag == true) {
+//    Serial.printf("UpdateDisplayFlag\n");
     for (int i = 0; i < fftWidth; i++) {
       pixelold[i] = pixelCurrent[i];
     }
-    // perform complex FFT
-    // calculation is performed in-place the FFT_buffer [re, im, re, im, re, im . . .]
+    // Perform complex FFT
+    // Calculation is performed in-place the FFT_buffer [re, im, re, im, re, im . . .]
     arm_cfft_f32(spec_FFT, buffer_spec_FFT, 0, 1);  // spec_FFT is width 512
     // calculate mag = I*I + Q*Q,
     // and simultaneously put them into the right order
@@ -192,11 +188,11 @@ void ZoomFFTExe(uint32_t blockSize) {
     // Write the FFT bins into the display buffer.
     if (calOnFlag)  // Expanded dynamic range during calibration.
       for (int16_t x = 0; x < fftWidth; x++) {
-        pixelnew[x] = displayScale[EEPROMData.currentScale].baseOffset + (int16_t)(40.0 * log10f_fast(FFT_spec[x]));
+        pixelnew[x] = displayScale[ConfigData.currentScale].baseOffset + (int16_t)(40.0 * log10f_fast(FFT_spec[x]));
       }
     else
       for (int16_t x = 0; x < fftWidth; x++) {
-        pixelnew[x] = displayScale[EEPROMData.currentScale].baseOffset + (int16_t)(displayScale[EEPROMData.currentScale].dBScale * log10f_fast(FFT_spec[x])) + fftOffset;
+        pixelnew[x] = displayScale[ConfigData.currentScale].baseOffset + (int16_t)(displayScale[ConfigData.currentScale].dBScale * log10f_fast(FFT_spec[x])) + fftOffset;
       }
   }
 }
@@ -242,16 +238,16 @@ void CalcZoom1Magn() {
     // apply low pass filter and scale the magnitude values and convert to int for spectrum display
 
     for (int16_t x = 0; x < SPECTRUM_RES; x++) {
-      spec_help = EEPROMData.LPFcoeff * FFT_spec[x] + (1.0 - EEPROMData.LPFcoeff) * FFT_spec_old[x];
+      spec_help = ConfigData.LPFcoeff * FFT_spec[x] + (1.0 - ConfigData.LPFcoeff) * FFT_spec_old[x];
       FFT_spec_old[x] = spec_help;
 
 #ifdef USE_LOG10FAST
       if (calOnFlag)  // Higher dynamic range spectral display during calibration.
-        pixelnew[x] = displayScale[EEPROMData.currentScale].baseOffset + (int16_t)(40.0 * log10f_fast(FFT_spec[x]));
+        pixelnew[x] = displayScale[ConfigData.currentScale].baseOffset + (int16_t)(40.0 * log10f_fast(FFT_spec[x]));
       else
-        pixelnew[x] = displayScale[EEPROMData.currentScale].baseOffset + (int16_t)(displayScale[EEPROMData.currentScale].dBScale * log10f_fast(FFT_spec[x])) + fftOffset;
+        pixelnew[x] = displayScale[ConfigData.currentScale].baseOffset + (int16_t)(displayScale[ConfigData.currentScale].dBScale * log10f_fast(FFT_spec[x])) + fftOffset;
 #else
-      pixelnew[x] = displayScale[EEPROMData.currentScale].baseOffset + (int16_t)(displayScale[EEPROMData.currentScale].dBScale * log10f(spec_help));
+      pixelnew[x] = displayScale[ConfigData.currentScale].baseOffset + (int16_t)(displayScale[ConfigData.currentScale].dBScale * log10f(spec_help));
 #endif
     }
   }

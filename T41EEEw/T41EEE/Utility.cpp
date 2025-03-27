@@ -253,8 +253,8 @@ void Calculatedbm() {
   // taken from the spectrum display FFT
   // taking into account the analog gain before the ADC
   // analog gain is adjusted in steps of 1.5dB
-  // bands[EEPROMData.currentBand].RFgain = 0 --> 0dB gain
-  // bands[EEPROMData.currentBand].RFgain = 15 --> 22.5dB gain
+  // bands[ConfigData.currentBand].RFgain = 0 --> 0dB gain
+  // bands[ConfigData.currentBand].RFgain = 15 --> 22.5dB gain
 
   // spectrum display is generated from 256 samples based on 1024 samples of the FIR FFT . . .
   // could this cause errors in the calculation of the signal strength ?
@@ -271,20 +271,19 @@ void Calculatedbm() {
   // width of a 256 tap FFT bin @ 96ksps = 375Hz
   // we have to take into account the magnify mode
   // --> recalculation of bin_BW
-  bin_bandwidth = bin_bandwidth / (1 << EEPROMData.spectrum_zoom);  // correct bin bandwidth is determined by the Zoom FFT display setting
+  bin_bandwidth = bin_bandwidth / (1 << ConfigData.spectrum_zoom);  // correct bin bandwidth is determined by the Zoom FFT display setting
 
   // in all magnify cases (2x up to 16x) the posbin is in the centre of the spectrum display
-  if (EEPROMData.spectrum_zoom != 0) {
+  if (ConfigData.spectrum_zoom != 0) {
     posbin = 128;  // right in the middle!
   } else {
     posbin = 64;
   }
 
-  //  determine Lbin and Ubin from ts.dmod_mode and FilterInfo.width
-  //  = determine bandwith separately for lower and upper sideband
-
-  bw_LSB = bands[EEPROMData.currentBand].FLoCut;
-  bw_USB = bands[EEPROMData.currentBand].FHiCut;
+  //  Determine Lbin and Ubin from ts.dmod_mode and FilterInfo.width.
+  //  LSB and USB filter bandwidth calculated the same way due to mode changes.  Greg KF5N March 16, 2025.
+  bw_LSB = bands.bands[ConfigData.currentBand].FHiCut - bands.bands[ConfigData.currentBand].FLoCut;;
+  bw_USB = bw_LSB;
   // calculate upper and lower limit for determination of signal strength
   // = filter passband is between the lower bin Lbin and the upper bin Ubin
   Lbin = (float32_t)posbin + roundf(bw_LSB / bin_bandwidth);  // bin on the lower/left side
@@ -310,7 +309,7 @@ void Calculatedbm() {
     //#ifdef USE_LOG10FAST
     switch (display_dbm) {
       case DISPLAY_S_METER_DBM:
-        dbm = EEPROMData.dBm_calibration + bands[EEPROMData.currentBand].gainCorrection + static_cast<float32_t>(attenuator) + slope * log10f_fast(sum_db) + cons - static_cast<float32_t>(bands[EEPROMData.currentBand].RFgain) * 1.5;
+        dbm = CalData.dBm_calibration + bands.bands[ConfigData.currentBand].gainCorrection + static_cast<float32_t>(attenuator) + slope * log10f_fast(sum_db) + cons - static_cast<float32_t>(bands.bands[ConfigData.currentBand].RFgain) * 1.5;
         dbmhz = 0;
         break;
       case DISPLAY_S_METER_DBMHZ:
@@ -491,14 +490,14 @@ void SaveAnalogSwitchValues() {
   tft.setTextColor(RA8875_GREEN);
   tft.setCursor(10, 10);
   tft.print("Press button you");
-  tft.setCursor(10, 30);
+  tft.setCursor(10, 34);
   tft.print("have assigned to");
-  tft.setCursor(10, 50);
+  tft.setCursor(10, 58);
   tft.print("the switch shown.");
 
   // Disable button repeat for interrupt driven buttons
-  origRepeatDelay = EEPROMData.buttonRepeatDelay;
-  EEPROMData.buttonRepeatDelay = 0;
+  origRepeatDelay = CalData.buttonRepeatDelay;
+  CalData.buttonRepeatDelay = 0;
 
   for (index = 0; index < NUMBER_OF_SWITCHES;) {
     tft.setCursor(20, 100);
@@ -506,15 +505,15 @@ void SaveAnalogSwitchValues() {
     tft.print(". ");
     tft.print(labels[index]);
 
-    if (buttonInterruptsEnabled) {
-      while ((value = ReadSelectedPushButton()) == -1) {
+    if (button.buttonInterruptsEnabled) {
+      while ((value = button.ReadSelectedPushButton()) == -1) {
         // Wait until a button is pressed
       }
     } else {
       value = -1;
       minVal = NOTHING_TO_SEE_HERE;
       while (true) {
-        value = ReadSelectedPushButton();
+        value = button.ReadSelectedPushButton();
         if (value < NOTHING_TO_SEE_HERE && value > 0) {
           delay(100L);
           if (value < minVal) {
@@ -534,21 +533,21 @@ void SaveAnalogSwitchValues() {
     tft.print(labels[index]);
     tft.setCursor(660, 20 + index * 25);
     tft.print(value);
-    EEPROMData.switchValues[index] = value;
+    CalData.switchValues[index] = value;
 
     // Set interrupt press/release thresholds based on the Select button, which has the highest ADC value
     if (index == 0) {
-      EEPROMData.buttonThresholdPressed = EEPROMData.switchValues[0] + WIGGLE_ROOM;
-      EEPROMData.buttonThresholdReleased = EEPROMData.buttonThresholdPressed + WIGGLE_ROOM;
+      CalData.buttonThresholdPressed = CalData.switchValues[0] + WIGGLE_ROOM;
+      CalData.buttonThresholdReleased = CalData.buttonThresholdPressed + WIGGLE_ROOM;
     }
 
     index++;
-    while ((value = ReadSelectedPushButton()) != -1 && value < NOTHING_TO_SEE_HERE) {
+    while ((value = button.ReadSelectedPushButton()) != -1 && value < NOTHING_TO_SEE_HERE) {
       // Wait until the button is released
     }
   }
 
-  EEPROMData.buttonRepeatDelay = origRepeatDelay;  // Restore original repeat delay
+  CalData.buttonRepeatDelay = origRepeatDelay;  // Restore original repeat delay
 }
 
 
@@ -601,60 +600,21 @@ void DisplayClock() {
 }  // end function displayTime
 
 
-// ============== Mode stuff
-/*****
-  Purpose: SetupMode sets default mode for the selected band
-
-  Parameter list:
-    int sideBand            the sideband
-
-  Return value;
-    void
-*****/
-void SetupMode(int sideBand) {
-  int temp;
-  // AFP 10-27-22
-  if (old_demod_mode != -99)  // first time radio is switched on and when changing bands
-  {
-    switch (sideBand) {
-      case DEMOD_LSB:
-        temp = bands[EEPROMData.currentBand].FHiCut;
-        bands[EEPROMData.currentBand].FHiCut = -bands[EEPROMData.currentBand].FLoCut;
-        bands[EEPROMData.currentBand].FLoCut = -temp;
-        break;
-
-      case DEMOD_USB:
-        temp = bands[EEPROMData.currentBand].FHiCut;
-        bands[EEPROMData.currentBand].FHiCut = -bands[EEPROMData.currentBand].FLoCut;
-        bands[EEPROMData.currentBand].FLoCut = -temp;
-        break;
-      case DEMOD_AM:
-        bands[EEPROMData.currentBand].FHiCut = -bands[EEPROMData.currentBand].FLoCut;
-        break;
-    }
-  }
-  ShowBandwidth();
-  // tft.fillRect(pos_x_frequency + 10, pos_y_frequency + 24, 210, 16, RA8875_BLACK);
-  //tft.fillRect(OPERATION_STATS_X + 170, FREQUENCY_Y + 30, tft.getFontWidth() * 5, tft.getFontHeight(), RA8875_BLACK);        // Clear top-left menu area
-  old_demod_mode = bands[EEPROMData.currentBand].mode;  // set old_mode flag for next time, at the moment only used for first time radio is switched on . . .
-}  // end void setup_mode
-
-
 /*****
   Purpose: set Band
   Parameter list:
     void
   Return value;
     void
-*****/
+*****
 void SetBand() {
   old_demod_mode = -99;  // used in setup_mode and when changing bands, so that LoCut and HiCut are not changed!
-  SetupMode(bands[EEPROMData.currentBand].mode);
+////  SetupMode(radioMode, bands[ConfigData.currentBand].sideband);  // Not required here?
   SetFreq();
   ShowFrequency();
   FilterBandwidth();
 }
-
+*/
 
 /*****
   Purpose: Tries to open the EEPROM SD file to see if an SD card is present in the system
@@ -676,7 +636,7 @@ int SDPresentCheck() {
     return 0;
   }
   // open the file.
-  File dataFile = SD.open("SDEEPROMData.txt");
+  File dataFile = SD.open("SDConfigData.txt");
 
   if (dataFile) {
     return 1;
@@ -697,21 +657,21 @@ int SDPresentCheck() {
 *****/
 FLASHMEM void initPowerCoefficients() {
       for(int i = 0; i < NUMBER_OF_BANDS; i = i + 1) {        
-         EEPROMData.powerOutCW[i] = sqrt(EEPROMData.transmitPowerLevel/20.0) * EEPROMData.CWPowerCalibrationFactor[i];
-         EEPROMData.powerOutSSB[i] =  sqrt(EEPROMData.transmitPowerLevel/20.0) * EEPROMData.SSBPowerCalibrationFactor[i];
+         ConfigData.powerOutCW[i] = sqrt(ConfigData.transmitPowerLevel/20.0) * CalData.CWPowerCalibrationFactor[i];
+         ConfigData.powerOutSSB[i] =  sqrt(ConfigData.transmitPowerLevel/20.0) * CalData.SSBPowerCalibrationFactor[i];
       }
 }
 
 
 FLASHMEM void initUserDefinedStuff() {
-  NR_Index = EEPROMData.nrOptionSelect;
-  TxRxFreq = EEPROMData.centerFreq = EEPROMData.lastFrequencies[EEPROMData.currentBand][EEPROMData.activeVFO];
-  SetKeyPowerUp();  // Use EEPROMData.keyType and EEPROMData.paddleFlip to configure key GPIs.  KF5N August 27, 2023
-  SetDitLength(EEPROMData.currentWPM);
-  SetTransmitDitLength(EEPROMData.currentWPM);
+  NR_Index = ConfigData.nrOptionSelect;
+  TxRxFreq = ConfigData.centerFreq = ConfigData.lastFrequencies[ConfigData.currentBand][ConfigData.activeVFO];
+  SetKeyPowerUp();  // Use ConfigData.keyType and ConfigData.paddleFlip to configure key GPIs.  KF5N August 27, 2023
+  SetDitLength(ConfigData.currentWPM);
+  SetTransmitDitLength(ConfigData.currentWPM);
   // Initialize buffers used by the CW transmitter and CW decoder.
-  sineTone(EEPROMData.CWOffset + 6);  // This function takes "number of cycles" which is the offset + 6.
-  si5351.set_correction(EEPROMData.freqCorrectionFactor, SI5351_PLL_INPUT_XO);
+  sineTone(ConfigData.CWOffset + 6);  // This function takes "number of cycles" which is the offset + 6.
+  si5351.set_correction(CalData.freqCorrectionFactor, SI5351_PLL_INPUT_XO);
   initCWShaping();
   initPowerCoefficients();
   ResetHistograms();  // KF5N February 20, 2024

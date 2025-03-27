@@ -3,28 +3,22 @@
 
 //int micGainChoice;
 
-
+// This function sets the microphone gain and compressor parameters.  Greg KF5N March 9, 2025.
 void updateMic() {
 
-  //  This is using the compression after the kneeDB[0] only.
-  //  struct compressionCurve crv = { -6.0f, EEPROMData.currentMicGain,           // margin, offset
-  //     {0.0f, -20.0f, -1000.0f, -1000.0f, -1000.0f},           // kneeDB[]
-  //     {  EEPROMData.currentMicCompRatio, 1.0f, 1.0f, 1.0, 1.0} };   // compressionRatio
+  micGain.setGain_dB(ConfigData.micGain);  // Set the microphone gain.
 
-  micGain.setGain_dB(EEPROMData.currentMicGain);  // Set the microphone gain.
-
-  struct compressionCurve crv = { -1.0, 0.0,  // margin, offset
-                                                //   {0.0f, -7.0f, -10.0f, -1000.0f, -1000.0f},           // kneeDB[]
-                                  { 0.0, -10.0, EEPROMData.currentMicThreshold, -1000.0f, -1000.0f },
-                                  //     {  100.0, 100.0f, 1.0f, 1.0, 1.0} };   // compressionRatio
-                                  { 10.0, EEPROMData.currentMicCompRatio, 1.0f, 1.0, 1.0 } };
+  struct compressionCurve crv = { -3.0, 0.0,  // margin, offset
+                                  { 0.0, -10.0, ConfigData.micThreshold, -1000.0f, -1000.0f },  
+                                  { 10.0, ConfigData.micCompRatio, 1.0f, 1.0, 1.0 } };
 
   int16_t delaySize = 256;                    // Any power of 2, i.e., 256, 128, 64, etc.
   compressor1.setDelayBufferSize(delaySize);  // Improves transient response of compressor.
-
+  compressor1.setAttackReleaseSec(0.005f, 2.0f);  // Same as used in Tiny Ten by Bob W7PUA.
   compressor1.setCompressionCurve(&crv);
   compressor1.begin();
 }
+
 
 /*****
   Purpose: Retrieve I and Q samples from the Open Audio Library CESSB object at 48ksps.
@@ -75,17 +69,27 @@ void ExciterIQData() {
     }
 
     // Set the sideband.
-    if (bands[EEPROMData.currentBand].mode == DEMOD_LSB) cessb1.setSideband(false);
-    if (bands[EEPROMData.currentBand].mode == DEMOD_USB) cessb1.setSideband(true);
+    if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER) cessb1.setSideband(false);
+    if (bands.bands[ConfigData.currentBand].sideband == Sideband::UPPER) cessb1.setSideband(true);
 
-    // Apply amplitude and phase corrections.
-    cessb1.setIQCorrections(true, EEPROMData.IQSSBAmpCorrectionFactor[EEPROMData.currentBandA], EEPROMData.IQSSBPhaseCorrectionFactor[EEPROMData.currentBandA], 0.0);
+    // Apply amplitude and phase corrections.  FT8 uses CW corrections and is always USB.
+    if(bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER) {
+    if(bands.bands[ConfigData.currentBand].mode == RadioMode::SSB_MODE)
+    cessb1.setIQCorrections(true, CalData.IQSSBAmpCorrectionFactorLSB[ConfigData.currentBand], CalData.IQSSBPhaseCorrectionFactorLSB[ConfigData.currentBand], 0.0);
+    else if (bands.bands[ConfigData.currentBand].mode == RadioMode::FT8_MODE)
+    cessb1.setIQCorrections(true, CalData.IQCWAmpCorrectionFactorUSB[ConfigData.currentBand], CalData.IQCWPhaseCorrectionFactorUSB[ConfigData.currentBand], 0.0);
+    } else if(bands.bands[ConfigData.currentBand].sideband == Sideband::UPPER) {
+    if(bands.bands[ConfigData.currentBand].mode == RadioMode::SSB_MODE)
+    cessb1.setIQCorrections(true, CalData.IQSSBAmpCorrectionFactorUSB[ConfigData.currentBand], CalData.IQSSBPhaseCorrectionFactorUSB[ConfigData.currentBand], 0.0);
+    else if (bands.bands[ConfigData.currentBand].mode == RadioMode::FT8_MODE)
+    cessb1.setIQCorrections(true, CalData.IQCWAmpCorrectionFactorUSB[ConfigData.currentBand], CalData.IQCWPhaseCorrectionFactorUSB[ConfigData.currentBand], 0.0);
+    }
 
     //  This is the correct place in the data flow to inject the scaling for power.
 #ifdef QSE2
-    powerScale = 2.0 * EEPROMData.powerOutSSB[EEPROMData.currentBand];
+    powerScale = 2.0 * ConfigData.powerOutSSB[ConfigData.currentBand];
 #else
-    powerScale = 1.4 * EEPROMData.powerOutSSB[EEPROMData.currentBand];
+    powerScale = 1.4 * ConfigData.powerOutSSB[ConfigData.currentBand];
 #endif
 
     arm_scale_f32(float_buffer_L_EX, powerScale, float_buffer_L_EX, 2048);  //Scale to compensate for losses in Interpolation
@@ -100,8 +104,13 @@ void ExciterIQData() {
     arm_float_to_q15(float_buffer_L_EX, q15_buffer_LTemp, 2048);
     arm_float_to_q15(float_buffer_R_EX, q15_buffer_RTemp, 2048);
 #ifdef QSE2
-    arm_offset_q15(q15_buffer_LTemp, EEPROMData.iDCoffsetSSB[EEPROMData.currentBand] + EEPROMData.dacOffsetSSB, q15_buffer_LTemp, 2048);  // Carrier suppression offset.
-    arm_offset_q15(q15_buffer_RTemp, EEPROMData.qDCoffsetSSB[EEPROMData.currentBand] + EEPROMData.dacOffsetSSB, q15_buffer_RTemp, 2048);
+    if(bands.bands[ConfigData.currentBand].mode == RadioMode::SSB_MODE) {
+    arm_offset_q15(q15_buffer_LTemp, CalData.iDCoffsetSSB[ConfigData.currentBand] + CalData.dacOffsetSSB, q15_buffer_LTemp, 2048);  // Carrier suppression offset.
+    arm_offset_q15(q15_buffer_RTemp, CalData.qDCoffsetSSB[ConfigData.currentBand] + CalData.dacOffsetSSB, q15_buffer_RTemp, 2048);
+    } else if (bands.bands[ConfigData.currentBand].mode == RadioMode::FT8_MODE) {
+    arm_offset_q15(q15_buffer_LTemp, CalData.iDCoffsetCW[ConfigData.currentBand] + CalData.dacOffsetCW, q15_buffer_LTemp, 2048);  // Carrier suppression offset.
+    arm_offset_q15(q15_buffer_RTemp, CalData.qDCoffsetCW[ConfigData.currentBand] + CalData.dacOffsetCW, q15_buffer_RTemp, 2048);      
+    }
 #endif
     Q_out_L_Ex.play(q15_buffer_LTemp, 2048);  // play it!  This is the I channel from the Audio Adapter line out to QSE I input.
     Q_out_R_Ex.play(q15_buffer_RTemp, 2048);  // play it!  This is the Q channel from the Audio Adapter line out to QSE Q input.
@@ -109,21 +118,25 @@ void ExciterIQData() {
 }
 
 /*****
-  Purpose: Set the current band relay ON or OFF
+  Purpose: Set the current band relay ON or OFF.  Reduce relay cycling.  Greg KF5N March 24, 2025
 
   Parameter list:
-    int state             OFF = 0, ON = 1
+    void
 
   Return value;
     void
 *****/
-void SetBandRelay(int state) {
-  // There are 4 physical relays.  Turn all of them off.
-  for (int i = 0; i < 4; i = i + 1) {
-    digitalWrite(bandswitchPins[i], LOW);  // Set ALL band relays low.  KF5N July 21, 2023
+void SetBandRelay() {
+  // There are 4 physical relays in the case of the V10/V11 LPF board.
+  for (int i = 0; i < 5; i = i + 1) {
+    if(i == ConfigData.currentBand) {
+    digitalWrite(bandswitchPins[ConfigData.currentBand], HIGH);
+    }
+    else { 
+      if(bandswitchPins[i] != bandswitchPins[ConfigData.currentBand])  // Skip if the pins are the same.
+      digitalWrite(bandswitchPins[i], LOW);  // Set band relay low.
+    }
   }
-  // Set current band relay "on".  Ignore 12M and 10M.  15M and 17M use the same relay.  KF5N September 27, 2023.
-  if (EEPROMData.currentBand < 5) digitalWrite(bandswitchPins[EEPROMData.currentBand], state);
 }
 
 
@@ -145,19 +158,19 @@ void SetCompressionThreshold() {
   tft.setCursor(SECONDARY_MENU_X - 48, MENUS_Y + 1);
   tft.print("Comp Thresh dB:");
   tft.setCursor(SECONDARY_MENU_X + 195, MENUS_Y + 1);
-  tft.print(EEPROMData.currentMicThreshold, 0);
+  tft.print(ConfigData.micThreshold, 0);
 
   while (true) {
     if (filterEncoderMove != 0) {
-      EEPROMData.currentMicThreshold += ((float)filterEncoderMove);
-      if (EEPROMData.currentMicThreshold < -60)
-        EEPROMData.currentMicThreshold = -60;
-      else if (EEPROMData.currentMicThreshold > 0)  // 100% max
-        EEPROMData.currentMicThreshold = 0;
+      ConfigData.micThreshold += ((float)filterEncoderMove);
+      if (ConfigData.micThreshold < -60)
+        ConfigData.micThreshold = -60;
+      else if (ConfigData.micThreshold > 0)  // 100% max
+        ConfigData.micThreshold = 0;
 
       tft.fillRect(SECONDARY_MENU_X + 195, MENUS_Y, 80, CHAR_HEIGHT, RA8875_MAGENTA);
       tft.setCursor(SECONDARY_MENU_X + 195, MENUS_Y + 1);
-      tft.print(EEPROMData.currentMicThreshold, 0);
+      tft.print(ConfigData.micThreshold, 0);
       filterEncoderMove = 0;
     }
     /*
@@ -168,7 +181,7 @@ void SetCompressionThreshold() {
     menu = readButton(lastUsedTask);
     if (menu == MenuSelect::MENU_OPTION_SELECT) {  // Make a choice??
       updateMic();
-      eeprom.EEPROMWrite();
+      eeprom.ConfigDataWrite();
       UpdateCompressionField();
       break;
     }
@@ -196,19 +209,19 @@ void SetCompressionRatio() {
   tft.setCursor(SECONDARY_MENU_X - 48, MENUS_Y + 1);
   tft.print("Comp Ratio:");
   tft.setCursor(SECONDARY_MENU_X + 180, MENUS_Y + 1);
-  tft.print(EEPROMData.currentMicCompRatio, 0);
+  tft.print(ConfigData.micCompRatio, 0);
 
   while (true) {
     if (filterEncoderMove != 0) {
-      EEPROMData.currentMicCompRatio += ((float)filterEncoderMove * 1.0);
-      if (EEPROMData.currentMicCompRatio > 1000)
-        EEPROMData.currentMicCompRatio = 1000;
-      else if (EEPROMData.currentMicCompRatio < 1)  // 100% max
-        EEPROMData.currentMicCompRatio = 1;
+      ConfigData.micCompRatio += ((float)filterEncoderMove * 1.0);
+      if (ConfigData.micCompRatio > 1000)
+        ConfigData.micCompRatio = 1000;
+      else if (ConfigData.micCompRatio < 1)  // 100% max
+        ConfigData.micCompRatio = 1;
 
       tft.fillRect(SECONDARY_MENU_X + 180, MENUS_Y, 80, CHAR_HEIGHT, RA8875_MAGENTA);
       tft.setCursor(SECONDARY_MENU_X + 180, MENUS_Y + 1);
-      tft.print(EEPROMData.currentMicCompRatio, 0);
+      tft.print(ConfigData.micCompRatio, 0);
       filterEncoderMove = 0;
     }
 menu = readButton(lastUsedTask);
@@ -219,9 +232,9 @@ menu = readButton(lastUsedTask);
     */
 
     if (menu == MenuSelect::MENU_OPTION_SELECT) {  // Make a choice??
-      // EEPROMData.EEPROMData.currentMicCompRatio = EEPROMData.currentMicCompRatio;
+      // ConfigData.ConfigData.micCompRatio = ConfigData.micCompRatio;
       updateMic();  // This updates the compression ratio and the threshold.
-      eeprom.EEPROMWrite();
+      eeprom.ConfigDataWrite();
       break;
     }
   }
@@ -246,17 +259,17 @@ void MicGainSet() {
   tft.setCursor(SECONDARY_MENU_X - 48, MENUS_Y + 1);
   tft.print("Mic Gain dB:");
   tft.setCursor(SECONDARY_MENU_X + 160, MENUS_Y + 1);
-  tft.print(EEPROMData.currentMicGain, 1);
+  tft.print(ConfigData.micGain, 1);
   while (true) {
     if (filterEncoderMove != 0) {
-      EEPROMData.currentMicGain += ((float)filterEncoderMove);
-      if (EEPROMData.currentMicGain < -20)
-        EEPROMData.currentMicGain = -20;
-      else if (EEPROMData.currentMicGain > 20)  // 100% max
-        EEPROMData.currentMicGain = 20;
+      ConfigData.micGain += ((float)filterEncoderMove);
+      if (ConfigData.micGain < -20)
+        ConfigData.micGain = -20;
+      else if (ConfigData.micGain > 20)  // 100% max
+        ConfigData.micGain = 20;
       tft.fillRect(SECONDARY_MENU_X + 160, MENUS_Y, 80, CHAR_HEIGHT, RA8875_MAGENTA);
       tft.setCursor(SECONDARY_MENU_X + 160, MENUS_Y + 1);
-      tft.print(EEPROMData.currentMicGain, 1);
+      tft.print(ConfigData.micGain, 1);
       filterEncoderMove = 0;
     }
     /*
@@ -266,7 +279,7 @@ void MicGainSet() {
     menu = readButton(lastUsedTask);
     if (menu == MenuSelect::MENU_OPTION_SELECT) {
       updateMic();  // Update the Open Audio compressor and microphone gain.
-      eeprom.EEPROMWrite();
+      eeprom.ConfigDataWrite();
       break;
     }
   }
@@ -294,19 +307,19 @@ void SetCompressionAttack()
   tft.setCursor(SECONDARY_MENU_X  - 48, MENUS_Y + 1);
   tft.print("Attack Sec:");
   tft.setCursor(SECONDARY_MENU_X + 180, MENUS_Y + 1);
-  tft.print(EEPROMData.currentMicAttack, 1);
+  tft.print(ConfigData.currentMicAttack, 1);
 
   while (true) {
     if (filterEncoderMove != 0) {
-      EEPROMData.currentMicAttack += ((float) filterEncoderMove * 0.1);
-      if (EEPROMData.currentMicAttack > 10)
-        EEPROMData.currentMicAttack = 10;
-      else if (EEPROMData.currentMicAttack < .1)                 // 100% max
-        EEPROMData.currentMicAttack = .1;
+      ConfigData.currentMicAttack += ((float) filterEncoderMove * 0.1);
+      if (ConfigData.currentMicAttack > 10)
+        ConfigData.currentMicAttack = 10;
+      else if (ConfigData.currentMicAttack < .1)                 // 100% max
+        ConfigData.currentMicAttack = .1;
 
       tft.fillRect(SECONDARY_MENU_X + 180, MENUS_Y, 80, CHAR_HEIGHT, RA8875_MAGENTA);
       tft.setCursor(SECONDARY_MENU_X + 180, MENUS_Y + 1);
-      tft.print(EEPROMData.currentMicAttack, 1);
+      tft.print(ConfigData.currentMicAttack, 1);
       filterEncoderMove = 0;
     }
 
@@ -315,7 +328,7 @@ void SetCompressionAttack()
     delay(150L);
 
     if (val == MENU_OPTION_SELECT) {                             // Make a choice??
-      //EEPROMData.EEPROMData.currentMicAttack = EEPROMData.currentMicAttack;
+      //ConfigData.ConfigData.currentMicAttack = ConfigData.currentMicAttack;
       EEPROMWrite();
 
       break;
@@ -345,19 +358,19 @@ void SetCompressionRelease()
   tft.setCursor(SECONDARY_MENU_X  - 48, MENUS_Y + 1);
   tft.print("Decay Sec:");
   tft.setCursor(SECONDARY_MENU_X + 180, MENUS_Y + 1);
-  tft.print(EEPROMData.currentMicRelease, 1);
+  tft.print(ConfigData.currentMicRelease, 1);
 
   while (true) {
     if (filterEncoderMove != 0) {
-      EEPROMData.currentMicRelease += ((float) filterEncoderMove * 0.1);
-      if (EEPROMData.currentMicRelease > 10)
-        EEPROMData.currentMicRelease = 10;
-      else if (EEPROMData.currentMicRelease < 0.1)                 // 100% max
-        EEPROMData.currentMicRelease = 0.1;
+      ConfigData.currentMicRelease += ((float) filterEncoderMove * 0.1);
+      if (ConfigData.currentMicRelease > 10)
+        ConfigData.currentMicRelease = 10;
+      else if (ConfigData.currentMicRelease < 0.1)                 // 100% max
+        ConfigData.currentMicRelease = 0.1;
 
       tft.fillRect(SECONDARY_MENU_X + 180, MENUS_Y, 80, CHAR_HEIGHT, RA8875_MAGENTA);
       tft.setCursor(SECONDARY_MENU_X + 180, MENUS_Y + 1);
-      tft.print(EEPROMData.currentMicRelease, 1);
+      tft.print(ConfigData.currentMicRelease, 1);
       filterEncoderMove = 0;
     }
 
@@ -366,7 +379,7 @@ void SetCompressionRelease()
     delay(150L);
 
     if (val == MENU_OPTION_SELECT) {                             // Make a choice??
-      //EEPROMData.EEPROMData.currentMicCompRatio = EEPROMData.currentMicCompRatio;
+      //ConfigData.ConfigData.micCompRatio = ConfigData.micCompRatio;
       EEPROMWrite();
 
       break;
