@@ -10,7 +10,7 @@ jobs:
   create_version:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
         with:
           repository: martin-rod/t41mr_public
           fetch-depth: 0
@@ -22,7 +22,7 @@ jobs:
           ls -l version/git_version.sh
           ls -l version/git_version.h
       - name: Upload version artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: version_artifact
           retention-days: 14
@@ -35,7 +35,7 @@ jobs:
     needs: create_version
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
         with:
           repository: martin-rod/t41mr_public
       - name: Git submodule update
@@ -57,7 +57,7 @@ jobs:
           cd build_eee
           make VERBOSE=1
       - name: Upload t41_sdt artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: t41_sdt_artifact
           retention-days: 14
