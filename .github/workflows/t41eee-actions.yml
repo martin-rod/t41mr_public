@@ -10,7 +10,7 @@ jobs:
   create_version:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: martin-rod/t41mr_public
           fetch-depth: 0
@@ -35,7 +35,7 @@ jobs:
     needs: create_version
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: martin-rod/t41mr_public
       - name: Git submodule update
