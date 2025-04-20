@@ -7,13 +7,12 @@
 3. Load to Teensy without Arduiono IDE installation using `teensy_loader_cli`.
 4. Build T41 on GitHub Action.
 5. Build T41 without Arduiono IDE installation.
-6. Tested on Debian 11 `bullseye` and GitHub `ubuntu-latest`.
+6. Tested on Debian 11 `bullseye`, Debian 12 `bookworm` and GitHub `ubuntu-latest`.
 7. Build result was tested `T41-EP 4SQRP` kit (v9-v11 AG1P Ron version)
 
 ## Issues
 
-1. teensy_loader_cli works correctly on the second try. Probably small timeout after reset.
-2. Build depends on library order in T41_LIB. Some symbol is probably defined two times.
+1. Build depends on library order in T41_LIB. Some symbol is probably defined two times.
 
 ## Requirements
 
@@ -157,11 +156,28 @@ git submodule update --init --remote libraries/OpenAudio_ArduinoLibrary
 
 <https://groups.io/g/SoftwareControlledHamRadio/topic/how_to_complete_flash_erase/104720544>
 
-0. Turn on Teensy before next step. The orange LED must light
-1. Press and hold the button on the Teensy (near the orange LED)
-2. Release the button after the first flash of the red LED (the red LED is under the Audio Adapter on the Teensy)
-3. The red LED stays on for about 30 seconds
-4. The orange LED flashes and the Teensy is in factory settings
+1. Turn on Teensy before next step. The orange LED must light
+2. Press and hold the button on the Teensy (near the orange LED)
+3. Release the button after the first flash of the red LED (the red LED is under the Audio Adapter on the Teensy)
+4. The red LED stays on for about 30 seconds
+5. The orange LED flashes and the Teensy is in factory settings
+
+### Serial port
+dmesg
+
+```
+[ 9856.898460] usb 1-9.3: USB disconnect, device number 115
+[ 9861.742655] usb 1-9.3: new high-speed USB device number 117 using xhci_hcd
+[ 9861.855411] usb 1-9.3: New USB device found, idVendor=16c0, idProduct=048b, bcdDevice= 2.80
+[ 9861.855426] usb 1-9.3: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+[ 9861.855432] usb 1-9.3: Product: Dual Serial
+[ 9861.855437] usb 1-9.3: Manufacturer: Teensyduino
+[ 9861.855441] usb 1-9.3: SerialNumber: 11111111
+[ 9861.860007] cdc_acm 1-9.3:1.0: ttyACM1: USB ACM device
+[ 9861.860687] cdc_acm 1-9.3:1.2: ttyACM2: USB ACM device
+```
+
+`gtkterm` wiht /dev/ttyACM1 15200 8N1 or `tio /dev/ttyACM1`
 
 ### Notes
 
