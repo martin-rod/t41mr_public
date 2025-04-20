@@ -157,6 +157,7 @@ git submodule update --init --remote libraries/OpenAudio_ArduinoLibrary
 
 <https://groups.io/g/SoftwareControlledHamRadio/topic/how_to_complete_flash_erase/104720544>
 
+0. Turn on Teensy before next step. The orange LED must light
 1. Press and hold the button on the Teensy (near the orange LED)
 2. Release the button after the first flash of the red LED (the red LED is under the Audio Adapter on the Teensy)
 3. The red LED stays on for about 30 seconds
