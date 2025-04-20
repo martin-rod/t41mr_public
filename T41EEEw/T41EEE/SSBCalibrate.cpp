@@ -307,7 +307,6 @@ void SSBCalibrate::CalibratePreamble(int setZoom) {
       void
  *****/
 void SSBCalibrate::CalibrateEpilogue(bool radioCal, bool saveToEeprom) {
-    Serial.printf("SSB epilogue\n");
   /*
   Serial.printf("lastState=%d radioState=%d memory_used=%d memory_used_max=%d f32_memory_used=%d f32_memory_used_max=%d\n",
                 lastState,
@@ -1149,6 +1148,9 @@ void SSBCalibrate::RadioCal(bool refineCal) {
   SSBCalibrate::DoXmitCarrierCalibrate(true, refineCal, false);
 #endif
 
+// Put back to LSB before proceeding:
+  bands.bands[ConfigData.currentBand].sideband = Sideband::LOWER;
+
 //  button.BandSet(BAND_40M);
   ConfigData.currentBand = ConfigData.currentBandA = BAND_40M;
   SetBandRelay();
@@ -1165,6 +1167,9 @@ void SSBCalibrate::RadioCal(bool refineCal) {
 #ifdef QSE2
   SSBCalibrate::DoXmitCarrierCalibrate(true, refineCal, false);
 #endif
+
+// Put back to LSB before proceeding:
+  bands.bands[ConfigData.currentBand].sideband = Sideband::LOWER;
 
 //  button.BandSet(BAND_20M);
   ConfigData.currentBand = ConfigData.currentBandA = BAND_20M;

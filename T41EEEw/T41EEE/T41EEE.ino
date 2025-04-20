@@ -202,7 +202,7 @@ int filterWidth = static_cast<int>((bands.bands[ConfigData.currentBand].FHiCut -
 int h = 135;  // SPECTRUM_HEIGHT + 3;
 bool ANR_notch = false;
 uint8_t auto_codec_gain = 1;
-uint8_t display_S_meter_or_spectrum_state = 0;
+//uint8_t display_S_meter_or_spectrum_state = 0;
 uint8_t keyPressedOn = 0;
 uint8_t NR_first_time = 1;
 uint8_t NR_Kim;
@@ -257,6 +257,9 @@ const uint16_t n_dec2_taps = (1 + (uint16_t)(n_att / (22.0 * (n_fstop2 - n_fpass
 int attenuator = 0;
 
 int audioYPixel[256]{ 0 };  // Will int16_t save memory here???  DMAMEM not working here.  Causes audio spectrum glitch.  KF5N February 26, 2024.
+int audioYPixelnew[256]{ 0 };
+int audioYPixelold[256]{ 0 };
+int audioYPixelcurrent[256]{ 0 };
 
 int bandswitchPins[] = {
   30,  // 80M
@@ -833,8 +836,8 @@ FLASHMEM void setup() {
 #else
   sgtl5000_1.lineOutLevel(20);  // Setting of 20 limits line-out level to 2.14 volts p-p.
 #endif
-  sgtl5000_1.adcHighPassFilterEnable();   // This is required for QSE2DC, specifically for carrier calibration.
-//  sgtl5000_1.adcHighPassFilterDisable();  //reduces noise.  https://forum.pjrc.com/threads/27215-24-bit-audio-boards?p=78831&viewfull=1#post78831
+  sgtl5000_1.adcHighPassFilterEnable();  // This is required for QSE2DC, specifically for carrier calibration.
+                                         //  sgtl5000_1.adcHighPassFilterDisable();  //reduces noise.  https://forum.pjrc.com/threads/27215-24-bit-audio-boards?p=78831&viewfull=1#post78831
 
   updateMic();             // This updates the transmit signal chain settings.  Located in SSB_Exciter.cpp.
   initializeAudioPaths();  // Updates the AGC (compressor) in the receiver.
@@ -919,20 +922,20 @@ FLASHMEM void setup() {
     tft.setCursor(10, 10);
     tft.print("Release button to start calibration.");
     delay(2000);
-    EnableButtonInterrupts();
-    SaveAnalogSwitchValues();
-    eeprom.EEPROMWrite();  // Call to reset switch matrix values
-  }                        // KD0RC end
+    button.EnableButtonInterrupts();
+    SaveAnalogSwitchValues();  // Call to reset switch matrix values
+    eeprom.CalDataWrite();
+  }  // KD0RC end
 #else
   button.EnableButtonInterrupts();
   eeprom.EEPROMStartup();
 #endif
 
-//  Entry graphics
+  //  Entry graphics
   Splash();
 
-//  Draw objects to the display.
-RedrawDisplayScreen();
+  //  Draw objects to the display.
+  RedrawDisplayScreen();
 
   /****************************************************************************************
      start local oscillator Si5351
@@ -981,13 +984,13 @@ RedrawDisplayScreen();
     bands.bands[ConfigData.currentBand].mode = RadioMode::SAM_MODE;
   }
 
-  mainMenuIndex = 0;  // Changed from middle to first. Do Menu Down to get to Calibrate quickly
+  mainMenuIndex = 0;                         // Changed from middle to first. Do Menu Down to get to Calibrate quickly
   zoomIndex = ConfigData.spectrum_zoom - 1;  // ButtonZoom() increments zoomIndex, so this cancels it so the read from EEPROM is accurately restored.  KF5N August 3, 2023
   button.ButtonZoom();                       // Restore zoom settings.  KF5N August 3, 2023
 
   ConfigData.sdCardPresent = SDPresentCheck();  // JJP 7/18/23
-  ConfigData.rfGainCurrent = 0;  // Start with lower gain so you don't get blasted.
-  lastState = RadioState::NOSTATE;  // Forces an update.
+  ConfigData.rfGainCurrent = 0;                 // Start with lower gain so you don't get blasted.
+  lastState = RadioState::NOSTATE;              // Forces an update.
 
   if ((MASTER_CLK_MULT_RX == 2) or (MASTER_CLK_MULT_TX == 2)) ResetFlipFlops();  // Required only for QSD2/QSE2.
 }
@@ -1008,8 +1011,7 @@ elapsedMicros usec = 0;  // Automatically increases as time passes; no ++ necess
 *****/
 float audioBW{ 0.0 };
 uint32_t receiverMute = 10;
-void loop()
-{
+void loop() {
   MenuSelect menu;
   long ditTimerOff;  //AFP 09-22-22
   long dahTimerOn;
@@ -1035,11 +1037,11 @@ void loop()
   if (lastState != radioState) {
     SetAudioOperatingState(radioState);
     button.ExecuteModeChange();
-    Serial.printf("Set audio state, begin loop. radioState = %d lastState = %d\n", radioState, lastState);
+    //    Serial.printf("Set audio state, begin loop. radioState = %d lastState = %d\n", radioState, lastState);
   }
 
-// Don't turn off audio in the case of CW for sidetone.
-  if (powerUp and not (radioState == RadioState::CW_TRANSMIT_STRAIGHT_STATE or radioState == RadioState::CW_TRANSMIT_KEYER_STATE)) {
+  // Don't turn off audio in the case of CW for sidetone.
+  if (powerUp and not(radioState == RadioState::CW_TRANSMIT_STRAIGHT_STATE or radioState == RadioState::CW_TRANSMIT_KEYER_STATE)) {
     afterPowerUp = afterPowerUp + 1;
     speakerScale.setGain(0);
     headphoneScale.setGain(0);
@@ -1051,7 +1053,7 @@ void loop()
       headphoneScale.setGain(HEADPHONESCALE);
     }
   }
-  if(radioState == RadioState::CW_TRANSMIT_STRAIGHT_STATE or radioState == RadioState::CW_TRANSMIT_KEYER_STATE) {
+  if (radioState == RadioState::CW_TRANSMIT_STRAIGHT_STATE or radioState == RadioState::CW_TRANSMIT_KEYER_STATE) {
     speakerScale.setGain(SPEAKERSCALE);
     headphoneScale.setGain(HEADPHONESCALE);
   }
@@ -1240,7 +1242,8 @@ void loop()
     else if (bands.bands[ConfigData.currentBand].mode == RadioMode::AM_MODE or bands.bands[ConfigData.currentBand].mode == RadioMode::SAM_MODE)
       audioBW = bands.bands[ConfigData.currentBand].FAMCut;
 
-    process.audioGainCompensate = 4 * 2800.0 / audioBW;
+    process.audioGainCompensate = 
+    2800.0 / audioBW;
 
     speakerVolume.setGain(volumeLog[ConfigData.audioVolume]);
     headphoneVolume.setGain(volumeLog[ConfigData.audioVolume]);

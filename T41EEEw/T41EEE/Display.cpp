@@ -60,6 +60,7 @@ double elapsed_micros_mean;
     void
 *****/
 void DrawAudioSpectContainer() {
+  tft.writeTo(L1);
   tft.drawRect(BAND_INDICATOR_X - 9, SPECTRUM_BOTTOM - 118, 255, 118, RA8875_GREEN);
   tft.setFontScale((enum RA8875tsize)0);
   tft.setTextColor(RA8875_WHITE);
@@ -206,8 +207,7 @@ void ShowSpectrum() {
         AudioH_max_box = k;              // Index of FH_max.  this corresponds to the noise floor.
                                          //        Serial.printf("k = %d AudioH_max_box = %d\n", k, AudioH_max_box);
       }
-    }
-    //    } //  HB finish
+    }  //  HB finish
 
     // Prevent spectrum from going below the bottom of the spectrum area.  KF5N
     if (y_new_plot > 247) y_new_plot = 247;
@@ -228,20 +228,23 @@ void ShowSpectrum() {
     //  What is the actual spectrum at this time?  It's a combination of the old and new spectrums.
     //  In the case of a CW interrupt, the array pixelnew should be saved as the actual spectrum.
     pixelCurrent[x1] = pixelnew[x1];  //  This is the actual "old" spectrum!  This is required due to CW interrupts.  pixelCurrent gets copied to pixelold by the FFT function.  KF5N
+    audioYPixelcurrent[x1] = audioYPixel[x1];
 
     // Draw audio spectrum.  The audio spectrum width is smaller than the RF spectrum width.
-    if (x1 < 253) {                                                                              //AFP 09-01-22
-      if (keyPressedOn == 1) {                                                                   //AFP 09-01-22
-        return;                                                                                  //AFP 09-01-22
-      } else {                                                                                   //AFP 09-01-22
-        tft.drawFastVLine(BAND_INDICATOR_X - 8 + x1, SPECTRUM_BOTTOM - 116, 115, RA8875_BLACK);  //AFP Erase old AUDIO spectrum line
+    if (x1 < 253) {                                                                      //AFP 09-01-22
+      if (keyPressedOn == 1) {                                                           //AFP 09-01-22
+        return;                                                                          //AFP 09-01-22
+      } else {                                                                           //AFP 09-01-22
+        if (audioYPixelold[x1] > CLIP_AUDIO_PEAK) audioYPixelold[x1] = CLIP_AUDIO_PEAK;  // audioSpectrumHeight = 118
+        tft.drawFastVLine(532 + x1, 245 - audioYPixelold[x1] - 0, audioYPixelold[x1], RA8875_BLACK);
         if (audioYPixel[x1] != 0) {
           if (audioYPixel[x1] > CLIP_AUDIO_PEAK)  // audioSpectrumHeight = 118
             audioYPixel[x1] = CLIP_AUDIO_PEAK;
           if (x1 == middleSlice) {
             smeterLength = y_new;
           }
-          tft.drawFastVLine(BAND_INDICATOR_X - 8 + x1, AUDIO_SPECTRUM_BOTTOM - audioYPixel[x1] - 1, audioYPixel[x1] - 2, RA8875_MAGENTA);  //AFP draw new AUDIO spectrum line
+          // Draw a vertical line with the audio spectrum magnitude.  AUDIO_SPECTRUM_BOTTOM = 247
+          tft.drawFastVLine(532 + x1, 245 - audioYPixel[x1] - 0, audioYPixel[x1], RA8875_MAGENTA);
         }
       }
     }
@@ -599,13 +602,14 @@ void ShowAutoStatus() {
 *****/
 void BandInformation()  // SSB or CW
 {
-  float CWFilterPosition = 0.0;
-  const char *CWFilter[] = { "0.8kHz", "1.0kHz", "1.3kHz", "1.8kHz", "2.0kHz", " Off " };
+  std::string CWFilter[] = { "0.8kHz", "1.0kHz", "1.3kHz", "1.8kHz", "2.0kHz", " Off " };
 
   tft.setFontScale((enum RA8875tsize)0);
   tft.setTextColor(RA8875_GREEN);
   tft.setCursor(5, FREQUENCY_Y + 30);
   tft.setTextColor(RA8875_WHITE);
+
+  tft.writeTo(L1);
 
   tft.print("Center Freq");                                    // This is static, never changes.
   tft.fillRect(100, FREQUENCY_Y + 31, 290, 15, RA8875_BLACK);  // Clear frequency, band, and mode.  This should be the only erase required.
@@ -633,38 +637,16 @@ void BandInformation()  // SSB or CW
   tft.setCursor(OPERATION_STATS_X + 90, FREQUENCY_Y + 30);  //AFP 10-18-22
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE) {
     tft.print("CW ");
-    tft.setCursor(OPERATION_STATS_X + 115, FREQUENCY_Y + 30);  //AFP 10-18-22
-    tft.writeTo(L2);                                           // Moved to L2 here to properly refresh the CW filter bandwidth.  KF5N July 30, 2023
-    tft.print(CWFilter[ConfigData.CWFilterIndex]);             //AFP 10-18-22
-    switch (ConfigData.CWFilterIndex) {
-      case 0:
-        CWFilterPosition = 35.7;  // 0.84 * 42.5;
-        break;
-      case 1:
-        CWFilterPosition = 42.5;
-        break;
-      case 2:
-        CWFilterPosition = 55.25;  // 1.3 * 42.5;
-        break;
-      case 3:
-        CWFilterPosition = 76.5;  // 1.8 * 42.5;
-        break;
-      case 4:
-        CWFilterPosition = 85.0;  // 2.0 * 42.5;
-        break;
-      case 5:
-        CWFilterPosition = 0.0;
-        break;
-    }
-    tft.drawFastVLine(BAND_INDICATOR_X - 8 + CWFilterPosition, AUDIO_SPECTRUM_BOTTOM - 118, 118, RA8875_LIGHT_GREY);
-    tft.writeTo(L1);
+    tft.setCursor(OPERATION_STATS_X + 111, FREQUENCY_Y + 30);  //AFP 10-18-22
+    tft.print(CWFilter[ConfigData.CWFilterIndex].c_str());     //AFP 10-18-22
+
     //================  AFP 10-19-22 =========
   }
 
   // Write SSB mode to display
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::SSB_MODE) {
     if (ConfigData.cessb) tft.print("CESSB");  // Which mode
-    if (not ConfigData.cessb) tft.print("SSB Data");
+    if (not ConfigData.cessb) tft.print("SSB");
   }
 
   // Write FT8 mode to display.
@@ -706,7 +688,6 @@ void BandInformation()  // SSB or CW
     default:
       break;
   }
-  //  ShowCurrentPowerSetting();  // Why is this done here?
 }
 
 
@@ -720,6 +701,7 @@ void BandInformation()  // SSB or CW
     void
 *****/
 void ShowCurrentPowerSetting() {
+  tft.setFontScale((enum RA8875tsize)0);
   tft.fillRect(OPERATION_STATS_X + 275, FREQUENCY_Y + 30, tft.getFontWidth() * 11, tft.getFontHeight(), RA8875_BLACK);  // Clear top-left menu area
   tft.setCursor(OPERATION_STATS_X + 275, FREQUENCY_Y + 30);
   tft.setTextColor(RA8875_RED);
@@ -809,12 +791,12 @@ void ShowFrequency() {
   if (ConfigData.activeVFO == VFO_A) {
     FormatFrequency(TxRxFreq, freqBuffer);
     tft.setFontScale(3, 2);  // JJP 7/15/23
-    if (TxRxFreq < bands.bands[ConfigData.currentBandA].fBandLow || TxRxFreq > bands.bands[ConfigData.currentBandA].fBandHigh) {
+    if (TxRxFreq < bands.bands[ConfigData.currentBandA].fBandLow or TxRxFreq > bands.bands[ConfigData.currentBandA].fBandHigh) {
       tft.setTextColor(RA8875_RED);  // Out of band
     } else {
       tft.setTextColor(RA8875_GREEN);  // In band
     }
-    tft.fillRect(0, FREQUENCY_Y - 14, tft.getFontWidth() * 11, tft.getFontHeight(), RA8875_BLACK);  // JJP 7/15/23
+    tft.fillRect(0, FREQUENCY_Y - 8, tft.getFontWidth() * 10, 34, RA8875_BLACK);  // This erases VFOA.
     tft.setCursor(0, FREQUENCY_Y - 17);                                                             // To adjust for Greg's font change jjp 7/14/23
     tft.print(freqBuffer);                                                                          // Show VFO_A
     tft.setFontScale(1, 2);                                                                         // JJP 7/15/23
@@ -1281,7 +1263,7 @@ void UpdateCompressionField()  // JJP 8/26/2023
 
 
 /*****
-  Purpose: Updates whether the decoder is on or off and decoder related graphics.
+  Purpose: Updates whether the decoder is on or off and decoder related graphics including CW, highpass, and lowpass filter bandwidths.
 
   Parameter list:
     void
@@ -1289,7 +1271,8 @@ void UpdateCompressionField()  // JJP 8/26/2023
   Return value;
     void
 *****/
-FLASHMEM void UpdateDecoderField() {
+FLASHMEM void UpdateAudioGraphics() {
+  float CWFilterPosition = 0.0;
   // Update text
   tft.setFontScale((enum RA8875tsize)0);
   tft.setTextColor(RA8875_WHITE);  // Display zoom factor
@@ -1299,18 +1282,81 @@ FLASHMEM void UpdateDecoderField() {
   //  tft.fillRect(DECODER_X + 90, DECODER_Y, tft.getFontWidth() * 20, tft.getFontHeight() + 2, RA8875_BLACK);
   tft.setCursor(FIELD_OFFSET_X, DECODER_Y - 5);
   tft.fillRect(FIELD_OFFSET_X, DECODER_Y - 5, 140, 17, RA8875_BLACK);  // Erase
-                                                                       //  if (ConfigData.decoderFlag) {                                        // AFP 09-27-22
-                                                                       //    tft.setCursor(FIELD_OFFSET_X, DECODER_Y - 5);
-                                                                       //    tft.print("    WPM");
-                                                                       //  } else {
-  //    tft.fillRect(FIELD_OFFSET_X, DECODER_Y - 5, 140, 17, RA8875_BLACK);  // Erase
-  //    tft.print("Off");
-  //  }
-  // Update text and graphics.
-  if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE and ConfigData.decoderFlag) {
+
+  // Update text and graphics.  Use a method of clearing everything, and then add only what is needed.
+  tft.writeTo(L2);  // This has to be written to L2 or it will be erased by the audio spectrum eraser.
+  tft.clearMemory();
+
+  // Update CW decoder status in information window.
+  if (ConfigData.decoderFlag) {
     tft.setCursor(FIELD_OFFSET_X, DECODER_Y - 5);
     tft.print("    WPM");
-    tft.writeTo(L2);
+  } else {
+    tft.fillRect(FIELD_OFFSET_X, DECODER_Y - 5, 140, 17, RA8875_BLACK);  // Erase
+    tft.print("Off");
+  }
+
+  //  The following code was moved from ShowSpectrum() in Display.cpp.
+  int filterLoPositionMarker{ 0 };
+  int filterHiPositionMarker{ 0 };
+  if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER or bands.bands[ConfigData.currentBand].sideband == Sideband::UPPER) {
+    filterLoPositionMarker = map(bands.bands[ConfigData.currentBand].FLoCut, 0, 6000, 0, 256);
+    filterHiPositionMarker = map(bands.bands[ConfigData.currentBand].FHiCut, 0, 6000, 0, 256);
+  } else if (bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_AM or bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_SAM) {
+    filterHiPositionMarker = map(bands.bands[ConfigData.currentBand].FAMCut, 0, 6000, 0, 256);
+  }
+
+  //Draw Filter indicator lines on audio plot to Layer 2.
+  tft.writeTo(L2);
+  // The encoder should adjust the low side of the filter if the CW filter is on.  This creates a tunable bandpass.  Sort of.
+  if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE and ConfigData.CWFilterIndex != 5) switchFilterSideband = true;
+
+  if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER or bands.bands[ConfigData.currentBand].sideband == Sideband::UPPER) {
+    if (not switchFilterSideband) {
+      tft.drawLine(BAND_INDICATOR_X - 6 + abs(filterLoPositionMarker), SPECTRUM_BOTTOM - 3, BAND_INDICATOR_X - 6 + abs(filterLoPositionMarker), SPECTRUM_BOTTOM - 112, RA8875_LIGHT_GREY);
+      tft.drawLine(BAND_INDICATOR_X - 7 + abs(filterHiPositionMarker), SPECTRUM_BOTTOM - 3, BAND_INDICATOR_X - 7 + abs(filterHiPositionMarker), SPECTRUM_BOTTOM - 112, RA8875_RED);
+    } else {
+      tft.drawLine(BAND_INDICATOR_X - 6 + abs(filterLoPositionMarker), SPECTRUM_BOTTOM - 3, BAND_INDICATOR_X - 6 + abs(filterLoPositionMarker), SPECTRUM_BOTTOM - 112, RA8875_RED);
+      tft.drawLine(BAND_INDICATOR_X - 7 + abs(filterHiPositionMarker), SPECTRUM_BOTTOM - 3, BAND_INDICATOR_X - 7 + abs(filterHiPositionMarker), SPECTRUM_BOTTOM - 112, RA8875_LIGHT_GREY);
+    }
+  }
+
+  // In AM modes draw high delimiter only and always make it red (active);
+  if (bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_AM or bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_SAM) {
+    tft.drawLine(BAND_INDICATOR_X - 7 + abs(filterHiPositionMarker), SPECTRUM_BOTTOM - 3, BAND_INDICATOR_X - 7 + abs(filterHiPositionMarker), SPECTRUM_BOTTOM - 112, RA8875_RED);
+  }
+
+  // Select the x-axis position for the CW filter box and delimiter line (on the right side of the box).
+  switch (ConfigData.CWFilterIndex) {
+    case 0:
+      CWFilterPosition = 35.7;  // 0.84 * 42.5;
+      break;
+    case 1:
+      CWFilterPosition = 42.5;
+      break;
+    case 2:
+      CWFilterPosition = 55.25;  // 1.3 * 42.5;
+      break;
+    case 3:
+      CWFilterPosition = 76.5;  // 1.8 * 42.5;
+      break;
+    case 4:
+      CWFilterPosition = 85.0;  // 2.0 * 42.5;
+      break;
+    case 5:
+      CWFilterPosition = 0.0;
+      break;
+  }
+
+  // Draw CW filter box if required.  Don't do this if the CW filter is off.
+  if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE and ConfigData.CWFilterIndex != 5) {
+    tft.writeTo(L2);  // This has to be written to L2 or it will be erased by the audio spectrum eraser.
+    tft.fillRect(BAND_INDICATOR_X - 6 + abs(filterLoPositionMarker), AUDIO_SPECTRUM_TOP, CWFilterPosition - abs(filterLoPositionMarker), 120, MAROON);
+    tft.drawFastVLine(BAND_INDICATOR_X - 8 + CWFilterPosition, AUDIO_SPECTRUM_BOTTOM - 118, 118, RA8875_LIGHT_GREY);
+  }
+
+  // Draw decoder delimiters if the decoder is on.
+  if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE and ConfigData.decoderFlag) {
     // Draw delimiter bars for CW offset frequency.  This depends on the user selected offset.
     if (ConfigData.CWOffset == 0) {
       tft.drawFastVLine(BAND_INDICATOR_X + 15, AUDIO_SPECTRUM_BOTTOM - 118, 118, RA8875_GREEN);  //CW lower freq indicator
@@ -1330,29 +1376,11 @@ FLASHMEM void UpdateDecoderField() {
     }
   }
 
-  // Erase graphics when decoder is off or non-CW modes.
-  if ((bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE && not ConfigData.decoderFlag) or bands.bands[ConfigData.currentBand].mode == RadioMode::SSB_MODE
-      or bands.bands[ConfigData.currentBand].mode == RadioMode::FT8_MODE or bands.bands[ConfigData.currentBand].mode == RadioMode::AM_MODE or bands.bands[ConfigData.currentBand].mode == RadioMode::SAM_MODE) {
-    tft.print("Off");
-    tft.writeTo(L2);
-    // Draw delimiter bars for CW offset frequency.  This depends on the user selected offset.
-    if (ConfigData.CWOffset == 0) {
-      tft.drawFastVLine(BAND_INDICATOR_X + 15, AUDIO_SPECTRUM_BOTTOM - 118, 118, RA8875_BLACK);  //CW lower freq indicator
-      tft.drawFastVLine(BAND_INDICATOR_X + 21, AUDIO_SPECTRUM_BOTTOM - 118, 118, RA8875_BLACK);  //CW upper freq indicator
-    }
-    if (ConfigData.CWOffset == 1) {
-      tft.drawFastVLine(BAND_INDICATOR_X + 18, AUDIO_SPECTRUM_BOTTOM - 118, 118, RA8875_BLACK);  //CW lower freq indicator
-      tft.drawFastVLine(BAND_INDICATOR_X + 24, AUDIO_SPECTRUM_BOTTOM - 118, 118, RA8875_BLACK);  //CW upper freq indicator
-    }
-    if (ConfigData.CWOffset == 2) {
-      tft.drawFastVLine(BAND_INDICATOR_X + 23, AUDIO_SPECTRUM_BOTTOM - 118, 118, RA8875_BLACK);  //CW lower freq indicator
-      tft.drawFastVLine(BAND_INDICATOR_X + 29, AUDIO_SPECTRUM_BOTTOM - 118, 118, RA8875_BLACK);  //CW upper freq indicator
-    }
-    if (ConfigData.CWOffset == 3) {
-      tft.drawFastVLine(BAND_INDICATOR_X + 26, AUDIO_SPECTRUM_BOTTOM - 118, 118, RA8875_BLACK);  //CW lower freq indicator
-      tft.drawFastVLine(BAND_INDICATOR_X + 32, AUDIO_SPECTRUM_BOTTOM - 118, 118, RA8875_BLACK);  //CW upper freq indicator
-    }
-  }
+  // Update stuff including graphics that got erase by this function.
+  BandInformation();
+  ShowBandwidth();
+  DrawFrequencyBarValue();  // This calls ShowBandwidth().  YES, this function is useful here.
+  DrawBandWidthIndicatorBar();
   tft.writeTo(L1);
 }
 
@@ -1508,7 +1536,7 @@ void RedrawDisplayScreen() {
   UpdateZoomField();
   UpdateCompressionField();
   UpdateWPMField();
-  UpdateDecoderField();
+  UpdateAudioGraphics();
   UpdateEqualizerField(ConfigData.receiveEQFlag, ConfigData.xmitEQFlag);
   UpdateAudioField();
   ShowCurrentPowerSetting();

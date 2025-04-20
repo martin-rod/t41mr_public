@@ -261,7 +261,7 @@ void Button::ExecuteButtonPress(MenuSelect val) {
 
     case MenuSelect::DECODER_TOGGLE:  // 13
       ConfigData.decoderFlag = not ConfigData.decoderFlag;
-      UpdateDecoderField();
+      UpdateAudioGraphics();
       break;
 
     case MenuSelect::MAIN_TUNE_INCREMENT:  // 14
@@ -1163,16 +1163,16 @@ void Button::ExecuteModeChange() {
   tft.writeTo(L2);  // Destroy the bandwidth indicator bar.  KF5N July 30, 2023
   tft.clearMemory();
   tft.writeTo(L1);
+  UpdateAudioGraphics();         // KF5N December 28 2023.
   FilterSetSSB();
   FilterBandwidth();
   ShowBandwidth();
   ShowFrequency();
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE) BandInformation();
   DrawBandWidthIndicatorBar();  // Restore the bandwidth indicator bar.  KF5N July 30, 2023
-  UpdateDecoderField();         // KF5N December 28 2023.
   BandInformation();
   fftOffset = 140;
-  Serial.printf("Execute Mode Change\n");
+//  Serial.printf("Execute Mode Change\n");
   SetBandRelay();  // Set relays in LPF for current band.
   SetFreq();       // Must update frequency, for example moving from SSB to CW, the RX LO is shifted.  KF5N
   powerUp = true;

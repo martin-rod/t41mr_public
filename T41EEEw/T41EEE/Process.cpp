@@ -53,7 +53,7 @@ void Process::ProcessIQData() {
     }
     // Set frequency here only to minimize interruption to signal stream during tuning.
     // This code was unnecessary in the revised tuning scheme.  KF5N July 22, 2023
-    if (centerTuneFlag == 1) {  //AFP 10-04-22
+    if (centerTuneFlag == 1) {  //  This flag is set by EncoderFineTune().
       DrawBandWidthIndicatorBar();
       ShowFrequency();
     }                    //AFP 10-04-22
@@ -65,8 +65,11 @@ void Process::ProcessIQData() {
 
     //  Set RFGain for all bands.
     if (ConfigData.autoGain) rfGain = ConfigData.rfGainCurrent;                          // Auto-gain
-    else rfGain = ConfigData.rfGain[ConfigData.currentBand] - 30;                        // Manual gain adjust.
+    else rfGain = ConfigData.rfGain[ConfigData.currentBand] - 20;                        // Manual gain adjust.
     rfGainValue = pow(10, static_cast<float32_t>(rfGain) / 20.0);                        // DSPGAINSCALE removed in T41EEE.9.  Greg KF5N February 24, 2024
+
+    rfGainValue = rfGainValue * audioGainCompensate;
+
     arm_scale_f32(float_buffer_L, rfGainValue, float_buffer_L, BUFFER_SIZE * N_BLOCKS);  //AFP 09-27-22
     arm_scale_f32(float_buffer_R, rfGainValue, float_buffer_R, BUFFER_SIZE * N_BLOCKS);  //AFP 09-27-22
 
@@ -101,7 +104,6 @@ void Process::ProcessIQData() {
     if (ADC_RX_I.available() > 50) {
       ADC_RX_I.clear();
       ADC_RX_Q.clear();
-      Serial.printf("interrupt\n");
     }
 
     /**********************************************************************************  AFP 12-31-20
@@ -133,7 +135,7 @@ void Process::ProcessIQData() {
       }
     }
 
-    display_S_meter_or_spectrum_state++;
+  //  display_S_meter_or_spectrum_state++;
     if (keyPressedOn == 1) {  ////AFP 09-01-22.  Is this a duplicate here???
       return;
     }
@@ -277,6 +279,7 @@ void Process::ProcessIQData() {
         audioSpectBuffer[1024 - k] = (iFFT_buffer[k] * iFFT_buffer[k]);
       }
       for (int k = 3; k < 256; k++) {
+        audioYPixelold[k] = audioYPixelcurrent[k];  // Store the existing audio spectrum so it can be erased.
         if (bands.bands[ConfigData.currentBand].sideband == Sideband::UPPER || bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_AM || bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_SAM) {  //AFP 10-26-22
           audioYPixel[k] = 65 + map(15 * log10f((audioSpectBuffer[1024 - k] + audioSpectBuffer[1024 - k + 1] + audioSpectBuffer[1024 - k + 2]) / 3), 0, 100, 0, 120) + audioFFToffset;
         } else if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER) {  //AFP 10-26-22
@@ -467,8 +470,8 @@ void Process::ProcessIQData() {
     **********************************************************************************/
 
     // Scale by 8 to compensate for interpolation.  Also compensate for audio filter bandwidth.
-    arm_scale_f32(float_buffer_L, 8.0 * audioGainCompensate, float_buffer_L, BUFFER_SIZE * N_BLOCKS);
-
+//    arm_scale_f32(float_buffer_L, 8.0 * audioGainCompensate, float_buffer_L, BUFFER_SIZE * N_BLOCKS);
+arm_scale_f32(float_buffer_L, 8.0, float_buffer_L, BUFFER_SIZE * N_BLOCKS);
     /**********************************************************************************  AFP 12-31-20
       CONVERT TO INTEGER AND PLAY AUDIO
     **********************************************************************************/
