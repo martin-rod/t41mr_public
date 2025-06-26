@@ -177,7 +177,66 @@ dmesg
 [ 9861.860687] cdc_acm 1-9.3:1.2: ttyACM2: USB ACM device
 ```
 
-`gtkterm` wiht /dev/ttyACM1 15200 8N1 or `tio /dev/ttyACM1`
+`gtkterm` wiht /dev/ttyACM1 15200 8N1 or `tio -m INLCRNL  /dev/ttyACM1`
+
+### Compiler
+
+gcc
+```
+rod@t440-d12:~/wrk_ham/t41/t41mr/build_eee (mr_config_20250420 *$%=)$ echo | /home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/arm-none-eabi-gcc -E -Wp,-v -xc /dev/null
+ignoring duplicate directory "/home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/../lib/gcc/../../lib/gcc/arm-none-eabi/13.2.1/include"
+ignoring nonexistent directory "/home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/../arm-none-eabi/usr/local/include"
+ignoring duplicate directory "/home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/../lib/gcc/../../lib/gcc/arm-none-eabi/13.2.1/include-fixed"
+ignoring duplicate directory "/home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/../lib/gcc/../../lib/gcc/arm-none-eabi/13.2.1/../../../../arm-none-eabi/include"
+ignoring duplicate directory "/home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/../arm-none-eabi/include"
+#include "..." search starts here:
+#include <...> search starts here:
+ /home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/13.2.1/include
+ /home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/13.2.1/include-fixed
+ /home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/13.2.1/../../../../arm-none-eabi/include
+End of search list.
+# 0 "/dev/null"
+# 0 "<built-in>"
+# 0 "<command-line>"
+# 1 "/dev/null"
+```
+
+g++
+```
+rod@t440-d12:~/wrk_ham/t41/t41mr/build_eee (mr_config_20250420 *$%=)$ echo | /home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/arm-none-eabi-g++ -E -Wp,-v -xc++ /dev/null
+ignoring duplicate directory "/home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/../lib/gcc/../../lib/gcc/arm-none-eabi/13.2.1/../../../../arm-none-eabi/include/c++/13.2.1"
+ignoring duplicate directory "/home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/../lib/gcc/../../lib/gcc/arm-none-eabi/13.2.1/../../../../arm-none-eabi/include/c++/13.2.1/arm-none-eabi"
+ignoring duplicate directory "/home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/../lib/gcc/../../lib/gcc/arm-none-eabi/13.2.1/../../../../arm-none-eabi/include/c++/13.2.1/backward"
+ignoring duplicate directory "/home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/../lib/gcc/../../lib/gcc/arm-none-eabi/13.2.1/include"
+ignoring nonexistent directory "/home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/../arm-none-eabi/usr/local/include"
+ignoring duplicate directory "/home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/../lib/gcc/../../lib/gcc/arm-none-eabi/13.2.1/include-fixed"
+ignoring duplicate directory "/home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/../lib/gcc/../../lib/gcc/arm-none-eabi/13.2.1/../../../../arm-none-eabi/include"
+ignoring duplicate directory "/home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/../arm-none-eabi/include"
+#include "..." search starts here:
+#include <...> search starts here:
+ /home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/13.2.1/../../../../arm-none-eabi/include/c++/13.2.1
+ /home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/13.2.1/../../../../arm-none-eabi/include/c++/13.2.1/arm-none-eabi
+ /home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/13.2.1/../../../../arm-none-eabi/include/c++/13.2.1/backward
+ /home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/13.2.1/include
+ /home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/13.2.1/include-fixed
+ /home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/13.2.1/../../../../arm-none-eabi/include
+End of search list.
+# 0 "/dev/null"
+# 0 "<built-in>"
+# 0 "<command-line>"
+# 1 "/dev/null"
+```
+
+???
+```
+/home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/arm-none-eabi/include/c++/13.2.1/tr1
+/home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/arm-none-eabi/include/c++/13.2.1
+/home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/arm-none-eabi/include
+/home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/arm-none-eabi/include/c++/13.2.1/arm-none-eabi
+/home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/arm-none-eabi/include/sys
+/home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/arm-none-eabi/include/ssp
+
+```
 
 ### Notes
 
