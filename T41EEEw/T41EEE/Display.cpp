@@ -1,5 +1,9 @@
-
 #include "SDT.h"
+
+#define TRACE_MODULE_LEVEL TR_L_ALL
+#define TRACE_MODULE_NAME Display
+
+#include "trace.h"
 
 // DrawAudioSpectContainer()
 // ShowName()
@@ -720,13 +724,14 @@ void ShowCurrentPowerSetting() {
     // show frequency
 *****/
 void FormatFrequency(uint32_t freq, char *freqBuffer) {
-  char outBuffer[15];
-  int i;
-  int len;
-  freq = static_cast<uint32_t>(freq);
-  ltoa(freq, outBuffer, 10);
-  len = strlen(outBuffer);
+  TRACE_LEVEL(TR_L_TRACE);
+  TRACE_T41(TR_L_TRACE, "freq:%lu", freq);
 
+  char outBuffer[15]={0};
+  ultoa(freq, outBuffer, 10);
+
+  size_t len = strlen(outBuffer);
+  size_t i;
   switch (len) {
     case 6:  // below 530.999 KHz
       freqBuffer[0] = outBuffer[0];
@@ -765,6 +770,9 @@ void FormatFrequency(uint32_t freq, char *freqBuffer) {
         freqBuffer[i] = outBuffer[i - 2];  // Last 3 digit chars
       }
       freqBuffer[i] = '\0';  // Make it a string
+      break;
+    default:
+      TRACE_T41(TR_L_ERROR, "len:%u", len);
       break;
   }
 }

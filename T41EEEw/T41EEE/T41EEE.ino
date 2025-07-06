@@ -5,6 +5,12 @@
 #include "SDT.h"
 #include <charconv>
 
+#define TRACE_MODULE_LEVEL TR_L_ALL
+#define TRACE_MODULE_NAME T41EEE
+
+#include "trace.h"
+#include "git_version.h"
+
 const char *configFilename = "/config.txt";    // <- SD library uses 8.3 filenames
 const char *calFilename = "/calibration.txt";  // <- SD library uses 8.3 filenames
 
@@ -811,8 +817,25 @@ uint32_t afterPowerUp = 0;
     void
 *****/
 FLASHMEM void setup() {
+  TRACE_LEVEL(TR_L_INFO);
+
   powerUp = true;
   Serial.begin(115200);      // Use this serial for Teensy programming.
+
+  Serial.printf("T41 %s %s\n",GIT_TAG_VERSION,GIT_DATE);
+  Serial.printf("branch:%s sha:%s\n",GIT_BRANCH,GIT_SHA);
+
+  TRACE_T41(TR_L_INFO, "T41 %s %s",GIT_TAG_VERSION,GIT_DATE);
+  TRACE_T41(TR_L_INFO, "branch:%s sha:%s",GIT_BRANCH,GIT_SHA);
+
+  TRACE_T41(TR_L_FATAL, "Test message TR_L_FATAL");
+  TRACE_T41(TR_L_ERROR, "Test message TR_L_ERROR");
+  // globalTraceLevel=TR_L_FATAL;
+  TRACE_T41(TR_L_WARN, "Test message TR_L_WARN");
+  TRACE_T41(TR_L_INFO, "Test message TR_L_INFO");
+  TRACE_T41(TR_L_DEBUG, "Test message TR_L_DEBUG");
+  TRACE_T41(TR_L_TRACE, "Test message TR_L_TRACE");
+
   SerialUSB1.begin(115200);  // Use this serial for FT8 keying.
 
   setSyncProvider(getTeensy3Time);  // get TIME from real time clock with 3V backup battery
