@@ -2,6 +2,7 @@
 set -e
 set -x
 
+# musi to byt tag s poznamkou
 # prepoklada se verze ve formatu vMMMMM, kde MMMMM je uint cislo
 # vyhleda posledni tag vMMMMM, MMMMM pouzihe jako verzi, SHA bude z aktualniho komitu
 # 0 - verze pro lokalni preklad, cislovani zacina od 1

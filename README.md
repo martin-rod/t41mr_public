@@ -181,6 +181,8 @@ dmesg
 
 ### Compiler
 
+#### Inlude
+
 gcc
 ```
 rod@t440-d12:~/wrk_ham/t41/t41mr/build_eee (mr_config_20250420 *$%=)$ echo | /home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/arm-none-eabi-gcc -E -Wp,-v -xc /dev/null
@@ -236,6 +238,26 @@ End of search list.
 /home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/arm-none-eabi/include/sys
 /home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/arm-none-eabi/include/ssp
 
+```
+
+#### Define
+
+From TDUINO:
+```
+__arm__
+__IMXRT1062__
+TEENSYDUINO=159
+ARDUINO=10607
+ARDUINO_TEENSY41
+F_CPU=528000000
+USB_DUAL_SERIAL
+LAYOUT_US_ENGLISH
+```
+
+From toolchain:
+```
+rod@t440-d12:~/wrk_ham/t41/t41mr (maro_trace *$%=)$ echo | /home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/arm-none-eabi-gcc  -dM -E - > define_c.txt
+rod@t440-d12:~/wrk_ham/t41/t41mr (maro_trace *$%=)$ echo | /home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/arm-none-eabi-g++  -dM -E - > define_cpp.txt
 ```
 
 ### Notes

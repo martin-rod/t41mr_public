@@ -2,4 +2,5 @@ build
 temp
 ./T41EEE/archive
 log.txt
+git_version.h
 
