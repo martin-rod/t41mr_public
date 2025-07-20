@@ -259,6 +259,21 @@ From toolchain:
 rod@t440-d12:~/wrk_ham/t41/t41mr (maro_trace *$%=)$ echo | /home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/arm-none-eabi-gcc  -dM -E - > define_c.txt
 rod@t440-d12:~/wrk_ham/t41/t41mr (maro_trace *$%=)$ echo | /home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/arm-none-eabi-g++  -dM -E - > define_cpp.txt
 ```
+### QtCreator
+
+The problem is that with the "Ibus" input method, "Ctrl-shift-u" is by default configured to the "Unicode Code Point" shortcut. You can try this: Type ctrl-shift-u, then an (underlined) u appears. If you then type a unicode code point number in hex (e.g. 21, the ASCII/unicode CP for !) and press enter, it is replaced with the corresponding character.
+
+https://superuser.com/questions/358749/how-to-disable-ctrlshiftu
+
+Solution (GUI)
+
+This shortcut can be changed or disabled using the ibus-setup utility:
+
+    Run ibus-setup from the terminal (or open IBus Preferences).
+    Go to “Emoji”.
+    Next to “Unicode code point:”, click on the three dots (i.e. ...).
+    In the dialog, click “Delete”, then “OK”.
+    Close the IBus Preferences window.
 
 ### Notes
 
