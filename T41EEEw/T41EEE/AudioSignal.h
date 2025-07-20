@@ -326,8 +326,9 @@ void SetAudioOperatingState(RadioState operatingState) {
     patchCord26.disconnect();
 
     // Update equalizer.  Update first 14 only.  Last two are constant.
-    for (int i = 0; i < 14; i = i + 1)
+    for (int i = 0; i < 14; i = i + 1) {
       dbBand1[i] = static_cast<float32_t>(ConfigData.equalizerXmt[i]);
+    }
 
     txEqualizer.equalizerNew(16, &fBand1[0], &dbBand1[0], 249,
                              &equalizeCoeffs[0], 65.0f);
@@ -401,8 +402,9 @@ void SetAudioOperatingState(RadioState operatingState) {
     patchCord26.disconnect();
 
     // Update equalizer.  Update first 14 only.  Last two are constant.
-    for (int i = 0; i < 14; i = i + 1)
+    for (int i = 0; i < 14; i = i + 1) {
       dbBand1[i] = ConfigData.equalizerXmt[i];
+    }
 
     txEqualizer.equalizerNew(16, &fBand1[0], &dbBand1[0], 249,
                              &equalizeCoeffs[0], 65.0f);
@@ -479,8 +481,9 @@ void SetAudioOperatingState(RadioState operatingState) {
     patchCord26.disconnect();
 
     // Update equalizer.  Update first 14 only.  Last two are constant.
-    for (int i = 0; i < 14; i = i + 1)
+    for (int i = 0; i < 14; i = i + 1) {
       dbBand1[i] = ConfigData.equalizerXmt[i];
+    }
 
     txEqualizer.equalizerNew(16, &fBand1[0], &dbBand1[0], 249,
                              &equalizeCoeffs[0], 65.0f);

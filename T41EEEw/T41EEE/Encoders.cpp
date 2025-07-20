@@ -38,21 +38,24 @@ void FilterSetSSB() {
   if (filter_pos != last_filter_pos) { // This decision is required as this
                                        // function is required to be used in
                                        // many locations.  KF5N April 21, 2024
-    if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE)
+    if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE) {
       BandInformation();
+    }
     //    tft.fillRect((MAX_WATERFALL_WIDTH + SPECTRUM_LEFT_X) / 2 -
     //    filterWidth, SPECTRUM_TOP_Y + 17, filterWidth, SPECTRUM_HEIGHT - 20,
     //    RA8875_BLACK);  // Erase old filter background
     filter_change = (filter_pos - last_filter_pos);
     if (filter_change >= 1) {
       filterWidth--; // filterWidth is used in graphics only!
-      if (filterWidth < 10)
+      if (filterWidth < 10) {
         filterWidth = 10;
+      }
     }
     if (filter_change <= -1) {
       filterWidth++;
-      if (filterWidth > 100)
+      if (filterWidth > 100) {
         filterWidth = 50;
+      }
     }
     last_filter_pos = filter_pos;
     // Change the FLoCut and FhiCut variables which adjust the DSP filters.
@@ -65,18 +68,20 @@ void FilterSetSSB() {
             filterEncoderMove * 100 * ENCODER_FACTOR;
         // Don't allow FLoCut to be less than 100 Hz below FHiCut.
         if (bands.bands[ConfigData.currentBand].FLoCut >=
-            (bands.bands[ConfigData.currentBand].FHiCut - 100))
+            (bands.bands[ConfigData.currentBand].FHiCut - 100)) {
           bands.bands[ConfigData.currentBand].FLoCut =
               bands.bands[ConfigData.currentBand].FHiCut - 100;
+        }
       } else { // Adjust and limit FHiCut.
         bands.bands[ConfigData.currentBand].FHiCut =
             bands.bands[ConfigData.currentBand].FHiCut +
             filterEncoderMove * 100 * ENCODER_FACTOR;
         // Don't allow FHiCut to be less than 100 Hz above FLoCut.
         if (bands.bands[ConfigData.currentBand].FHiCut <=
-            (bands.bands[ConfigData.currentBand].FLoCut + 100))
+            (bands.bands[ConfigData.currentBand].FLoCut + 100)) {
           bands.bands[ConfigData.currentBand].FHiCut =
               bands.bands[ConfigData.currentBand].FLoCut + 100;
+        }
       }
     }
 
@@ -110,8 +115,9 @@ void EncoderCenterTune() {
 
   unsigned char result = tuneEncoder.process(); // Read the encoder
 
-  if (result == 0) // Nothing read
+  if (result == 0) { // Nothing read
     return;
+  }
 
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE &&
       ConfigData.decoderFlag) { // No reason to reset if we're not doing decoded
@@ -131,8 +137,9 @@ void EncoderCenterTune() {
 
   ConfigData.centerFreq +=
       (ConfigData.centerTuneStep * tuneChange); // tune the master vfo
-  if (ConfigData.centerFreq < 300000)
+  if (ConfigData.centerFreq < 300000) {
     ConfigData.centerFreq = 300000;
+  }
   TxRxFreq = ConfigData.centerFreq + NCOFreq;
   ConfigData.lastFrequencies[ConfigData.currentBand][ConfigData.activeVFO] =
       TxRxFreq;
@@ -176,8 +183,9 @@ void EncoderVolume() //============================== AFP 10-22-22  Begin new
   if (ConfigData.audioVolume > 100) {
     ConfigData.audioVolume = 100;
   } else {
-    if (ConfigData.audioVolume < 0)
+    if (ConfigData.audioVolume < 0) {
       ConfigData.audioVolume = 0;
+    }
   }
 
   volumeChangeFlag =
@@ -204,21 +212,24 @@ float GetEncoderValueLive(float minValue, float maxValue, float startValue,
   float currentValue = startValue;
   tft.setFontScale((enum RA8875tsize)1);
   tft.setTextColor(RA8875_WHITE);
-  if (left)
+  if (left) {
     tft.fillRect(160, 0, 85, CHAR_HEIGHT, RA8875_BLACK);
-  else
+  } else {
     tft.fillRect(250, 0, 285, CHAR_HEIGHT,
                  RA8875_BLACK); // Increased rectangle size to full erase value.
                                 // KF5N August 12, 2023
-  if (left)
+  }
+  if (left) {
     tft.setCursor(0, 1);
-  else
+  } else {
     tft.setCursor(257, 1);
+  }
   tft.print(prompt.c_str());
-  if (left)
+  if (left) {
     tft.setCursor(160, 1);
-  else
+  } else {
     tft.setCursor(440, 1);
+  }
   //  if (abs(startValue) > 2) {  // Note sure where this restriction came from.
   //    tft.print(startValue, 0);
   //  } else {
@@ -226,15 +237,17 @@ float GetEncoderValueLive(float minValue, float maxValue, float startValue,
   //  }
   if (filterEncoderMove != 0) {
     currentValue += filterEncoderMove * increment; // Bump up or down...
-    if (currentValue < minValue)
+    if (currentValue < minValue) {
       currentValue = minValue;
-    else if (currentValue > maxValue)
+    } else if (currentValue > maxValue) {
       currentValue = maxValue;
+    }
 
-    if (left)
+    if (left) {
       tft.setCursor(160, 1);
-    else
+    } else {
       tft.setCursor(440, 1);
+    }
     //    if (abs(startValue) > 2) {
     //      tft.print(startValue, 0);
     //    } else {
@@ -265,21 +278,24 @@ float GetEncoderValueLiveString(float minValue, float maxValue,
   float currentValue = startValue;
   tft.setFontScale((enum RA8875tsize)1);
   tft.setTextColor(RA8875_WHITE);
-  if (left)
+  if (left) {
     tft.fillRect(160, 0, 85, CHAR_HEIGHT, RA8875_BLACK);
-  else
+  } else {
     tft.fillRect(250, 0, 285, CHAR_HEIGHT,
                  RA8875_BLACK); // Increased rectangle size to full erase value.
                                 // KF5N August 12, 2023
-  if (left)
+  }
+  if (left) {
     tft.setCursor(0, 1);
-  else
+  } else {
     tft.setCursor(257, 1);
+  }
   tft.print(prompt.c_str());
-  if (left)
+  if (left) {
     tft.setCursor(160, 1);
-  else
+  } else {
     tft.setCursor(440, 1);
+  }
   if (abs(startValue) > 2) {
     tft.print(startValue, 0);
   } else {
@@ -287,15 +303,17 @@ float GetEncoderValueLiveString(float minValue, float maxValue,
   }
   if (filterEncoderMove != 0) {
     currentValue += filterEncoderMove * increment; // Bump up or down...
-    if (currentValue < minValue)
+    if (currentValue < minValue) {
       currentValue = minValue;
-    else if (currentValue > maxValue)
+    } else if (currentValue > maxValue) {
       currentValue = maxValue;
+    }
 
-    if (left)
+    if (left) {
       tft.setCursor(160, 1);
-    else
+    } else {
       tft.setCursor(440, 1);
+    }
     if (abs(startValue) > 2) {
       tft.print(startValue, 0);
     } else {
@@ -326,21 +344,24 @@ q15_t GetEncoderValueLiveQ15t(int minValue, int maxValue, int startValue,
   int currentValue = startValue;
   tft.setFontScale((enum RA8875tsize)1);
   tft.setTextColor(RA8875_WHITE);
-  if (left)
+  if (left) {
     tft.fillRect(160, 0, 85, CHAR_HEIGHT, RA8875_BLACK);
-  else
+  } else {
     tft.fillRect(250, 0, 285, CHAR_HEIGHT,
                  RA8875_BLACK); // Increased rectangle size to full erase value.
                                 // KF5N August 12, 2023
-  if (left)
+  }
+  if (left) {
     tft.setCursor(0, 1);
-  else
+  } else {
     tft.setCursor(257, 1);
+  }
   tft.print(prompt);
-  if (left)
+  if (left) {
     tft.setCursor(160, 1);
-  else
+  } else {
     tft.setCursor(440, 1);
+  }
   if (abs(startValue) > 2) {
     tft.print(startValue);
   } else {
@@ -349,15 +370,17 @@ q15_t GetEncoderValueLiveQ15t(int minValue, int maxValue, int startValue,
 
   if (filterEncoderMove != 0) {
     currentValue += filterEncoderMove * increment; // Bump up or down...
-    if (currentValue < minValue)
+    if (currentValue < minValue) {
       currentValue = minValue;
-    else if (currentValue > maxValue)
+    } else if (currentValue > maxValue) {
       currentValue = maxValue;
+    }
 
-    if (left)
+    if (left) {
       tft.setCursor(160, 1);
-    else
+    } else {
       tft.setCursor(440, 1);
+    }
     if (abs(startValue) > 2) {
       tft.print(startValue);
     } else {
@@ -399,10 +422,11 @@ int GetEncoderValue(int minValue, int maxValue, int startValue, int increment,
   while (true) {
     if (filterEncoderMove != 0) {
       currentValue += filterEncoderMove * increment; // Bump up or down...
-      if (currentValue < minValue)
+      if (currentValue < minValue) {
         currentValue = minValue;
-      else if (currentValue > maxValue)
+      } else if (currentValue > maxValue) {
         currentValue = maxValue;
+      }
 
       tft.fillRect(465, 0, 65, CHAR_HEIGHT, RA8875_MAGENTA);
       tft.setCursor(470, 1);
@@ -446,10 +470,11 @@ int SetWPM() {
       ConfigData.currentWPM += filterEncoderMove; // Yep
       lastWPM = ConfigData.currentWPM;
       if (lastWPM <
-          5) // Set minimum keyer speed to 5 wpm.  KF5N August 20, 2023
+          5) { // Set minimum keyer speed to 5 wpm.  KF5N August 20, 2023
         lastWPM = 5;
-      else if (lastWPM > MAX_WPM)
+      } else if (lastWPM > MAX_WPM) {
         lastWPM = MAX_WPM;
+      }
 
       tft.fillRect(SECONDARY_MENU_X + 200, MENUS_Y + 1, 50, CHAR_HEIGHT,
                    RA8875_MAGENTA);
@@ -499,8 +524,9 @@ uint32_t SetTransmitDelay() {
   while (true) {
     if (filterEncoderMove != 0) {                 // Changed encoder?
       lastDelay += filterEncoderMove * increment; // Yep
-      if (lastDelay < 0L)
+      if (lastDelay < 0L) {
         lastDelay = 250L;
+      }
 
       tft.fillRect(SECONDARY_MENU_X + 80, MENUS_Y + 1, 200, CHAR_HEIGHT,
                    RA8875_MAGENTA);

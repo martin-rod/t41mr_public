@@ -54,10 +54,10 @@ void ZoomFFTPrep() { // take value of spectrum_zoom and initialize FIR
                 60, 0, 0.0, (float32_t)SR[SampleRate].rate);
 
   //[in,out]  S points to an instance of the floating-point FIR decimator
-  //structure [in]  numTaps number of coefficients in the filter [in]  M
-  //decimation factor [in]  pCoeffs points to the filter coefficients [in]
-  //pState  points to the state buffer [in]  blockSize number of input samples
-  //to process per call
+  // structure [in]  numTaps number of coefficients in the filter [in]  M
+  // decimation factor [in]  pCoeffs points to the filter coefficients [in]
+  // pState  points to the state buffer [in]  blockSize number of input samples
+  // to process per call
 
   if (arm_fir_decimate_init_f32(&Fir_Zoom_FFT_Decimate_I1, Zoom_FFT_no_coeff1,
                                 Zoom_FFT_M1, Fir_Zoom_FFT_Decimate1_coeffs,
@@ -148,8 +148,9 @@ void ZoomFFTExe(uint32_t blockSize) {
     FFT_ring_buffer_x[zoom_sample_ptr] = x_buffer[i];
     FFT_ring_buffer_y[zoom_sample_ptr] = y_buffer[i];
     zoom_sample_ptr++;
-    if (zoom_sample_ptr >= fftWidth)
+    if (zoom_sample_ptr >= fftWidth) {
       zoom_sample_ptr = 0;
+    }
   }
 
   // when do we want to display a new spectrum?
@@ -182,8 +183,9 @@ void ZoomFFTExe(uint32_t blockSize) {
                                    FFT_ring_buffer_y[zoom_sample_ptr] *
                                    (0.5 - 0.5 * cos(6.28 * idx / SPECTRUM_RES));
     zoom_sample_ptr++;
-    if (zoom_sample_ptr >= fftWidth)
+    if (zoom_sample_ptr >= fftWidth) {
       zoom_sample_ptr = 0;
+    }
   }
 
   //***************
@@ -193,10 +195,12 @@ void ZoomFFTExe(uint32_t blockSize) {
   //    float32_t LPFcoeff = LPF_spectrum * (AUDIO_SAMPLE_RATE_EXACT /
   //    SR[SampleRate].rate);
   float32_t LPFcoeff = 0.6;
-  if (LPFcoeff > 1.0)
+  if (LPFcoeff > 1.0) {
     LPFcoeff = 1.0;
-  if (LPFcoeff < 0.001)
+  }
+  if (LPFcoeff < 0.001) {
     LPFcoeff = 0.001;
+  }
   float32_t onem_LPFcoeff = 1.0 - LPFcoeff;
 
   // The rest of the function is activated when the buffers are full and ready.
@@ -229,18 +233,19 @@ void ZoomFFTExe(uint32_t blockSize) {
       FFT_spec_old[x] = FFT_spec[x];
     }
     // Write the FFT bins into the display buffer.
-    if (calOnFlag) // Expanded dynamic range during calibration.
+    if (calOnFlag) { // Expanded dynamic range during calibration.
       for (int16_t x = 0; x < fftWidth; x++) {
         pixelnew[x] = displayScale[ConfigData.currentScale].baseOffset +
                       (int16_t)(40.0 * log10f_fast(FFT_spec[x]));
       }
-    else
+    } else {
       for (int16_t x = 0; x < fftWidth; x++) {
         pixelnew[x] = displayScale[ConfigData.currentScale].baseOffset +
                       (int16_t)(displayScale[ConfigData.currentScale].dBScale *
                                 log10f_fast(FFT_spec[x])) +
                       fftOffset;
       }
+    }
   }
 }
 
@@ -300,15 +305,16 @@ void CalcZoom1Magn() {
       FFT_spec_old[x] = spec_help;
 
 #ifdef USE_LOG10FAST
-      if (calOnFlag) // Higher dynamic range spectral display during
-                     // calibration.
+      if (calOnFlag) { // Higher dynamic range spectral display during
+                       // calibration.
         pixelnew[x] = displayScale[ConfigData.currentScale].baseOffset +
                       (int16_t)(40.0 * log10f_fast(FFT_spec[x]));
-      else
+      } else {
         pixelnew[x] = displayScale[ConfigData.currentScale].baseOffset +
                       (int16_t)(displayScale[ConfigData.currentScale].dBScale *
                                 log10f_fast(FFT_spec[x])) +
                       fftOffset;
+      }
 #else
       pixelnew[x] = displayScale[ConfigData.currentScale].baseOffset +
                     (int16_t)(displayScale[ConfigData.currentScale].dBScale *

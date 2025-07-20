@@ -115,8 +115,9 @@ void CWCalibrate::printCalType(int mode, int IQCalType, bool autoCal,
                            "Calibrate"};
   tft.writeTo(L1);
   calName = IQName[calTypeFlag];
-  if (mode == 1)
+  if (mode == 1) {
     calName = "Receive SSB";
+  }
   tft.setFontScale((enum RA8875tsize)1);
   tft.setTextColor(RA8875_RED);
   if ((bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER) and
@@ -383,28 +384,32 @@ void CWCalibrate::CalibrateEpilogue(bool radioCal, bool saveToEeprom) {
       transmitPowerLevelTemp; // Restore the user's transmit power level
                               // setting.  KF5N August 15, 2023
   if (bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_AM or
-      bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_SAM)
+      bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_SAM) {
     bands.bands[ConfigData.currentBand].sideband = tempSideband;
+  }
   bands.bands[ConfigData.currentBand].mode = tempMode;
   radioState = tempState;
   zoomIndex = userZoomIndex - 1;
   button.ButtonZoom(); // Restore the user's zoom setting.  Note that this
                        // function also modifies ConfigData.spectrum_zoom.
-  if (saveToEeprom)
+  if (saveToEeprom) {
     eeprom.CalDataWrite(); // Save calibration numbers and configuration.  KF5N
                            // August 12, 2023
-  tft.writeTo(L2);         // Clear layer 2.  KF5N July 31, 2023
+  }
+  tft.writeTo(L2); // Clear layer 2.  KF5N July 31, 2023
   tft.clearMemory();
   tft.writeTo(L1); // Exit function in layer 1.  KF5N August 3, 2023
   calOnFlag = false;
-  if (not radioCal)
+  if (not radioCal) {
     RedrawDisplayScreen(); // Redraw everything!
-  else
+  } else {
     tft.fillWindow(); // Clear the display.
+  }
   fftOffset = 0; // Some reboots may be caused by large fftOffset values when
                  // Auto-Spectrum is on.
-  if ((MASTER_CLK_MULT_RX == 2) || (MASTER_CLK_MULT_TX == 2))
+  if ((MASTER_CLK_MULT_RX == 2) || (MASTER_CLK_MULT_TX == 2)) {
     ResetFlipFlops();
+  }
   lastState =
       RadioState::NOSTATE; // This is required due to the function deactivating
                            // the receiver.  This forces a pass through the
@@ -432,12 +437,15 @@ void CWCalibrate::DoReceiveCalibrate(int mode, bool radioCal, bool shortCal,
   bool refineCal = false;
   loadCalToneBuffers(3000.0);
   CalibratePreamble(0); // Set zoom to 1X.
-  if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER)
+  if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER) {
     calFreqShift = 24000; //  LSB offset.  KF5N
-  if (bands.bands[ConfigData.currentBand].sideband == Sideband::UPPER)
+  }
+  if (bands.bands[ConfigData.currentBand].sideband == Sideband::UPPER) {
     calFreqShift = 24000; //  USB offset.  KF5N
-  if ((MASTER_CLK_MULT_RX == 2) || (MASTER_CLK_MULT_TX == 2))
+  }
+  if ((MASTER_CLK_MULT_RX == 2) || (MASTER_CLK_MULT_TX == 2)) {
     ResetFlipFlops();
+  }
   SetFreqCal(calFreqShift);
   calTypeFlag = 0; // RX cal
   plotCalGraphics(calTypeFlag);
@@ -547,8 +555,9 @@ void CWCalibrate::DoReceiveCalibrate(int mode, bool radioCal, bool shortCal,
     }
     CWCalibrate::ShowSpectrum2(mode);
     task = readButton(lastUsedTask);
-    if (shortCal)
+    if (shortCal) {
       task = MenuSelect::FILTER;
+    }
     switch (task) {
     // Activate automatic calibration.
     case MenuSelect::ZOOM: // 2nd row, 1st column button
@@ -659,10 +668,12 @@ void CWCalibrate::DoReceiveCalibrate(int mode, bool radioCal, bool shortCal,
               1.0 + maxSweepAmp; //  so adjdB and adjdB_avg are forced upwards.
         }
         state = State::warmup;
-        if (warmup == 10)
+        if (warmup == 10) {
           state = State::state0;
-        if (warmup == 10 && refineCal)
+        }
+        if (warmup == 10 && refineCal) {
           state = State::refineCal;
+        }
         break;
       case State::refineCal:
         // Prep the refinement arrays based on saved values.
@@ -682,13 +693,15 @@ void CWCalibrate::DoReceiveCalibrate(int mode, bool radioCal, bool shortCal,
         phase = 0.0;
         amplitude =
             1.0 - maxSweepAmp; // Begin sweep at low end and move upwards.
-        if (mode == 0)
+        if (mode == 0) {
           GetEncoderValueLive(-2.0, 2.0, phase, correctionIncrement,
                               (char *)"IQ Phase",
                               false); // Display the phase value.
-        if (mode == 1)
+        }
+        if (mode == 1) {
           GetEncoderValueLive(-2.0, 2.0, phase, correctionIncrement,
                               (char *)"IQ Phase", false);
+        }
         adjdB = 0;
         adjdB_avg = 0;
         index = 0;
@@ -796,8 +809,9 @@ void CWCalibrate::DoReceiveCalibrate(int mode, bool radioCal, bool shortCal,
           averageFlag = false;
           averageCount = 0;
           count = count + 1;
-          if (count == 1 || count == 3)
+          if (count == 1 || count == 3) {
             state = State::refinePhase; // Alternate refinePhase and refineAmp.
+          }
           break;
         }
         avgState = averagingState::refineAmp;
@@ -834,10 +848,12 @@ void CWCalibrate::DoReceiveCalibrate(int mode, bool radioCal, bool shortCal,
           averageCount = 0;
           count = count + 1;
           state = State::refineAmp;
-          if (count == 2)
+          if (count == 2) {
             state = State::refineAmp;
-          if (count == 4)
+          }
+          if (count == 4) {
             state = State::setOptimal;
+          }
           break;
         }
         avgState = averagingState::refinePhase;
@@ -846,20 +862,24 @@ void CWCalibrate::DoReceiveCalibrate(int mode, bool radioCal, bool shortCal,
 
       case State::average: // Stay in this state while averaging is in progress.
         if (averageCount > 3) {
-          if (avgState == averagingState::refineAmp)
+          if (avgState == averagingState::refineAmp) {
             state = State::refineAmp;
-          if (avgState == averagingState::refinePhase)
+          }
+          if (avgState == averagingState::refinePhase) {
             state = State::refinePhase;
+          }
           averageCount = 0;
           averageFlag = true; // Averaging is complete!
           break;
         }
         averageCount = averageCount + 1;
         averageFlag = false;
-        if (avgState == averagingState::refineAmp)
+        if (avgState == averagingState::refineAmp) {
           state = State::refineAmp;
-        if (avgState == averagingState::refinePhase)
+        }
+        if (avgState == averagingState::refinePhase) {
           state = State::refinePhase;
+        }
         break;
 
       case State::setOptimal:
@@ -923,8 +943,9 @@ void CWCalibrate::DoReceiveCalibrate(int mode, bool radioCal, bool shortCal,
       }
     } // end automatic calibration state machine
 
-    if (task != MenuSelect::DEFAULT)
-      lastUsedTask = task;      //  Save the last used task.
+    if (task != MenuSelect::DEFAULT) {
+      lastUsedTask = task; //  Save the last used task.
+    }
     task = MenuSelect::DEFAULT; // Reset task after it is used.
     //  Read encoder and update values.
 
@@ -932,43 +953,47 @@ void CWCalibrate::DoReceiveCalibrate(int mode, bool radioCal, bool shortCal,
       amplitude = GetEncoderValueLive(-2.0, 2.0, amplitude, correctionIncrement,
                                       (char *)"IQ Gain", true);
       if (mode == 0) { // CW
-        if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER)
+        if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER) {
           CalData.IQCWRXAmpCorrectionFactorLSB[ConfigData.currentBand] =
               amplitude;
-        else if (bands.bands[ConfigData.currentBand].sideband ==
-                 Sideband::UPPER)
+        } else if (bands.bands[ConfigData.currentBand].sideband ==
+                   Sideband::UPPER) {
           CalData.IQCWRXAmpCorrectionFactorUSB[ConfigData.currentBand] =
               amplitude;
+        }
       }
       if (mode == 1) { // SSB
-        if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER)
+        if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER) {
           CalData.IQSSBRXAmpCorrectionFactorLSB[ConfigData.currentBand] =
               amplitude;
-        else if (bands.bands[ConfigData.currentBand].sideband ==
-                 Sideband::UPPER)
+        } else if (bands.bands[ConfigData.currentBand].sideband ==
+                   Sideband::UPPER) {
           CalData.IQSSBRXAmpCorrectionFactorUSB[ConfigData.currentBand] =
               amplitude;
+        }
       }
     } else {
       phase = GetEncoderValueLive(-2.0, 2.0, phase, correctionIncrement,
                                   (char *)"IQ Phase", false);
       if (mode == 0) { // CW
-        if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER)
+        if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER) {
           CalData.IQCWRXPhaseCorrectionFactorLSB[ConfigData.currentBand] =
               phase;
-        else if (bands.bands[ConfigData.currentBand].sideband ==
-                 Sideband::UPPER)
+        } else if (bands.bands[ConfigData.currentBand].sideband ==
+                   Sideband::UPPER) {
           CalData.IQCWRXPhaseCorrectionFactorUSB[ConfigData.currentBand] =
               phase;
+        }
       }
       if (mode == 1) { // SSB
-        if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER)
+        if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER) {
           CalData.IQSSBRXPhaseCorrectionFactorLSB[ConfigData.currentBand] =
               phase;
-        else if (bands.bands[ConfigData.currentBand].sideband ==
-                 Sideband::UPPER)
+        } else if (bands.bands[ConfigData.currentBand].sideband ==
+                   Sideband::UPPER) {
           CalData.IQSSBRXPhaseCorrectionFactorUSB[ConfigData.currentBand] =
               phase;
+        }
       }
     }
   } // end while
@@ -1051,8 +1076,9 @@ void CWCalibrate::DoXmitCalibrate(int mode, bool radioCal, bool shortCal,
   while (true) {
     CWCalibrate::ShowSpectrum2(mode);
     task = readButton(lastUsedTask);
-    if (shortCal)
+    if (shortCal) {
       task = MenuSelect::FILTER;
+    }
     switch (task) {
     // Activate automatic calibration.
     case MenuSelect::ZOOM: // 2nd row, 1st column button
@@ -1132,10 +1158,12 @@ void CWCalibrate::DoXmitCalibrate(int mode, bool radioCal, bool shortCal,
               1.0 + maxSweepAmp; //  so adjdB and adjdB_avg are forced upwards.
         }
         state = State::warmup;
-        if (warmup == 10)
+        if (warmup == 10) {
           state = State::state0;
-        if (warmup == 10 && refineCal)
+        }
+        if (warmup == 10 && refineCal) {
           state = State::refineCal;
+        }
         break;
       case State::refineCal:
         // Prep the refinement arrays based on saved values.
@@ -1266,8 +1294,9 @@ void CWCalibrate::DoXmitCalibrate(int mode, bool radioCal, bool shortCal,
           averageFlag = false;
           averageCount = 0;
           count = count + 1;
-          if (count == 1 || count == 3)
+          if (count == 1 || count == 3) {
             state = State::refinePhase; // Alternate refinePhase and refineAmp.
+          }
           break;
         }
         avgState = averagingState::refineAmp;
@@ -1304,10 +1333,12 @@ void CWCalibrate::DoXmitCalibrate(int mode, bool radioCal, bool shortCal,
           averageCount = 0;
           count = count + 1;
           state = State::refineAmp;
-          if (count == 2)
+          if (count == 2) {
             state = State::refineAmp;
-          if (count == 4)
+          }
+          if (count == 4) {
             state = State::setOptimal;
+          }
           break;
         }
         avgState = averagingState::refinePhase;
@@ -1316,20 +1347,24 @@ void CWCalibrate::DoXmitCalibrate(int mode, bool radioCal, bool shortCal,
 
       case State::average: // Stay in this state while averaging is in progress.
         if (averageCount > 3) {
-          if (avgState == averagingState::refineAmp)
+          if (avgState == averagingState::refineAmp) {
             state = State::refineAmp;
-          if (avgState == averagingState::refinePhase)
+          }
+          if (avgState == averagingState::refinePhase) {
             state = State::refinePhase;
+          }
           averageCount = 0;
           averageFlag = true; // Averaging is complete!
           break;
         }
         averageCount = averageCount + 1;
         averageFlag = false;
-        if (avgState == averagingState::refineAmp)
+        if (avgState == averagingState::refineAmp) {
           state = State::refineAmp;
-        if (avgState == averagingState::refinePhase)
+        }
+        if (avgState == averagingState::refinePhase) {
           state = State::refinePhase;
+        }
         break;
 
       case State::setOptimal:
@@ -1370,24 +1405,29 @@ void CWCalibrate::DoXmitCalibrate(int mode, bool radioCal, bool shortCal,
       }
     } // end automatic calibration state machine
 
-    if (task != MenuSelect::DEFAULT)
-      lastUsedTask = task;      //  Save the last used task.
+    if (task != MenuSelect::DEFAULT) {
+      lastUsedTask = task; //  Save the last used task.
+    }
     task = MenuSelect::DEFAULT; // Reset task after it is used.
     //  Read encoder and update values within the while loop.
     if (IQCalType == 0) {
       amplitude = GetEncoderValueLive(-2.0, 2.0, amplitude, correctionIncrement,
                                       (char *)"IQ Gain", true);
-      if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER)
+      if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER) {
         CalData.IQCWAmpCorrectionFactorLSB[ConfigData.currentBand] = amplitude;
-      else if (bands.bands[ConfigData.currentBand].sideband == Sideband::UPPER)
+      } else if (bands.bands[ConfigData.currentBand].sideband ==
+                 Sideband::UPPER) {
         CalData.IQCWAmpCorrectionFactorUSB[ConfigData.currentBand] = amplitude;
+      }
     } else {
       phase = GetEncoderValueLive(-2.0, 2.0, phase, correctionIncrement,
                                   (char *)"IQ Phase", false);
-      if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER)
+      if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER) {
         CalData.IQCWPhaseCorrectionFactorLSB[ConfigData.currentBand] = phase;
-      else if (bands.bands[ConfigData.currentBand].sideband == Sideband::UPPER)
+      } else if (bands.bands[ConfigData.currentBand].sideband ==
+                 Sideband::UPPER) {
         CalData.IQCWPhaseCorrectionFactorUSB[ConfigData.currentBand] = phase;
+      }
     }
   } // end while
 } // End Transmit calibration
@@ -1435,8 +1475,9 @@ void CWCalibrate::DoXmitCarrierCalibrate(int mode, bool radioCal, bool shortCal,
   tft.fillRect(405, 125, 50, tft.getFontHeight(), RA8875_BLACK);
   tft.setCursor(405, 125);
   tft.print(correctionIncrement);
-  if ((MASTER_CLK_MULT_RX == 2) || (MASTER_CLK_MULT_TX == 2))
+  if ((MASTER_CLK_MULT_RX == 2) || (MASTER_CLK_MULT_TX == 2)) {
     ResetFlipFlops();
+  }
   SetFreqCal(freqOffset);
   printCalType(mode, calTypeFlag, autoCal, false);
   // Get current values into the amplitude and phase working variables.
@@ -1472,8 +1513,9 @@ void CWCalibrate::DoXmitCarrierCalibrate(int mode, bool radioCal, bool shortCal,
   while (true) {
     CWCalibrate::ShowSpectrum2(mode);
     task = readButton(lastUsedTask);
-    if (shortCal)
+    if (shortCal) {
       task = MenuSelect::FILTER; // Jump to refineCal.
+    }
     switch (task) {
     // Activate automatic calibration.
     case MenuSelect::ZOOM: // 2nd row, 1st column button
@@ -1552,10 +1594,12 @@ void CWCalibrate::DoXmitCarrierCalibrate(int mode, bool radioCal, bool shortCal,
               maxSweepAmp; //  so adjdB and adjdB_avg are forced upwards.
         }
         state = State::warmup;
-        if (warmup == 10)
+        if (warmup == 10) {
           state = State::state0;
-        if (warmup == 10 && refineCal)
+        }
+        if (warmup == 10 && refineCal) {
           state = State::refineCal;
+        }
         break;
       case State::refineCal:
         // Prep the refinement arrays based on saved values.
@@ -1698,8 +1742,9 @@ void CWCalibrate::DoXmitCarrierCalibrate(int mode, bool radioCal, bool shortCal,
           averageFlag = false;
           averageCount = 0;
           count = count + 1;
-          if (count == 1 || count == 3)
+          if (count == 1 || count == 3) {
             state = State::refinePhase; // Alternate refinePhase and refineAmp.
+          }
           break;
         }
         avgState = averagingState::refineAmp;
@@ -1738,10 +1783,12 @@ void CWCalibrate::DoXmitCarrierCalibrate(int mode, bool radioCal, bool shortCal,
           averageCount = 0;
           count = count + 1;
           state = State::refineAmp;
-          if (count == 2)
+          if (count == 2) {
             state = State::refineAmp;
-          if (count == 4)
+          }
+          if (count == 4) {
             state = State::setOptimal;
+          }
           break;
         }
         avgState = averagingState::refinePhase;
@@ -1750,20 +1797,24 @@ void CWCalibrate::DoXmitCarrierCalibrate(int mode, bool radioCal, bool shortCal,
 
       case State::average: // Stay in this state while averaging is in progress.
         if (averageCount > 5) {
-          if (avgState == averagingState::refineAmp)
+          if (avgState == averagingState::refineAmp) {
             state = State::refineAmp;
-          if (avgState == averagingState::refinePhase)
+          }
+          if (avgState == averagingState::refinePhase) {
             state = State::refinePhase;
+          }
           averageCount = 0;
           averageFlag = true; // Averaging is complete!
           break;
         }
         averageCount = averageCount + 1;
         averageFlag = false;
-        if (avgState == averagingState::refineAmp)
+        if (avgState == averagingState::refineAmp) {
           state = State::refineAmp;
-        if (avgState == averagingState::refinePhase)
+        }
+        if (avgState == averagingState::refinePhase) {
           state = State::refinePhase;
+        }
         break;
 
       case State::setOptimal:
@@ -1793,8 +1844,9 @@ void CWCalibrate::DoXmitCarrierCalibrate(int mode, bool radioCal, bool shortCal,
       }
     } // end automatic calibration state machine
 
-    if (task != MenuSelect::DEFAULT)
-      lastUsedTask = task;      //  Save the last used task.
+    if (task != MenuSelect::DEFAULT) {
+      lastUsedTask = task; //  Save the last used task.
+    }
     task = MenuSelect::DEFAULT; // Reset task after it is used.
     //  Read encoder and update values.
     if (IQCalType == 0) {
@@ -2218,28 +2270,44 @@ void CWCalibrate::ShowSpectrum2(int mode) // AFP 2-10-23
   //  There are 2 for-loops, one for the reference signal and another for the
   //  undesired sideband.
   if (calTypeFlag == 0) { // Receive cal
-    for (x1 = cal_bins[0] - capture_bins; x1 < cal_bins[0] + capture_bins; x1++)
+    for (x1 = cal_bins[0] - capture_bins; x1 < cal_bins[0] + capture_bins;
+         x1++) {
       adjdB = PlotCalSpectrum(mode, x1, cal_bins, capture_bins);
-    for (x1 = cal_bins[1] - capture_bins; x1 < cal_bins[1] + capture_bins; x1++)
+    }
+    for (x1 = cal_bins[1] - capture_bins; x1 < cal_bins[1] + capture_bins;
+         x1++) {
       adjdB = PlotCalSpectrum(mode, x1, cal_bins, capture_bins);
+    }
   }
 
   // Plot carrier during transmit cal, do not return a dB value:
   if (calTypeFlag == 1) { // Transmit cal
-    for (x1 = cal_bins[0] - capture_bins; x1 < cal_bins[0] + capture_bins; x1++)
+    for (x1 = cal_bins[0] - capture_bins; x1 < cal_bins[0] + capture_bins;
+         x1++) {
       adjdB = PlotCalSpectrum(mode, x1, cal_bins, capture_bins);
-    for (x1 = cal_bins[2] - capture_bins; x1 < cal_bins[2] + capture_bins; x1++)
+    }
+    for (x1 = cal_bins[2] - capture_bins; x1 < cal_bins[2] + capture_bins;
+         x1++) {
       adjdB = PlotCalSpectrum(mode, x1, cal_bins, capture_bins);
-    for (x1 = cal_bins[1] - capture_bins; x1 < cal_bins[1] + capture_bins; x1++)
+    }
+    for (x1 = cal_bins[1] - capture_bins; x1 < cal_bins[1] + capture_bins;
+         x1++) {
       PlotCalSpectrum(mode, x1, cal_bins, capture_bins); // Carrier
+    }
   }
   if (calTypeFlag == 2) { // Carrier cal
-    for (x1 = cal_bins[0] - capture_bins; x1 < cal_bins[0] + capture_bins; x1++)
+    for (x1 = cal_bins[0] - capture_bins; x1 < cal_bins[0] + capture_bins;
+         x1++) {
       adjdB = PlotCalSpectrum(mode, x1, cal_bins, capture_bins);
-    for (x1 = cal_bins[1] - capture_bins; x1 < cal_bins[1] + capture_bins; x1++)
+    }
+    for (x1 = cal_bins[1] - capture_bins; x1 < cal_bins[1] + capture_bins;
+         x1++) {
       adjdB = PlotCalSpectrum(mode, x1, cal_bins, capture_bins);
-    for (x1 = cal_bins[2] - capture_bins; x1 < cal_bins[2] + capture_bins; x1++)
+    }
+    for (x1 = cal_bins[2] - capture_bins; x1 < cal_bins[2] + capture_bins;
+         x1++) {
       PlotCalSpectrum(mode, x1, cal_bins, capture_bins); // Undesired sideband
+    }
   }
 
   tft.setCursor(350, 142);
@@ -2278,9 +2346,10 @@ float CWCalibrate::PlotCalSpectrum(int mode, int x1, int cal_bins[3],
   if (x1 ==
       (cal_bins[0] - capture_bins)) { // Set flag at revised beginning.  KF5N
     updateDisplayFlag = true;         // This flag is used in ZoomFFTExe().
-  } else
+  } else {
     updateDisplayFlag = false; //  Do not save the the display data for the
                                //  remainder of the sweep.
+  }
 
   CWCalibrate::ProcessIQData2(
       mode); // Call the Audio process from within the display routine to
@@ -2344,24 +2413,32 @@ float CWCalibrate::PlotCalSpectrum(int mode, int x1, int cal_bins[3],
   y_new_plot = 135 + (-y_new + rawSpectrumPeak);
 
   // Prevent spectrum from going above the top of the spectrum area.  KF5N
-  if (y_new_plot < 120)
+  if (y_new_plot < 120) {
     y_new_plot = 120;
-  if (y1_new_plot < 120)
+  }
+  if (y1_new_plot < 120) {
     y1_new_plot = 120;
-  if (y_old_plot < 120)
+  }
+  if (y_old_plot < 120) {
     y_old_plot = 120;
-  if (y_old2_plot < 120)
+  }
+  if (y_old2_plot < 120) {
     y_old2_plot = 120;
+  }
 
   // The prevents spectrum from going below lower limit.
-  if (y_new_plot > base_y)
+  if (y_new_plot > base_y) {
     y_new_plot = base_y;
-  if (y_old_plot > base_y)
+  }
+  if (y_old_plot > base_y) {
     y_old_plot = base_y;
-  if (y_old2_plot > base_y)
+  }
+  if (y_old2_plot > base_y) {
     y_old2_plot = base_y;
-  if (y1_new_plot > base_y)
+  }
+  if (y1_new_plot > base_y) {
     y1_new_plot = base_y;
+  }
 
   // Erase the old spectrum and draw the new spectrum.
   tft.drawLine(x1, y_old2_plot, x1, y_old_plot, RA8875_BLACK);  // Erase old...
@@ -2374,8 +2451,9 @@ float CWCalibrate::PlotCalSpectrum(int mode, int x1, int cal_bins[3],
           (1.95 * 2.0); // Cast to float and calculate the dB level.  Needs
                         // further refinement for accuracy.  KF5N
   if (bands.bands[ConfigData.currentBand].sideband == Sideband::UPPER &&
-      not(calTypeFlag == 0))
+      not(calTypeFlag == 0)) {
     adjdB = -adjdB; // Flip sign for USB only for TX cal.
+  }
   adjdB_avg =
       adjdB * alpha +
       adjdBold *

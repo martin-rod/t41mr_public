@@ -188,8 +188,9 @@ void Eeprom::SetFavoriteFrequency() {
       if (index < 0) {
         index = MAX_FAVORITES - 1; // Wrap to last one
       } else {
-        if (index > MAX_FAVORITES)
+        if (index > MAX_FAVORITES) {
           index = 0; // Wrap to first one
+        }
       }
       tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT,
                    RA8875_MAGENTA);
@@ -248,8 +249,9 @@ void Eeprom::GetFavoriteFrequency() {
       if (index < 0) {
         index = MAX_FAVORITES - 1; // Wrap to last one
       } else {
-        if (index > MAX_FAVORITES)
+        if (index > MAX_FAVORITES) {
           index = 0; // Wrap to first one
+        }
       }
       tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT,
                    RA8875_MAGENTA);

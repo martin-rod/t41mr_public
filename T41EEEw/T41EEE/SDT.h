@@ -1,7 +1,7 @@
 #pragma once
 
 //======================================== User section that might need to be
-//changed ===================================
+// changed ===================================
 #include "MyConfigurationFile.h" // This file name should remain unchanged
 
 //======================================== Library include files
@@ -182,13 +182,13 @@ const int FFT_LENGTH = 512;
 
 //============== Pin Assignments =====================================
 //============== Pins 0 and 1 are usually reserved for the USB COM port
-//communications
+// communications
 //============== On the Teensy 4.1 board, pins GND, 0-12, and pins 13-23, 3.3V,
-//GND, and
+// GND, and
 //============== Vin are "covered up" by the Audio board. However, not all of
-//those pins are
+// those pins are
 //============== actually used by the board. See:
-//https://www.pjrc.com/store/teensy3_audio.html
+// https://www.pjrc.com/store/teensy3_audio.html
 //========================================= Display pins
 const int TFT_DC = 9;
 const int TFT_CS = 10;
@@ -196,7 +196,7 @@ const int TFT_MOSI = 11;
 const int TFT_SCLK = 13;
 const int TFT_RST = 255;
 //========================================= Encoder pins  Jack Purdum W8TEE
-//September 25, 2023
+// September 25, 2023
 #ifdef FOURSQRP
 const int VOLUME_ENCODER_A = 2;
 const int VOLUME_ENCODER_B = 3;
@@ -800,7 +800,7 @@ extern Menu_D Menus[];
 //======================================== Global variables declarations
 //===============================================
 //========================== Some are not in alpha order because of forward
-//references =================================
+// references =================================
 
 extern int last_filter_pos;
 extern int filter_pos;

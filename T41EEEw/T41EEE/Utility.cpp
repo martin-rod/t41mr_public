@@ -128,10 +128,11 @@ void IQPhaseCorrection(float32_t *I_buffer, float32_t *Q_buffer,
 *****/
 float MSinc(int m, float fc) {
   float x = m * PIH;
-  if (m == 0)
+  if (m == 0) {
     return 1.0f;
-  else
+  } else {
     return sinf(x * fc) / (fc * x);
+  }
 }
 
 /*****
@@ -337,10 +338,11 @@ float32_t arm_atan2_f32(float32_t y, float32_t x) {
     in = x / y;
     flags |= 0x01;
   } else { /* x >= y */
-    if (x > 0.0f)
+    if (x > 0.0f) {
       in = y / x;
-    else        /* both are 0.0 */
+    } else {    /* both are 0.0 */
       in = 0.0; /* prevent division by 0 */
+    }
   }
 
   /* Calculation of index of the table */
@@ -372,16 +374,19 @@ float32_t arm_atan2_f32(float32_t y, float32_t x) {
   atan2Val =
       ((a * wa) + (b * wb)) + ((c * wc) + (d * wd)); /* Calculate atan2 value */
 
-  if (flags & 0x01) /* exchanged input values? */
+  if (flags & 0x01) { /* exchanged input values? */
 
     atan2Val = 1.5707963267949f - atan2Val; /* output = pi/2 - output */
+  }
 
-  if (flags & 0x02)
+  if (flags & 0x02) {
     atan2Val =
         3.14159265358979f - atan2Val; /* negative x input? Quadrant 2 or 3 */
+  }
 
-  if (flags & 0x04)
+  if (flags & 0x04) {
     atan2Val = -atan2Val; /* negative y input? Quadrant 3 or 4 */
+  }
 
   return (atan2Val); /* Return the output value */
 }
@@ -666,11 +671,12 @@ void arm_clip_f32(const float32_t *pSrc, float32_t *pDst, float32_t low,
                   float32_t high, uint32_t numSamples) {
   uint32_t i;
   for (i = 0; i < numSamples; i++) {
-    if (pSrc[i] > high)
+    if (pSrc[i] > high) {
       pDst[i] = high;
-    else if (pSrc[i] < low)
+    } else if (pSrc[i] < low) {
       pDst[i] = low;
-    else
+    } else {
       pDst[i] = pSrc[i];
+    }
   }
 }

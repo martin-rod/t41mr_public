@@ -125,8 +125,9 @@ FLASHMEM void SelectCWFilter() {
       ConfigData.CWFilterIndex); // CWFilter is an array of strings.
   //  BandInformation();
 
-  if (ConfigData.CWFilterIndex != 5)
+  if (ConfigData.CWFilterIndex != 5) {
     switchFilterSideband = true; // Sets current delimiter to FLow.
+  }
   UpdateAudioGraphics(); // This draws decoder delimiters and CW bandwidth box
                          // (red);
   eeprom.ConfigDataWrite();
@@ -159,13 +160,15 @@ FLASHMEM void SelectCWOffset() {
 
   //  If user selects cancel, CWOffset will be set to the bogus value of 4.  So
   //  keep the old value.
-  if (ConfigData.CWOffset == 4)
+  if (ConfigData.CWOffset == 4) {
     ConfigData.CWOffset = tempCWOffset;
+  }
 
   // Now generate the values for the buffer which is used to create the CW tone.
   // The values are discrete because there must be whole cycles.
-  if (ConfigData.CWOffset < 4)
+  if (ConfigData.CWOffset < 4) {
     sineTone(numCycles[ConfigData.CWOffset]);
+  }
   UpdateAudioGraphics();
   eeprom.ConfigDataWrite(); // Save to EEPROM.
 }
@@ -358,10 +361,11 @@ void SetSideToneVolume(bool speaker) {
   tft.setCursor(SECONDARY_MENU_X - 48, MENUS_Y + 1);
   tft.print("Sidetone Volume:");
   tft.setCursor(SECONDARY_MENU_X + 220, MENUS_Y + 1);
-  if (speaker)
+  if (speaker) {
     sidetoneDisplay = ConfigData.sidetoneSpeaker;
-  else
+  } else {
     sidetoneDisplay = ConfigData.sidetoneHeadphone;
+  }
   keyDown = false;
   tft.print(sidetoneDisplay); // Display in range of 0 to 100.
 
@@ -386,17 +390,19 @@ void SetSideToneVolume(bool speaker) {
           sidetoneDisplay +
           filterEncoderMove; // * 0.001;  // ConfigData.sidetoneVolume range is
                              // 0.0 to 1.0 in 0.001 steps.  KF5N August 29, 2023
-      if (sidetoneDisplay < 0)
+      if (sidetoneDisplay < 0) {
         sidetoneDisplay = 0;
-      else if (sidetoneDisplay > 100) // 100% max
+      } else if (sidetoneDisplay > 100) { // 100% max
         sidetoneDisplay = 100;
+      }
       tft.fillRect(SECONDARY_MENU_X + 200, MENUS_Y, 70, CHAR_HEIGHT,
                    RA8875_MAGENTA);
       tft.setCursor(SECONDARY_MENU_X + 220, MENUS_Y + 1);
-      if (speaker)
+      if (speaker) {
         ConfigData.sidetoneSpeaker = sidetoneDisplay;
-      else
+      } else {
         ConfigData.sidetoneHeadphone = sidetoneDisplay;
+      }
       tft.setTextColor(RA8875_WHITE);
       tft.print(sidetoneDisplay);
       filterEncoderMove = 0;
@@ -406,9 +412,10 @@ void SetSideToneVolume(bool speaker) {
                       100.0); // This control has a range of 0.0 to 1.0.
     menu = readButton();
     if (menu ==
-        MenuSelect::MENU_OPTION_SELECT) { // Make a choice??
-                                          // ConfigData.ConfigData.sidetoneVolume
-                                          // = ConfigData.sidetoneVolume;
+        MenuSelect::
+            MENU_OPTION_SELECT) { // Make a choice??
+                                  // ConfigData.ConfigData.sidetoneVolume
+                                  // = ConfigData.sidetoneVolume;
       eeprom.ConfigDataWrite();
       break;
     }
@@ -683,8 +690,9 @@ void DoGapHistogram(long gapLen) {
               1; // set flag so we know tha this is the top of the gapAtom range
         }
       }
-      if (topGapIndex > 2 * gapAtom)
+      if (topGapIndex > 2 * gapAtom) {
         topGapIndex = topGapIndexOld; // discard outliers
+      }
     }
     endGapFlag = 0;               // reset flag
     topGapIndexOld = topGapIndex; // Keep good value for reference
@@ -694,8 +702,9 @@ void DoGapHistogram(long gapLen) {
                           2); // Find number of elements to check
       JackClusteredArrayMax(&gapHistogram[(int32_t)thresholdGeometricMean + 1],
                             offset, &tempChar, &charIndex, &temp, (int32_t)3);
-      if (charIndex) // if something found
+      if (charIndex) { // if something found
         gapChar = charIndex;
+      }
     }
   }
   if (atomIndex) {

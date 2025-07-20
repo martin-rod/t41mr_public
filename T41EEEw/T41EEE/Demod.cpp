@@ -85,18 +85,21 @@ void AMDecodeSAM() {
 
     del_out = fil_out;
     omega2 = omega2 + g2 * det;
-    if (omega2 < omega_min)
+    if (omega2 < omega_min) {
       omega2 = omega_min;
-    else if (omega2 > omega_max)
+    } else if (omega2 > omega_max) {
       omega2 = omega_max;
+    }
     fil_out = g1 * det + omega2;
     phzerror = phzerror + del_out;
 
     // Wrap round 2PI, modulus
-    while (phzerror >= TWO_PI)
+    while (phzerror >= TWO_PI) {
       phzerror -= TWO_PI;
-    while (phzerror < 0.0)
+    }
+    while (phzerror < 0.0) {
       phzerror += TWO_PI;
+    }
   }
 
   // In the small frequency display

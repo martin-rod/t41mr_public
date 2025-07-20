@@ -85,31 +85,37 @@ void ExciterIQData() {
   }
 
   // Set the sideband.
-  if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER)
+  if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER) {
     cessb1.setSideband(false);
-  if (bands.bands[ConfigData.currentBand].sideband == Sideband::UPPER)
+  }
+  if (bands.bands[ConfigData.currentBand].sideband == Sideband::UPPER) {
     cessb1.setSideband(true);
+  }
 
   // Apply amplitude and phase corrections.  FT8 uses CW corrections and is
   // always USB.
   if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER) {
-    if (bands.bands[ConfigData.currentBand].mode == RadioMode::SSB_MODE)
+    if (bands.bands[ConfigData.currentBand].mode == RadioMode::SSB_MODE) {
       cessb1.setIQCorrections(
           true, CalData.IQSSBAmpCorrectionFactorLSB[ConfigData.currentBand],
           CalData.IQSSBPhaseCorrectionFactorLSB[ConfigData.currentBand], 0.0);
-    else if (bands.bands[ConfigData.currentBand].mode == RadioMode::FT8_MODE)
+    } else if (bands.bands[ConfigData.currentBand].mode ==
+               RadioMode::FT8_MODE) {
       cessb1.setIQCorrections(
           true, CalData.IQCWAmpCorrectionFactorUSB[ConfigData.currentBand],
           CalData.IQCWPhaseCorrectionFactorUSB[ConfigData.currentBand], 0.0);
+    }
   } else if (bands.bands[ConfigData.currentBand].sideband == Sideband::UPPER) {
-    if (bands.bands[ConfigData.currentBand].mode == RadioMode::SSB_MODE)
+    if (bands.bands[ConfigData.currentBand].mode == RadioMode::SSB_MODE) {
       cessb1.setIQCorrections(
           true, CalData.IQSSBAmpCorrectionFactorUSB[ConfigData.currentBand],
           CalData.IQSSBPhaseCorrectionFactorUSB[ConfigData.currentBand], 0.0);
-    else if (bands.bands[ConfigData.currentBand].mode == RadioMode::FT8_MODE)
+    } else if (bands.bands[ConfigData.currentBand].mode ==
+               RadioMode::FT8_MODE) {
       cessb1.setIQCorrections(
           true, CalData.IQCWAmpCorrectionFactorUSB[ConfigData.currentBand],
           CalData.IQCWPhaseCorrectionFactorUSB[ConfigData.currentBand], 0.0);
+    }
   }
 
   //  This is the correct place in the data flow to inject the scaling for
@@ -183,9 +189,10 @@ void SetBandRelay() {
       digitalWrite(bandswitchPins[ConfigData.currentBand], HIGH);
     } else {
       if (bandswitchPins[i] !=
-          bandswitchPins[ConfigData.currentBand]) // Skip if the pins are the
-                                                  // same.
-        digitalWrite(bandswitchPins[i], LOW);     // Set band relay low.
+          bandswitchPins[ConfigData.currentBand]) { // Skip if the pins are the
+                                                    // same.
+        digitalWrite(bandswitchPins[i], LOW);       // Set band relay low.
+      }
     }
   }
 }
@@ -214,10 +221,11 @@ void SetCompressionThreshold() {
   while (true) {
     if (filterEncoderMove != 0) {
       ConfigData.micThreshold += ((float)filterEncoderMove);
-      if (ConfigData.micThreshold < -60)
+      if (ConfigData.micThreshold < -60) {
         ConfigData.micThreshold = -60;
-      else if (ConfigData.micThreshold > 0) // 100% max
+      } else if (ConfigData.micThreshold > 0) { // 100% max
         ConfigData.micThreshold = 0;
+      }
 
       tft.fillRect(SECONDARY_MENU_X + 195, MENUS_Y, 80, CHAR_HEIGHT,
                    RA8875_MAGENTA);
@@ -266,10 +274,11 @@ void SetCompressionRatio() {
   while (true) {
     if (filterEncoderMove != 0) {
       ConfigData.micCompRatio += ((float)filterEncoderMove * 1.0);
-      if (ConfigData.micCompRatio > 1000)
+      if (ConfigData.micCompRatio > 1000) {
         ConfigData.micCompRatio = 1000;
-      else if (ConfigData.micCompRatio < 1) // 100% max
+      } else if (ConfigData.micCompRatio < 1) { // 100% max
         ConfigData.micCompRatio = 1;
+      }
 
       tft.fillRect(SECONDARY_MENU_X + 180, MENUS_Y, 80, CHAR_HEIGHT,
                    RA8875_MAGENTA);
@@ -316,10 +325,11 @@ void MicGainSet() {
   while (true) {
     if (filterEncoderMove != 0) {
       ConfigData.micGain += ((float)filterEncoderMove);
-      if (ConfigData.micGain < -20)
+      if (ConfigData.micGain < -20) {
         ConfigData.micGain = -20;
-      else if (ConfigData.micGain > 20) // 100% max
+      } else if (ConfigData.micGain > 20) { // 100% max
         ConfigData.micGain = 20;
+      }
       tft.fillRect(SECONDARY_MENU_X + 160, MENUS_Y, 80, CHAR_HEIGHT,
                    RA8875_MAGENTA);
       tft.setCursor(SECONDARY_MENU_X + 160, MENUS_Y + 1);

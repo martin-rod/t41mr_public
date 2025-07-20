@@ -671,10 +671,11 @@ void Button::ButtonZoom() {
   if (zoomIndex == MAX_ZOOM_ENTRIES) {
     zoomIndex = 0;
   }
-  if (zoomIndex <= 0)
+  if (zoomIndex <= 0) {
     ConfigData.spectrum_zoom = 0;
-  else
+  } else {
     ConfigData.spectrum_zoom = zoomIndex;
+  }
   ZoomFFTPrep();
   UpdateZoomField();
   tft.writeTo(L2); // Clear layer 2.  KF5N July 31, 2023
@@ -809,8 +810,9 @@ void Button::ButtonNR() // AFP 09-19-22 update
   if (ConfigData.nrOptionSelect > 3) {
     ConfigData.nrOptionSelect = 0;
   }
-  if (ConfigData.nrOptionSelect == 3)
+  if (ConfigData.nrOptionSelect == 3) {
     ANR_notch = false; // Turn off AutoNotch if LMS NR is selected.
+  }
   UpdateNoiseField();
 }
 
@@ -912,10 +914,11 @@ void Button::ResetZoom(int zoomIndex1) {
   if (zoomIndex1 == MAX_ZOOM_ENTRIES) {
     zoomIndex1 = 0;
   }
-  if (zoomIndex1 <= 0)
+  if (zoomIndex1 <= 0) {
     ConfigData.spectrum_zoom = 0;
-  else
+  } else {
     ConfigData.spectrum_zoom = zoomIndex1;
+  }
 
   ZoomFFTPrep();
   UpdateZoomField();
@@ -1162,8 +1165,9 @@ void Button::ButtonFrequencyEntry() {
   // 2023
   tft.writeTo(L2);
   tft.clearMemory();
-  if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE)
+  if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE) {
     BandInformation();
+  }
   DrawBandWidthIndicatorBar();
   RedrawDisplayScreen(); // KD0RC
   FilterSetSSB();
@@ -1189,8 +1193,9 @@ void Button::ExecuteModeChange() {
   FilterBandwidth();
   ShowBandwidth();
   ShowFrequency();
-  if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE)
+  if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE) {
     BandInformation();
+  }
   DrawBandWidthIndicatorBar(); // Restore the bandwidth indicator bar.  KF5N
                                // July 30, 2023
   BandInformation();

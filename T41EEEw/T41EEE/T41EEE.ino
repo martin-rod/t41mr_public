@@ -205,7 +205,7 @@ dispSc displayScale[] = // dbText, dBScale, baseOffset
 };
 
 //======================================== Global variables declarations for
-//Quad Oscillator 2 ===============================================
+// Quad Oscillator 2 ===============================================
 int32_t NCOFreq = 0;
 
 //======================================== Global variables declarations
@@ -644,8 +644,8 @@ FLASHMEM void InitializeDataArrays() {
   //  //memset(pixelCurrent, 0, 1024);            // 512 * 2  KF5N JJP  7/14/23
   CLEAR_VAR(buffer_spec_FFT); // memset(buffer_spec_FFT, 0, 4096);         //
                               // SPECTRUM_RES = 512 * 2 = 1024
-  CLEAR_VAR(NR_FFT_buffer); // memset(NR_FFT_buffer, 0, 2048);           //
-                            // NR_FFT_L * sizeof(NR_FFT_buffer[0]));
+  CLEAR_VAR(NR_FFT_buffer);   // memset(NR_FFT_buffer, 0, 2048);           //
+                              // NR_FFT_L * sizeof(NR_FFT_buffer[0]));
   CLEAR_VAR(
       NR_output_audio_buffer); // memset(NR_output_audio_buffer, 0, 1024);  //
                                // 256 * sizeof(NR_output_audio_buffer[0]));
@@ -654,16 +654,16 @@ FLASHMEM void InitializeDataArrays() {
                                       // 512);
   CLEAR_VAR(NR_last_sample_buffer_R); // memset(NR_last_sample_buffer_R, 0,
                                       // 512);
-  CLEAR_VAR(NR_M);        // memset(NR_M, 0, 512);
-  CLEAR_VAR(NR_lambda);   // memset(NR_lambda, 0, 512);
-  CLEAR_VAR(NR_G);        // memset(NR_G, 0, 512);
-  CLEAR_VAR(NR_SNR_prio); // memset(NR_SNR_prio, 0, 512);
-  CLEAR_VAR(NR_SNR_post); // memset(NR_SNR_post, 0, 512);
-  CLEAR_VAR(NR_Hk_old);   // memset(NR_Hk_old, 0, 512);
-  CLEAR_VAR(NR_X);        // memset(NR_X, 0, 1536);
-  CLEAR_VAR(NR_Nest);     // memset(NR_Nest, 0, 1024);
-  CLEAR_VAR(NR_Gts);      // memset(NR_Gts, 0, 1024);
-  CLEAR_VAR(NR_E);        // memset(NR_E, 0, 7680);
+  CLEAR_VAR(NR_M);                    // memset(NR_M, 0, 512);
+  CLEAR_VAR(NR_lambda);               // memset(NR_lambda, 0, 512);
+  CLEAR_VAR(NR_G);                    // memset(NR_G, 0, 512);
+  CLEAR_VAR(NR_SNR_prio);             // memset(NR_SNR_prio, 0, 512);
+  CLEAR_VAR(NR_SNR_post);             // memset(NR_SNR_post, 0, 512);
+  CLEAR_VAR(NR_Hk_old);               // memset(NR_Hk_old, 0, 512);
+  CLEAR_VAR(NR_X);                    // memset(NR_X, 0, 1536);
+  CLEAR_VAR(NR_Nest);                 // memset(NR_Nest, 0, 1024);
+  CLEAR_VAR(NR_Gts);                  // memset(NR_Gts, 0, 1024);
+  CLEAR_VAR(NR_E);                    // memset(NR_E, 0, 7680);
 
   //  CalcCplxFIRCoeffs(FIR_Coef_I, FIR_Coef_Q, m_NumTaps,
   //  (float32_t)bands.bands[ConfigData.currentBand].FLoCut,
@@ -722,8 +722,9 @@ FLASHMEM void InitializeDataArrays() {
   // also adjust IIR AM filter
   // calculate IIR coeffs
   LP_F_help = bands.bands[ConfigData.currentBand].FHiCut;
-  if (LP_F_help < -bands.bands[ConfigData.currentBand].FLoCut)
+  if (LP_F_help < -bands.bands[ConfigData.currentBand].FLoCut) {
     LP_F_help = -bands.bands[ConfigData.currentBand].FLoCut;
+  }
   SetIIRCoeffs((float32_t)LP_F_help, 1.3, (float32_t)SR[SampleRate].rate / DF,
                0);              // 1st stage
   for (int i = 0; i < 5; i++) { // fill coefficients into the right file
@@ -882,10 +883,11 @@ MenuSelect readButton(MenuSelect lastUsedTask) {
   if (val != -1) { // -1 is returned by ReadSelectedPushButton in the case of an
                    // invalid read.
     menu = button.ProcessButtonPress(val);
-    if (menu != lastUsedTask && task == MenuSelect::DEFAULT)
+    if (menu != lastUsedTask && task == MenuSelect::DEFAULT) {
       task = menu;
-    else
+    } else {
       task = MenuSelect::BOGUS_PIN_READ;
+    }
   }
   return task;
 }
@@ -897,8 +899,9 @@ MenuSelect readButton() {
   if (val != -1) { // -1 is returned by ReadSelectedPushButton in the case of an
                    // invalid read.
     menu = button.ProcessButtonPress(val);
-  } else
+  } else {
     menu = MenuSelect::BOGUS_PIN_READ;
+  }
   return menu;
 }
 
@@ -1158,8 +1161,9 @@ FLASHMEM void setup() {
       0; // Start with lower gain so you don't get blasted.
   lastState = RadioState::NOSTATE; // Forces an update.
 
-  if ((MASTER_CLK_MULT_RX == 2) or (MASTER_CLK_MULT_TX == 2))
+  if ((MASTER_CLK_MULT_RX == 2) or (MASTER_CLK_MULT_TX == 2)) {
     ResetFlipFlops(); // Required only for QSD2/QSE2.
+  }
 }
 //============================================================== END setup()
 //=================================================================
@@ -1197,35 +1201,42 @@ void loop() {
   //  State detection for modes which can transmit.  AM and SAM don't transmit,
   //  so there is not a state transition required.
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::SSB_MODE and
-      digitalRead(PTT) == HIGH)
+      digitalRead(PTT) == HIGH) {
     radioState = RadioState::SSB_RECEIVE_STATE;
+  }
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::SSB_MODE &&
-      digitalRead(PTT) == LOW)
+      digitalRead(PTT) == LOW) {
     radioState = RadioState::SSB_TRANSMIT_STATE;
+  }
 
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::FT8_MODE and
-      SerialUSB1.rts() == LOW)
+      SerialUSB1.rts() == LOW) {
     radioState = RadioState::FT8_RECEIVE_STATE;
+  }
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::FT8_MODE and
-      SerialUSB1.rts() == HIGH)
+      SerialUSB1.rts() == HIGH) {
     radioState = RadioState::FT8_TRANSMIT_STATE;
+  }
 
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE &&
       (digitalRead(ConfigData.paddleDit) == HIGH &&
-       digitalRead(ConfigData.paddleDah) == HIGH))
+       digitalRead(ConfigData.paddleDah) == HIGH)) {
     radioState = RadioState::CW_RECEIVE_STATE; // Was using symbolic constants.
                                                // Also changed in code below.
                                                // KF5N August 8, 2023
+  }
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE &&
       (digitalRead(ConfigData.paddleDit) == LOW &&
        bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE &&
-       ConfigData.keyType == 0))
+       ConfigData.keyType == 0)) {
     radioState = RadioState::CW_TRANSMIT_STRAIGHT_STATE;
+  }
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE &&
       (keyPressedOn == 1 &&
        bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE &&
-       ConfigData.keyType == 1))
+       ConfigData.keyType == 1)) {
     radioState = RadioState::CW_TRANSMIT_KEYER_STATE;
+  }
 
   if (lastState != radioState) {
     SetAudioOperatingState(radioState);
@@ -1354,9 +1365,10 @@ void loop() {
           if (cwKeyDown) { // Initiate falling CW signal.
             CW_ExciterIQData(CW_SHAPING_FALL);
             cwKeyDown = false;
-          } else
+          } else {
             CW_ExciterIQData(CW_SHAPING_ZERO); //  No waveforms; but DC offset
                                                //  is still present.
+          }
         }
       }
     }
@@ -1449,12 +1461,14 @@ void loop() {
     // bands[ConfigData.currentBand].FHiCut.
     if (bands.bands[ConfigData.currentBand].mode == RadioMode::SSB_MODE or
         bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE or
-        bands.bands[ConfigData.currentBand].mode == RadioMode::FT8_MODE)
+        bands.bands[ConfigData.currentBand].mode == RadioMode::FT8_MODE) {
       audioBW = bands.bands[ConfigData.currentBand].FHiCut -
                 bands.bands[ConfigData.currentBand].FLoCut;
-    else if (bands.bands[ConfigData.currentBand].mode == RadioMode::AM_MODE or
-             bands.bands[ConfigData.currentBand].mode == RadioMode::SAM_MODE)
+    } else if (bands.bands[ConfigData.currentBand].mode == RadioMode::AM_MODE or
+               bands.bands[ConfigData.currentBand].mode ==
+                   RadioMode::SAM_MODE) {
       audioBW = bands.bands[ConfigData.currentBand].FAMCut;
+    }
 
     process.audioGainCompensate = 2800.0 / audioBW;
 

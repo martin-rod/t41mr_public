@@ -119,10 +119,12 @@ void FreqShift2() {
 
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE) {
     cwFreqOffset = (ConfigData.CWOffset + 6) * 24000 / 256;
-    if (bands.bands[ConfigData.currentBand].sideband == Sideband::UPPER)
+    if (bands.bands[ConfigData.currentBand].sideband == Sideband::UPPER) {
       sideToneShift = -cwFreqOffset;
-    if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER)
+    }
+    if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER) {
       sideToneShift = cwFreqOffset;
+    }
   }
 
   NCO_INC =

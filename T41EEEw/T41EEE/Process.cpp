@@ -74,11 +74,12 @@ void Process::ProcessIQData() {
     resetTuningFlag = 0;
 
     //  Set RFGain for all bands.
-    if (ConfigData.autoGain)
+    if (ConfigData.autoGain) {
       rfGain = ConfigData.rfGainCurrent; // Auto-gain
-    else
+    } else {
       rfGain =
           ConfigData.rfGain[ConfigData.currentBand] - 20; // Manual gain adjust.
+    }
     rfGainValue = pow(10, static_cast<float32_t>(rfGain) /
                               20.0); // DSPGAINSCALE removed in T41EEE.9.  Greg
                                      // KF5N February 24, 2024
@@ -229,14 +230,18 @@ void Process::ProcessIQData() {
     is shifted by fs/4
     **********************************************************************************/
 
-    if ((ConfigData.spectrum_zoom == 1) && (updateDisplayCounter == 1))
+    if ((ConfigData.spectrum_zoom == 1) && (updateDisplayCounter == 1)) {
       ZoomFFTExe(BUFFER_SIZE * N_BLOCKS);
-    if ((ConfigData.spectrum_zoom == 2) && (updateDisplayCounter < 2))
+    }
+    if ((ConfigData.spectrum_zoom == 2) && (updateDisplayCounter < 2)) {
       ZoomFFTExe(BUFFER_SIZE * N_BLOCKS);
-    if ((ConfigData.spectrum_zoom == 3) && (updateDisplayCounter < 4))
+    }
+    if ((ConfigData.spectrum_zoom == 3) && (updateDisplayCounter < 4)) {
       ZoomFFTExe(BUFFER_SIZE * N_BLOCKS);
-    if ((ConfigData.spectrum_zoom == 4) && (updateDisplayCounter < 8))
+    }
+    if ((ConfigData.spectrum_zoom == 4) && (updateDisplayCounter < 8)) {
       ZoomFFTExe(BUFFER_SIZE * N_BLOCKS);
+    }
 
     if (calibrateFlag == true) {
       CalibrateOptions();
@@ -307,7 +312,7 @@ void Process::ProcessIQData() {
         FFT_buffer[i] = 0.0;
       }
       first_block = 0;
-    } else // All other FFTs
+    } else { // All other FFTs
 
       // Fill FFT_buffer with last events audio samples for all other FFT
       // instances.
@@ -315,6 +320,7 @@ void Process::ProcessIQData() {
         FFT_buffer[i * 2] = last_sample_buffer_L[i];     // real
         FFT_buffer[i * 2 + 1] = last_sample_buffer_R[i]; // imaginary
       }
+    }
 
     for (unsigned i = 0; i < BUFFER_SIZE * N_BLOCKS / (uint32_t)(DF);
          i++) { // Copy recent samples to last_sample_buffer for next time!
@@ -323,7 +329,7 @@ void Process::ProcessIQData() {
     }
 
     //------------------------------ now fill recent audio samples into
-    //FFT_buffer (left channel: re, right channel: im)
+    // FFT_buffer (left channel: re, right channel: im)
     for (unsigned i = 0; i < BUFFER_SIZE * N_BLOCKS / (uint32_t)(DF); i++) {
       FFT_buffer[FFT_length + i * 2] = float_buffer_L[i];     // real
       FFT_buffer[FFT_length + i * 2 + 1] = float_buffer_R[i]; // imaginary
@@ -380,8 +386,9 @@ void Process::ProcessIQData() {
                   0, 100, 0, 120) +
               audioFFToffset;
         }
-        if (audioYPixel[k] < 0)
+        if (audioYPixel[k] < 0) {
           audioYPixel[k] = 0;
+        }
       }
       arm_max_f32(audioSpectBuffer, 1024, &audioMaxSquared,
                   &AudioMaxIndex); // AFP 09-18-22 Max value of squared abin
@@ -478,7 +485,7 @@ void Process::ProcessIQData() {
     }
 
     //============================  Receive EQ  ========================  AFP
-    //08-08-22
+    // 08-08-22
     if (ConfigData.receiveEQFlag) {
       DoReceiveEQ();
       arm_copy_f32(float_buffer_L, float_buffer_R, FFT_length / 2);

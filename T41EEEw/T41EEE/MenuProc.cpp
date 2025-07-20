@@ -518,9 +518,10 @@ void CWOptions() // new option for Sidetone and Delay JJP 9/1/22
 
   if (morseDecodeAdjustFlag == false) {
     CWChoice = SubmenuSelectString(cwChoices, 10, 0);
-    if (CWChoice == 0)
+    if (CWChoice == 0) {
       morseDecodeAdjustFlag = true; // Handle the special case of Morse decoder
                                     // adjust; the loop must run.
+    }
   }
 
   switch (CWChoice) {
@@ -529,8 +530,9 @@ void CWOptions() // new option for Sidetone and Delay JJP 9/1/22
     ConfigData.morseDecodeSensitivity =
         GetEncoderValueLiveString(0, 10000, ConfigData.morseDecodeSensitivity,
                                   100, cwChoices[CWChoice], false);
-    if (ConfigData.morseDecodeSensitivity != morseDecodeSensitivityOld)
+    if (ConfigData.morseDecodeSensitivity != morseDecodeSensitivityOld) {
       morseDecodeSensitivityOld = ConfigData.morseDecodeSensitivity;
+    }
     menu = readButton();
     if (menu != MenuSelect::BOGUS_PIN_READ) {       // Any button press??
       if (menu == MenuSelect::MENU_OPTION_SELECT) { // Yep. Make a choice??
@@ -778,16 +780,19 @@ void ProcessEqualizerChoices(int EQType, char *title) {
                  yLevel[iFreq], RA8875_CYAN);
     tft.setCursor(xOrigin + (barWidth + 4) * iFreq,
                   yOrigin + high - tft.getFontHeight() * 2);
-    if (EQType == 0)
+    if (EQType == 0) {
       tft.print(rXeqFreq[iFreq].c_str());
-    else
+    } else {
       tft.print(tXeqFreq[iFreq].c_str());
+    }
     tft.setCursor(xOrigin + (barWidth + 4) * iFreq + tft.getFontWidth() * 1.5,
                   yOrigin + high + tft.getFontHeight() * 2);
-    if (EQType == 0)
+    if (EQType == 0) {
       tft.print(yLevel[iFreq]);
-    if (EQType == 1)
+    }
+    if (EQType == 1) {
       tft.print(ConfigData.equalizerXmt[iFreq]);
+    }
   }
 
   columnIndex = 0; // Get ready to set values for columns
@@ -837,10 +842,11 @@ void ProcessEqualizerChoices(int EQType, char *title) {
                      barWidth, CHAR_HEIGHT, RA8875_BLACK);
         tft.setCursor(xOffset + tft.getFontWidth() * 1.5,
                       yOrigin + high + tft.getFontHeight() * 2);
-        if (EQType == 0)
+        if (EQType == 0) {
           tft.print(yLevel[columnIndex]);
-        else
+        } else {
           tft.print((yLevel[columnIndex] - 100) / 10);
+        }
         if (yLevel[columnIndex] <
             DEFAULT_EQUALIZER_BAR) { // Repaint red center line if erased
           tft.drawFastHLine(xOrigin - 4, yOrigin + (high / 2), wide + 4,
@@ -1268,8 +1274,9 @@ void VFOSelect() {
   // 2023
   tft.writeTo(L2);
   tft.clearMemory();
-  if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE)
+  if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE) {
     BandInformation();
+  }
   //  DrawBandWidthIndicatorBar();
   //  DrawFrequencyBarValue();
   //  UpdateAudioGraphics();
@@ -1526,14 +1533,16 @@ int SubmenuSelect(const std::string options[], int numberOfChoices,
 
       case MenuSelect::MAIN_MENU_UP:
         encoderReturnValue++;
-        if (encoderReturnValue >= numberOfChoices)
+        if (encoderReturnValue >= numberOfChoices) {
           encoderReturnValue = 0;
+        }
         break;
 
       case MenuSelect::MAIN_MENU_DN:
         encoderReturnValue--;
-        if (encoderReturnValue < 0)
+        if (encoderReturnValue < 0) {
           encoderReturnValue = numberOfChoices - 1;
+        }
         break;
 
       default:
@@ -1600,14 +1609,16 @@ int SubmenuSelectString(std::string options[], int numberOfChoices,
 
       case MenuSelect::MAIN_MENU_UP:
         encoderReturnValue++;
-        if (encoderReturnValue >= numberOfChoices)
+        if (encoderReturnValue >= numberOfChoices) {
           encoderReturnValue = 0;
+        }
         break;
 
       case MenuSelect::MAIN_MENU_DN:
         encoderReturnValue--;
-        if (encoderReturnValue < 0)
+        if (encoderReturnValue < 0) {
           encoderReturnValue = numberOfChoices - 1;
+        }
         break;
 
       default:

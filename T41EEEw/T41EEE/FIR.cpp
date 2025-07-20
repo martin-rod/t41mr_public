@@ -59,7 +59,7 @@ FLASHMEM float32_t CW_Filter_Coeffs2[64] = {
 // AFP updated entire file 01-16-22
 //=== CW Filter ===
 //--------------------------  CW Filter IIR coefficients fc= 720, BW= 480
-//Butterworth  -------------------
+// Butterworth  -------------------
 float32_t CW_Filter_Coeffs[40] = {
     -0.052435730923943512, 0.000000000000000000,  0.052435730923943512,
     1.873536650623021550,  -0.903491018266337598, -0.051776963065707407,
@@ -508,12 +508,13 @@ void CalcFIRCoeffs(float *coeffs_I, int numCoeffs, float32_t fc,
   fc = fc / Fsamprate;
   dfc = dfc / Fsamprate;
   // calculate Kaiser-Bessel window shape factor beta from stop-band attenuation
-  if (Astop < 20.96)
+  if (Astop < 20.96) {
     Beta = 0.0;
-  else if (Astop >= 50.0)
+  } else if (Astop >= 50.0) {
     Beta = 0.1102 * (Astop - 8.71);
-  else
+  } else {
     Beta = 0.5842 * powf((Astop - 20.96), 0.4) + 0.07886 * (Astop - 20.96);
+  }
 
   for (int i = 0; i < numCoeffs; i++) // zero pad entire coefficient buffer,
                                       // important for variables from DMAMEM
@@ -539,15 +540,17 @@ void CalcFIRCoeffs(float *coeffs_I, int numCoeffs, float32_t fc,
   {
     nc = 2 * (numCoeffs / 2);
     // clear coefficients
-    for (int ii = 0; ii < 2 * (nc - 1); ii++)
+    for (int ii = 0; ii < 2 * (nc - 1); ii++) {
       coeffs_I[ii] = 0;
+    }
     // set real delay
     coeffs_I[nc] = 1;
 
     // set imaginary Hilbert coefficients
     for (int ii = 1; ii < (nc + 1); ii += 2) {
-      if (2 * ii == nc)
+      if (2 * ii == nc) {
         continue;
+      }
       float x = (float)(2 * ii - nc) / (float)nc;
       float w = Izero(Beta * sqrtf(1.0f - x * x)) / izb; // Kaiser window
       coeffs_I[2 * ii + 1] = 1.0f / (PIH * (float)(ii - nc / 2)) * w;
@@ -564,11 +567,13 @@ void CalcFIRCoeffs(float *coeffs_I, int numCoeffs, float32_t fc,
   if (type == 1) {
     coeffs_I[nc / 2] += 1;
   } else if (type == 2) {
-    for (int jj = 0; jj < nc + 1; jj++)
+    for (int jj = 0; jj < nc + 1; jj++) {
       coeffs_I[jj] *= 2.0f * cosf(PIH * (2 * jj - nc) * fc);
+    }
   } else if (type == 3) {
-    for (int jj = 0; jj < nc + 1; jj++)
+    for (int jj = 0; jj < nc + 1; jj++) {
       coeffs_I[jj] *= -2.0f * cosf(PIH * (2 * jj - nc) * fc);
+    }
     coeffs_I[nc / 2] += 1;
   }
 
@@ -623,9 +628,9 @@ void CalcCplxFIRCoeffs(float *coeffs_I, float *coeffs_Q, int numCoeffs,
   for (int i = 0; i < numCoeffs; i++) {
     x = (float32_t)i - fCenter;
     if (abs((float)i - fCenter) <
-        0.01) // deal with odd size filter singularity where sin(0)/0==1
+        0.01) { // deal with odd size filter singularity where sin(0)/0==1
       z = 2.0 * nFc;
-    else
+    } else {
       switch (FIR_filter_window) {
       case 1: // 4-term Blackman-Harris --> this is what Power SDR uses
         z = (float32_t)sinf(TWO_PI * x * nFc) / (PI * x) *
@@ -658,6 +663,7 @@ void CalcCplxFIRCoeffs(float *coeffs_I, float *coeffs_Q, int numCoeffs,
              0.0106411 * cosf((SIXPI * i) / (numCoeffs - 1)));
         break;
       }
+    }
     // shift lowpass filter coefficients in frequency by (hicut+lowcut)/2 to
     // form bandpass filter anywhere in range
     coeffs_I[i] = z * cosf(nFs * x);
@@ -691,8 +697,9 @@ void SetIIRCoeffs(float32_t f0, float32_t Q, float32_t sample_rate,
   // y[n] = b0 * x[n] + b1 * x[n-1] + b2 * x[n-2] - a1 * y[n-1] - a2 * y[n-2]
   //
   // Therefore, we have to use negated a1 and a2 for use with the ARM function
-  if (f0 > sample_rate / 2.0)
+  if (f0 > sample_rate / 2.0) {
     f0 = sample_rate / 2.0;
+  }
   float32_t w0 = f0 * (TWO_PI / sample_rate);
   float32_t sinW0 = sinf(w0);
   float32_t alpha = sinW0 / (Q * 2.0);

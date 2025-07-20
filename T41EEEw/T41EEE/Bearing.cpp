@@ -2053,8 +2053,9 @@ FLASHMEM void CaptureKeystrokes() {
       break;
 
     case MenuSelect::MAIN_MENU_UP: // Go up a row
-      if (row <= 155)              // Trying to go up above numerics
+      if (row <= 155) {            // Trying to go up above numerics
         break;
+      }
       DrawNormalLetter(row, spacing[keyCell], whichLetterIndex, keyWidth,
                        keyHeight);
       delay(150L);
@@ -2169,8 +2170,9 @@ FLASHMEM void CaptureKeystrokes() {
       break;
 
     case MenuSelect::DEMODULATION: // Go down a row
-      if (row >= 360)
+      if (row >= 360) {
         break;
+      }
       if (row < 240) {
         xOffset = 50;
         horizontalSpacer =
@@ -2424,8 +2426,9 @@ FLASHMEM void bmpDraw(const char *filename, int x, int y) {
   float deltaLon = (dxLon - homeLon);
   float deltaLonRadians;
 
-  if ((x >= tft.width()) || (y >= tft.height()))
+  if ((x >= tft.width()) || (y >= tft.height())) {
     return;
+  }
 
   if (!SD.begin(chipSelect)) {
     tft.print("SD card cannot be initialized.");
@@ -2471,10 +2474,12 @@ FLASHMEM void bmpDraw(const char *filename, int x, int y) {
         // Crop area to be loaded
         w = bmpWidth;
         h = bmpHeight;
-        if ((x + w - 1) >= tft.width())
+        if ((x + w - 1) >= tft.width()) {
           w = tft.width() - x;
-        if ((y + h - 1) >= tft.height())
+        }
+        if ((y + h - 1) >= tft.height()) {
           h = tft.height() - y;
+        }
 
         // Set TFT address window to clipped image bounds
         ypos = y;
@@ -2485,10 +2490,11 @@ FLASHMEM void bmpDraw(const char *filename, int x, int y) {
           // and scanline padding.  Also, the seek only takes
           // place if the file position actually needs to change
           // (avoids a lot of cluster math in SD library).
-          if (flip) // Bitmap is stored bottom-to-top order (normal BMP)
+          if (flip) { // Bitmap is stored bottom-to-top order (normal BMP)
             pos = bmpImageoffset + (bmpHeight - 1 - row) * rowSize;
-          else // Bitmap is stored top-to-bottom
+          } else { // Bitmap is stored top-to-bottom
             pos = bmpImageoffset + row * rowSize;
+          }
 
           if (bmpFile.position() != pos) { // Need seek?
             bmpFile.seek(pos);
@@ -2669,8 +2675,9 @@ FLASHMEM void writeClippedRect(int x, int y, int cx, int cy, uint16_t *pixels,
 
     g_WRCount++;
 
-    if (waitForWRC)
+    if (waitForWRC) {
       WaitforWRComplete();
+    }
     // only process if something is visible.
   } else if ((end_x >= 0) && (end_y >= 0) && (x < g_tft_width) &&
              (y < g_tft_height)) {
@@ -2682,15 +2689,17 @@ FLASHMEM void writeClippedRect(int x, int y, int cx, int cy, uint16_t *pixels,
       cx_out += x;
       x = 0;
     }
-    if (end_x > g_tft_width)
+    if (end_x > g_tft_width) {
       cx_out -= (end_x - g_tft_width);
+    }
     if (y < 0) {
       pixels += -y * cx; // point to first word we will use.
       cy_out += y;
       y = 0;
     }
-    if (end_y > g_tft_height)
+    if (end_y > g_tft_height) {
       cy_out -= (end_y - g_tft_height);
+    }
     if (cx_out && cy_out) {
 
 #ifdef TFT_EMULATE_FB

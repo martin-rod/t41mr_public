@@ -256,13 +256,15 @@ void Kim1_NR() {
         if (NR_use_X) {
           NR_G[bindx] =
               1.0 - (NR_lambda[bindx] * NR_KIM_K / NR_X[bindx][NR_X_pointer]);
-          if (NR_G[bindx] < 0.0)
+          if (NR_G[bindx] < 0.0) {
             NR_G[bindx] = 0.0;
+          }
         } else {
           NR_G[bindx] =
               1.0 - (NR_lambda[bindx] * NR_KIM_K / NR_E[bindx][NR_E_pointer]);
-          if (NR_G[bindx] < 0.0)
+          if (NR_G[bindx] < 0.0) {
             NR_G[bindx] = 0.0;
+          }
         }
 
         // time smoothing
@@ -371,21 +373,25 @@ void Xanr() // variable leak LMS algorithm for automatic notch or noise
     inv_sigp = 1.0 / (sigma + 1e-10);
     error = ANR_d[ANR_in_idx] - y;
 
-    if (ANR_notch)
+    if (ANR_notch) {
       float_buffer_R[i] = error; // NOTCH FILTER
-    else
+    } else {
       float_buffer_R[i] = y; // NOISE REDUCTION
+    }
 
-    if ((nel = error * (1.0 - ANR_two_mu * sigma * inv_sigp)) < 0.0)
+    if ((nel = error * (1.0 - ANR_two_mu * sigma * inv_sigp)) < 0.0) {
       nel = -nel;
+    }
     if ((nev = ANR_d[ANR_in_idx] - (1.0 - ANR_two_mu * ANR_ngamma) * y -
-               ANR_two_mu * error * sigma * inv_sigp) < 0.0)
+               ANR_two_mu * error * sigma * inv_sigp) < 0.0) {
       nev = -nev;
+    }
     if (nev < nel) {
-      if ((ANR_lidx += ANR_lincr) > ANR_lidx_max)
+      if ((ANR_lidx += ANR_lincr) > ANR_lidx_max) {
         ANR_lidx = ANR_lidx_max;
-      else if ((ANR_lidx -= ANR_ldecr) < ANR_lidx_min)
+      } else if ((ANR_lidx -= ANR_ldecr) < ANR_lidx_min) {
         ANR_lidx = ANR_lidx_min;
+      }
     }
     ANR_ngamma = ANR_gamma * (ANR_lidx * ANR_lidx) * (ANR_lidx * ANR_lidx) *
                  ANR_den_mult;
