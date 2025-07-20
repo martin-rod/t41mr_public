@@ -68,23 +68,25 @@ static const char *traceLevelTextColor(uint8_t level) {
 
 extern class usb_serial_class Serial;
 void TRACE_TO_T41_USB_SERIAL(uint8_t level, const char *file, int32_t line,
-    const char *func, const char *format, ...) {
+                             const char *func, const char *format, ...) {
   va_list arglist;
 
-  snprintf(traceMessage, 255, "%08lu %s ", millis(), traceLevelTextColor(level));
+  snprintf(traceMessage, 255, "%08lu %s ", millis(),
+           traceLevelTextColor(level));
 
   size_t len = strlen(traceMessage);
 
   va_start(arglist, format);
   vsnprintf(traceMessage + len, (sizeof(traceMessage) - len), format, arglist);
   len = strlen(traceMessage);
-  snprintf(traceMessage + len, (sizeof(traceMessage) - len), " %s %s:%ld\n", func,
-      file, line);
+  snprintf(traceMessage + len, (sizeof(traceMessage) - len), " %s %s:%ld\n",
+           func, file, line);
   va_end(arglist);
   Serial.printf("%s", traceMessage);
 }
 
 #else  // if TRACE_GLOBAL_LEVEL > TR_L_NO
-void TRACE_TO_T41_USB_SERIAL(int16_t /*level*/, const char * /*file*/, int32_t /*line*/,
-    const char * /*func*/, const char * /*format*/, ...) {}
+void TRACE_TO_T41_USB_SERIAL(int16_t /*level*/, const char * /*file*/,
+                             int32_t /*line*/, const char * /*func*/,
+                             const char * /*format*/, ...) {}
 #endif // if TRACE_GLOBAL_LEVEL > TR_L_NO

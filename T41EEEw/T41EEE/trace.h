@@ -49,29 +49,30 @@ extern uint8_t globalTraceLevel;
 #undef TRACE_T41
 #if TRACE_MODULE_LEVEL > 0
 #define TRACE_LEVEL(val) const uint8_t TRACE_VAR = val
-#define TRACE_T41(l, ...)                                              \
-  do {                                                                 \
-    if (TRACE_CONDITION(l) && (TRACE_GLOBAL_CONDITION(l))) {           \
-      TRACE_METHOD_NAME(l, TRACE_PARAMS, TRACE_PREFIX(l) __VA_ARGS__); \
-    }                                                                  \
+#define TRACE_T41(l, ...)                                                      \
+  do {                                                                         \
+    if (TRACE_CONDITION(l) && (TRACE_GLOBAL_CONDITION(l))) {                   \
+      TRACE_METHOD_NAME(l, TRACE_PARAMS, TRACE_PREFIX(l) __VA_ARGS__);         \
+    }                                                                          \
   } while (false)
 #else // if TRACE_MODULE_LEVEL > 0
 #define TRACE_LEVEL(val)
-#define TRACE_T41(l, ...) \
-  do {                    \
+#define TRACE_T41(l, ...)                                                      \
+  do {                                                                         \
   } while (false)
 #endif // if TRACE_MODULE_LEVEL > 0
 
 void TRACE_TO_T41_USB_SERIAL(uint8_t level, const char *file, int32_t line,
-    const char *func, const char *format, ...);
+                             const char *func, const char *format, ...);
 
 #endif // T41_TRACE_H
 
 /* *
  * Before #include "trace.h"
  *
- * #define TRACE_MODULE_NAME <name>           set prefix of message in the source file
- * #define TRACE_MODULE_LEVEL [<level>]       set trace level for whole file
+ * #define TRACE_MODULE_NAME <name>           set prefix of message in the
+ *source file #define TRACE_MODULE_LEVEL [<level>]       set trace level for
+ *whole file
  *
  * level:
  *
@@ -102,7 +103,8 @@ using namespace std;
 int main()
 {
     // TR_L_TRACE, TR_L_DEBUG is removed during compile time
-    // TR_L_INFO, TR_L_WARN, TR_L_ERROR, TR_L_FATAL is not removed during compile time
+    // TR_L_INFO, TR_L_WARN, TR_L_ERROR, TR_L_FATAL is not removed during
+compile time
     // TR_L_INFO and up ...
     TRACE_LEVEL( TR_L_INFO );
 

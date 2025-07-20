@@ -10,15 +10,14 @@ float32_t omega2 = 0.0;
 float32_t phzerror = 0.0;
 float32_t det = 0.0;
 float32_t fil_out = 0.0;
-float32_t SAM_carrier = 0.0;                 //AFP 11-02-22
-float32_t SAM_lowpass = 2700.0;              //AFP 11-02-22
-float32_t SAM_carrier_freq_offset = 0.0;     //AFP 11-02-22
-float32_t SAM_carrier_freq_offsetOld = 0.0;  //AFP 11-02-22
+float32_t SAM_carrier = 0.0;                // AFP 11-02-22
+float32_t SAM_lowpass = 2700.0;             // AFP 11-02-22
+float32_t SAM_carrier_freq_offset = 0.0;    // AFP 11-02-22
+float32_t SAM_carrier_freq_offsetOld = 0.0; // AFP 11-02-22
 float32_t ai, bi, aq, bq;
 float32_t ai_ps, bi_ps, aq_ps, bq_ps;
 float32_t audiou;
 float32_t Cos = 0.0;
-
 
 /*****  AFP 11-03-22
   Purpose: AMDecodeSAM()
@@ -26,21 +25,27 @@ float32_t Cos = 0.0;
     void
   Return value;
     void
-  Notes:  Synchronous AM detection.  Determines the carrier frequency, adjusts freq and replaces the received carrier with a steady signal to prevent fading.
+  Notes:  Synchronous AM detection.  Determines the carrier frequency, adjusts
+freq and replaces the received carrier with a steady signal to prevent fading.
   This algorithm works best of those implemented.
   // taken from Warren Pratt´s WDSP, 2016
-  // http://svn.tapr.org/repos_sdr_hpsdr/trunk/W5WC/PowerSDR_HPSDR_mRX_PS/Source/wdsp/
+  //
+http://svn.tapr.org/repos_sdr_hpsdr/trunk/W5WC/PowerSDR_HPSDR_mRX_PS/Source/wdsp/
 *****/
 void AMDecodeSAM() {
 
   int zeta_help = 65;
-  float32_t zeta = (float32_t)zeta_help / 100.0;  // PLL step response: smaller, slower response 1.0 - 0.1
+  float32_t zeta =
+      (float32_t)zeta_help /
+      100.0; // PLL step response: smaller, slower response 1.0 - 0.1
   float32_t g1 = 1.0 - exp(-2.0 * ConfigData.omegaN * zeta * 1 / 24000);
-  float32_t g2 = -g1 + 2.0 * (1 - exp(-ConfigData.omegaN * zeta * 1 / 24000) * cosf(ConfigData.omegaN * 1 / 24000 * sqrtf(1.0 - zeta * zeta)));
+  float32_t g2 = -g1 + 2.0 * (1 - exp(-ConfigData.omegaN * zeta * 1 / 24000) *
+                                      cosf(ConfigData.omegaN * 1 / 24000 *
+                                           sqrtf(1.0 - zeta * zeta)));
   const float32_t omega_min = TWO_PI * -ConfigData.pll_fmax * 1 / 24000;
   const float32_t omega_max = TWO_PI * ConfigData.pll_fmax * 1 / 24000;
-  const float32_t tauR = 0.02;  // original 0.02;
-  const float32_t tauI = 1.4;   // original 1.4;
+  const float32_t tauR = 0.02; // original 0.02;
+  const float32_t tauI = 1.4;  // original 1.4;
   float32_t mtauR = exp(-1 / 24000 * tauR);
   float32_t onem_mtauR = 1.0 - mtauR;
   float32_t mtauI = exp(-1 / 24000 * tauI);
@@ -48,7 +53,7 @@ void AMDecodeSAM() {
   uint8_t fade_leveler = 1;
   float32_t Sin, Cos;
 
-//  tft.print("(SAM) ");  //AFP 11-01-22
+  //  tft.print("(SAM) ");  //AFP 11-01-22
 
   for (unsigned i = 0; i < FFT_length / 2; i++) {
     Sin = arm_sin_f32(phzerror);
@@ -80,14 +85,18 @@ void AMDecodeSAM() {
 
     del_out = fil_out;
     omega2 = omega2 + g2 * det;
-    if (omega2 < omega_min) omega2 = omega_min;
-    else if (omega2 > omega_max) omega2 = omega_max;
+    if (omega2 < omega_min)
+      omega2 = omega_min;
+    else if (omega2 > omega_max)
+      omega2 = omega_max;
     fil_out = g1 * det + omega2;
     phzerror = phzerror + del_out;
 
-    //Wrap round 2PI, modulus
-    while (phzerror >= TWO_PI) phzerror -= TWO_PI;
-    while (phzerror < 0.0) phzerror += TWO_PI;
+    // Wrap round 2PI, modulus
+    while (phzerror >= TWO_PI)
+      phzerror -= TWO_PI;
+    while (phzerror < 0.0)
+      phzerror += TWO_PI;
   }
 
   // In the small frequency display
@@ -97,18 +106,22 @@ void AMDecodeSAM() {
   SAM_carrier = 0.08 * (omega2 * 24000) / (2 * TWO_PI);
   SAM_carrier = SAM_carrier + 0.92 * SAM_lowpass;
   SAM_carrier_freq_offset = static_cast<int>(10 * SAM_carrier);
-  SAM_carrier_freq_offset = 0.9 * SAM_carrier_freq_offsetOld + 0.1 * SAM_carrier_freq_offset;
+  SAM_carrier_freq_offset =
+      0.9 * SAM_carrier_freq_offsetOld + 0.1 * SAM_carrier_freq_offset;
   SAM_lowpass = SAM_carrier;
 
   tft.setFontScale((enum RA8875tsize)0);
-  tft.fillRect(OPERATION_STATS_X + 205, FREQUENCY_Y + 32, tft.getFontWidth() * 6, 14, RA8875_BLUE);  // AFP 11-01-22 Clear top-left menu area
-  tft.setCursor(OPERATION_STATS_X + 205, FREQUENCY_Y + 30);                                                       // AFP 11-01-22
+  tft.fillRect(OPERATION_STATS_X + 205, FREQUENCY_Y + 32,
+               tft.getFontWidth() * 6, 14,
+               RA8875_BLUE); // AFP 11-01-22 Clear top-left menu area
+  tft.setCursor(OPERATION_STATS_X + 205, FREQUENCY_Y + 30); // AFP 11-01-22
   tft.setTextColor(RA8875_WHITE);
 
   if (SAM_carrier_freq_offset != SAM_carrier_freq_offsetOld) {
-//    tft.fillRect(OPERATION_STATS_X + 200, FREQUENCY_Y + 30, tft.getFontWidth() * 8, tft.getFontHeight(), RA8875_BLUE);
+    //    tft.fillRect(OPERATION_STATS_X + 200, FREQUENCY_Y + 30,
+    //    tft.getFontWidth() * 8, tft.getFontHeight(), RA8875_BLUE);
 
-    tft.print(0.20024 * SAM_carrier_freq_offset, 1);  //AFP 11-01-22
+    tft.print(0.20024 * SAM_carrier_freq_offset, 1); // AFP 11-01-22
   }
   SAM_carrier_freq_offsetOld = SAM_carrier_freq_offset;
 }
@@ -134,7 +147,7 @@ float ApproxAtan2(float y, float x) {
         // atan2(y,x) = atan(y/x) - PI if x < 0, y < 0
         return ApproxAtan(z) - PI;
       }
-    } else  // Use property atan(y/x) = PI/2 - atan(x/y) if |y/x| > 1.
+    } else // Use property atan(y/x) = PI/2 - atan(x/y) if |y/x| > 1.
     {
       const float z = x / y;
       if (y > 0.0f) {
@@ -146,13 +159,13 @@ float ApproxAtan2(float y, float x) {
       }
     }
   } else {
-    if (y > 0.0f)  // x = 0, y > 0
+    if (y > 0.0f) // x = 0, y > 0
     {
       return TWO_PI;
-    } else if (y < 0.0f)  // x = 0, y < 0
+    } else if (y < 0.0f) // x = 0, y < 0
     {
       return -TWO_PI;
     }
   }
-  return 0.0f;  // x,y = 0. Could return NaN instead.
+  return 0.0f; // x,y = 0. Could return NaN instead.
 }
