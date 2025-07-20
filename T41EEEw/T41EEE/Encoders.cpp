@@ -126,7 +126,7 @@ void EncoderCenterTune() {
 void EncoderVolume()  //============================== AFP 10-22-22  Begin new
 {
   char result;
-  int increment [[maybe_unused]] = 0;
+  [[maybe_unused]] int increment  = 0;
 
   result = volumeEncoder.process();  // Read the encoder
 
