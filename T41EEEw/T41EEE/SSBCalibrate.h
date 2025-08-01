@@ -1,6 +1,8 @@
-// Class Calibrate replaces Process2.cpp.  Greg KF5N June 16, 2024
-
 #pragma once
+
+#include "SDT.h"
+
+// Class Calibrate replaces Process2.cpp.  Greg KF5N June 16, 2024
 
 // Re-factoring into class Calibrate.  Greg KF5N June 15, 2024.
 // Automatic calibration added.  Greg KF5N June 11, 2024

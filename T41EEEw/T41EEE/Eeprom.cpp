@@ -1,5 +1,25 @@
+#include "Eeprom.h"
 
-#include "SDT.h"
+#include "Button.h"
+#include "CalibrationData.h"
+#include "ConfigurationData.h"
+#include "Display.h"
+#include "Eeprom.h"
+#include "Encoders.h"
+#include "Filter.h"
+#include "MenuProc.h"
+#include "MyConfigurationFile.h"
+#include "T41EEE.h"
+#include "Tune.h"
+#include "Utility.h"
+
+#define TRACE_MODULE_LEVEL TR_L_ALL
+#define TRACE_MODULE_NAME EEPROM
+
+#include "trace.h"
+
+// Eeprom object.
+Eeprom eeprom;
 
 /*****
   Purpose: To save the configuration data (working variables) to EEPROM.
@@ -178,8 +198,7 @@ void Eeprom::SetFavoriteFrequency() {
   tft.setFontScale((enum RA8875tsize)1);
   index = 0;
   tft.setTextColor(RA8875_WHITE);
-  tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT,
-               RA8875_MAGENTA);
+  tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT, RA8875_MAGENTA);
   tft.setCursor(SECONDARY_MENU_X, MENUS_Y);
   tft.print(ConfigData.favoriteFreqs[index]);
   while (true) {
@@ -192,8 +211,7 @@ void Eeprom::SetFavoriteFrequency() {
           index = 0; // Wrap to first one
         }
       }
-      tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT,
-                   RA8875_MAGENTA);
+      tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT, RA8875_MAGENTA);
       tft.setCursor(SECONDARY_MENU_X, MENUS_Y);
       tft.print(ConfigData.favoriteFreqs[index]);
       filterEncoderMove = 0;
@@ -207,7 +225,7 @@ void Eeprom::SetFavoriteFrequency() {
       EraseMenus();
       ConfigData.favoriteFreqs[index] = TxRxFreq;
       // UpdateEEPROMSyncIndicator(0);       //  JJP 7/25/23
-      if (ConfigData.activeVFO == VFO_A) {
+      if (ConfigData.activeVFO == VfoState::VFO_A) {
         ConfigData.currentFreqA = TxRxFreq;
       } else {
         ConfigData.currentFreqB = TxRxFreq;
@@ -239,8 +257,7 @@ void Eeprom::GetFavoriteFrequency() {
   int currentBand2 = 0;
   tft.setFontScale((enum RA8875tsize)1);
   tft.setTextColor(RA8875_WHITE);
-  tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT,
-               RA8875_MAGENTA);
+  tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT, RA8875_MAGENTA);
   tft.setCursor(SECONDARY_MENU_X, MENUS_Y);
   tft.print(ConfigData.favoriteFreqs[index]);
   while (true) {
@@ -253,8 +270,7 @@ void Eeprom::GetFavoriteFrequency() {
           index = 0; // Wrap to first one
         }
       }
-      tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT,
-                   RA8875_MAGENTA);
+      tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT, RA8875_MAGENTA);
       tft.setCursor(SECONDARY_MENU_X, MENUS_Y);
       tft.print(ConfigData.favoriteFreqs[index]);
       filterEncoderMove = 0;
@@ -264,26 +280,21 @@ void Eeprom::GetFavoriteFrequency() {
     //    switches val = ProcessButtonPress(val); delay(150L);
     menu = readButton();
 
-    if (ConfigData.centerFreq >= bands.bands[BAND_80M].fBandLow &&
-        ConfigData.centerFreq <= bands.bands[BAND_80M].fBandHigh) {
+    if (ConfigData.centerFreq >= bands.bands[BAND_80M].fBandLow && ConfigData.centerFreq <= bands.bands[BAND_80M].fBandHigh) {
       currentBand2 = BAND_80M;
     } else if (ConfigData.centerFreq >= bands.bands[BAND_80M].fBandHigh &&
-               ConfigData.centerFreq <=
-                   7000000L) { // covers 5MHz WWV AFP 11-03-22
+               ConfigData.centerFreq <= 7000000L) { // covers 5MHz WWV AFP 11-03-22
       currentBand2 = BAND_80M;
     } else if (ConfigData.centerFreq >= bands.bands[BAND_40M].fBandLow &&
                ConfigData.centerFreq <= bands.bands[BAND_40M].fBandHigh) {
       currentBand2 = BAND_40M;
     } else if (ConfigData.centerFreq >= bands.bands[BAND_40M].fBandHigh &&
-               ConfigData.centerFreq <=
-                   14000000L) { // covers 10MHz WWV AFP 11-03-22
+               ConfigData.centerFreq <= 14000000L) { // covers 10MHz WWV AFP 11-03-22
       currentBand2 = BAND_40M;
     } else if (ConfigData.centerFreq >= bands.bands[BAND_20M].fBandLow &&
                ConfigData.centerFreq <= bands.bands[BAND_20M].fBandHigh) {
       currentBand2 = BAND_20M;
-    } else if (ConfigData.centerFreq >= 14000000L &&
-               ConfigData.centerFreq <=
-                   18000000L) { // covers 15MHz WWV AFP 11-03-22
+    } else if (ConfigData.centerFreq >= 14000000L && ConfigData.centerFreq <= 18000000L) { // covers 15MHz WWV AFP 11-03-22
       currentBand2 = BAND_20M;
     } else if (ConfigData.centerFreq >= bands.bands[BAND_17M].fBandLow &&
                ConfigData.centerFreq <= bands.bands[BAND_17M].fBandHigh) {
@@ -302,24 +313,22 @@ void Eeprom::GetFavoriteFrequency() {
 
     if (menu == MenuSelect::MENU_OPTION_SELECT) { // Make a choice??
       switch (ConfigData.activeVFO) {
-      case VFO_A:
-        if (ConfigData.currentBandA ==
-            NUMBER_OF_BANDS) {         // Incremented too far?
-          ConfigData.currentBandA = 0; // Yep. Roll to list front.
+      case VfoState::VFO_A:
+        if (ConfigData.currentBandA == NUMBER_OF_BANDS) { // Incremented too far?
+          ConfigData.currentBandA = 0;                    // Yep. Roll to list front.
         }
         ConfigData.currentBandA = currentBand2;
         TxRxFreq = ConfigData.centerFreq + NCOFreq;
-        ConfigData.lastFrequencies[ConfigData.currentBand][VFO_A] = TxRxFreq;
+        ConfigData.lastFrequencies[ConfigData.currentBand][static_cast<size_t>(VfoState::VFO_A)] = TxRxFreq;
         break;
 
-      case VFO_B:
-        if (ConfigData.currentBandB ==
-            NUMBER_OF_BANDS) {         // Incremented too far?
-          ConfigData.currentBandB = 0; // Yep. Roll to list front.
+      case VfoState::VFO_B:
+        if (ConfigData.currentBandB == NUMBER_OF_BANDS) { // Incremented too far?
+          ConfigData.currentBandB = 0;                    // Yep. Roll to list front.
         } // Same for VFO B
         ConfigData.currentBandB = currentBand2;
         TxRxFreq = ConfigData.centerFreq + NCOFreq;
-        ConfigData.lastFrequencies[ConfigData.currentBand][VFO_B] = TxRxFreq;
+        ConfigData.lastFrequencies[ConfigData.currentBand][static_cast<size_t>(VfoState::VFO_B)] = TxRxFreq;
         break;
       }
     }
@@ -359,13 +368,10 @@ void Eeprom::GetFavoriteFrequency() {
 *****/
 
 void Eeprom::ConfigDataDefaults() {
-  struct config_t *defaultConfig =
-      new config_t;            // Create a copy of the default configuration.
-  ConfigData = *defaultConfig; // Copy the defaults to ConfigData struct.
-  // Initialize the frequency setting based on the last used frequency stored to
-  // EEPROM.
-  TxRxFreq = ConfigData.centerFreq =
-      ConfigData.lastFrequencies[ConfigData.currentBand][ConfigData.activeVFO];
+  struct config_t *defaultConfig = new config_t; // Create a copy of the default configuration.
+  ConfigData = *defaultConfig;                   // Copy the defaults to ConfigData struct.
+  // Initialize the frequency setting based on the last used frequency stored to EEPROM.
+  TxRxFreq = ConfigData.centerFreq = ConfigData.lastFrequencies[ConfigData.currentBand][static_cast<size_t>(ConfigData.activeVFO)];
   ////  RedrawDisplayScreen();  //  Need to refresh display here.
 }
 
@@ -380,13 +386,12 @@ void Eeprom::ConfigDataDefaults() {
 *****/
 
 void Eeprom::CalDataDefaults() {
-  struct calibration_t *defaultCal =
-      new calibration_t; // Create a copy of the default configuration.
-  CalData = *defaultCal; // Copy the defaults to ConfigData struct.
-  // Initialize the frequency setting based on the last used frequency stored to
-  // EEPROM.
-  TxRxFreq = ConfigData.centerFreq =
-      ConfigData.lastFrequencies[ConfigData.currentBand][ConfigData.activeVFO];
+  // Create a copy of the default configuration.
+  struct calibration_t *defaultCal = new calibration_t;
+  // Copy the defaults to ConfigData struct.
+  CalData = *defaultCal;
+  // Initialize the frequency setting based on the last used frequency stored to EEPROM.
+  TxRxFreq = ConfigData.centerFreq = ConfigData.lastFrequencies[ConfigData.currentBand][static_cast<size_t>(ConfigData.activeVFO)];
   ////  RedrawDisplayScreen();  //  Need to refresh display here.
 }
 
@@ -399,7 +404,9 @@ void Eeprom::CalDataDefaults() {
   Return value;
     void
 *****/
-void Eeprom::EEPROMStartup() {
+bool Eeprom::EEPROMStartup() {
+  TRACE_LEVEL(TR_L_TRACE);
+
   int ConfigDataEEPROMSize;
   int ConfigDataStackSize;
   int CalDataEEPROMSize;
@@ -407,18 +414,21 @@ void Eeprom::EEPROMStartup() {
   int BandsEEPROMSize;
   int BandsStackSize;
 
-  //  Determine if the struct ConfigData is compatible (same size) with the one
-  //  stored in EEPROM.
-
+  // Determine if the struct ConfigData is compatible (same size) with the one stored in EEPROM.
   ConfigDataEEPROMSize = EEPROMReadSize(EEPROM_BASE_ADDRESS);
   ConfigDataStackSize = sizeof(ConfigData);
+  TRACE_T41(TR_L_TRACE, "ConfigDataEEPROMSize:%u", ConfigDataEEPROMSize);
+  TRACE_T41(TR_L_TRACE, "ConfigDataStackSize:%u", ConfigDataStackSize);
 
   CalDataEEPROMSize = EEPROMReadSize(CAL_BASE_ADDRESS);
   CalDataStackSize = sizeof(CalData);
+  TRACE_T41(TR_L_TRACE, "CalDataEEPROMSize:%u", CalDataEEPROMSize);
+  TRACE_T41(TR_L_TRACE, "CalDataStackSize:%u", CalDataStackSize);
 
   BandsEEPROMSize = EEPROMReadSize(BANDS_BASE_ADDRESS);
   BandsStackSize = sizeof(bands);
-  //  Serial.printf("BandsStackSize = %d\n", BandsStackSize);
+  TRACE_T41(TR_L_TRACE, "BandsEEPROMSize:%u", BandsEEPROMSize);
+  TRACE_T41(TR_L_TRACE, "BandsStackSize:%u", BandsStackSize);
 
   // For minor revisions to the code, we don't want to overwrite the EEPROM.
   // We will assume the switch matrix and other items are calibrated or
@@ -431,35 +441,61 @@ void Eeprom::EEPROMStartup() {
   // settings. If all else fails, then the user should execute a FLASH erase.
   // The configuration and calibration can then be read from the SD card.
 
-  // The case where struct sizes are the same, indicating no changes to the
-  // struct.  Nothing more to do, return.
-  if (ConfigDataEEPROMSize == ConfigDataStackSize and
-      CalDataEEPROMSize == CalDataStackSize and
-      BandsEEPROMSize == BandsStackSize) {
-    //    Serial.printf("Got to stack versus EEPROM comparison\n");
-    //    Serial.printf("ConfigDataEEPROMSize = %d ConfigDataStackSize = %d\n",
-    //    ConfigDataEEPROMSize, ConfigDataStackSize);
-    //    Serial.printf("CalDataEEPROMSize = %d CalDataStackSize = %d\n",
-    //    CalDataEEPROMSize, CalDataStackSize);
-    ConfigDataRead(); // Read the ConfigData into active memory.
-    CalDataRead();    // Read the CalData into active memory.
-    BandsRead();      // Read the bands array into active memory.
-    return;           // Done, begin radio operation.
+  // The case where struct sizes are the same, indicating no changes to the struct.  Nothing more to do, return.
+  if (ConfigDataEEPROMSize == ConfigDataStackSize and CalDataEEPROMSize == CalDataStackSize and BandsEEPROMSize == BandsStackSize) {
+    TRACE_T41(TR_L_TRACE, "ConfigDataRead() begin");
+    ConfigDataRead();
+    TRACE_T41(TR_L_TRACE, "ConfigDataRead() end");
+
+    TRACE_T41(TR_L_TRACE, "CalDataRead() begin");
+    CalDataRead();
+    TRACE_T41(TR_L_TRACE, "CalDataRead() end");
+
+    TRACE_T41(TR_L_TRACE, "BandsRead() begin");
+    BandsRead();
+    TRACE_T41(TR_L_TRACE, "BandsRead() end");
+
+    return false;
   }
 
-  // If the flow proceeds here, it is time to initialize some things.
-  // The rest of the code will require a switch matrix calibration, and will
-  // write the ConfigData struct to EEPROM.
+// only for developmnet
+#if 0
+  copyMyConfigutation(ConfigData);
+  copyMyCalibration(CalData);
+// or
+  loadMyConfigutation(myConfigFilename,ConfigData);
+  loadMyCalibration(myCalFilename,CalData);
+#endif
 
-  SaveAnalogSwitchValues(); // Calibrate the switch matrix.
-  ConfigDataWriteSize(
-      ConfigDataStackSize); // Write the size of the struct to EEPROM.
-  ConfigDataWrite(); // Write the ConfigData struct to non-volatile memory.
-  CalDataWriteSize(CalDataStackSize); // Write the size of the struct to EEPROM.
-  CalDataWrite(); // Write the ConfigData struct to non-volatile memory.
-  BandsWriteSize(
-      BandsStackSize); // Write the size of the bands array to EEPROM.
-  BandsWrite();        // Write the bands array to non-volatile memory.
+  // If the flow proceeds here, it is time to initialize some things. The rest of the code will require a switch matrix
+  // calibration, and wil write the ConfigData struct to EEPROM.
 
-  //  Serial.printf("")
+  TRACE_T41(TR_L_TRACE, "BandsAccordingToItuRegion() begin");
+  BandsAccordingToItuRegion();
+  TRACE_T41(TR_L_TRACE, "BandsAccordingToItuRegion() end");
+
+  TRACE_T41(TR_L_TRACE, "CalibrationAccordingToItuRegion() begin");
+  CalibrationAccordingToItuRegion();
+  TRACE_T41(TR_L_TRACE, "CalibrationAccordingToItuRegion() end");
+
+  TRACE_T41(TR_L_TRACE, "ConfigurationAccordingToItuRegion() begin");
+  ConfigurationAccordingToItuRegion();
+  TRACE_T41(TR_L_TRACE, "ConfigurationAccordingToItuRegion() end");
+
+  TRACE_T41(TR_L_TRACE, "ConfigDataWrite() begin");
+  ConfigDataWriteSize(ConfigDataStackSize);
+  ConfigDataWrite();
+  TRACE_T41(TR_L_TRACE, "ConfigDataWrite() end");
+
+  TRACE_T41(TR_L_TRACE, "CalDataWrite() begin");
+  CalDataWriteSize(CalDataStackSize);
+  CalDataWrite();
+  TRACE_T41(TR_L_TRACE, "CalDataWrite() end");
+
+  TRACE_T41(TR_L_TRACE, "BandsWrite() begin");
+  BandsWriteSize(BandsStackSize);
+  BandsWrite();
+  TRACE_T41(TR_L_TRACE, "BandsWrite() end");
+
+  return true;
 }

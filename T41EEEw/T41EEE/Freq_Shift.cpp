@@ -1,5 +1,9 @@
+#include "Freq_Shift.h"
 
-#include "SDT.h"
+#include "Band.h"
+#include "ConfigurationData.h"
+#include "Encoders.h"
+#include "T41EEE.h"
 
 float32_t DMAMEM float_buffer_L_3[2048];
 float32_t DMAMEM float_buffer_R_3[2048];
@@ -32,7 +36,7 @@ component) as it is! xnew(1) =  - ximag(1) + jxreal(1) Parameter list: void
     void
 *****/
 void FreqShift1() {
-  for (unsigned i = 0; i < BUFFER_SIZE * N_BLOCKS; i += 4) {
+  for (unsigned i = 0; i < BUFFER_SIZE * N_B; i += 4) {
     hh1 = -float_buffer_R[i + 1]; // xnew(1) =  - ximag(1) + jxreal(1)
     hh2 = float_buffer_L[i + 1];
     float_buffer_L[i + 1] = hh1;
@@ -46,7 +50,7 @@ void FreqShift1() {
     float_buffer_L[i + 3] = hh1;
     float_buffer_R[i + 3] = hh2;
   }
-  for (unsigned i = 0; i < BUFFER_SIZE * N_BLOCKS; i++) {
+  for (unsigned i = 0; i < BUFFER_SIZE * N_B; i++) {
     float_buffer_L_3[i] = float_buffer_L[i];
     float_buffer_R_3[i] = float_buffer_R[i];
   }
@@ -128,23 +132,17 @@ void FreqShift2() {
   }
 
   NCO_INC =
-      2.0 * PI * (NCOFreq + sideToneShift) /
-      SR[SampleRate]
-          .rate; // 192000 SPS is the actual sample rate used in the Receive ADC
+      2.0 * PI * (NCOFreq + sideToneShift) / SR[static_cast<size_t>(SampleRate)].rate; // 192000 SPS is the actual sample rate used in the Receive ADC
 
   OSC_COS = cos(NCO_INC);
   OSC_SIN = sin(NCO_INC);
 
-  for (i = 0; i < BUFFER_SIZE * N_BLOCKS; i++) {
+  for (i = 0; i < BUFFER_SIZE * N_B; i++) {
     // generate local oscillator on-the-fly:  This takes a lot of processor
     // time!
-    Osc_Q = (Osc_Vect_Q * OSC_COS) -
-            (Osc_Vect_I * OSC_SIN); // Q channel of oscillator
-    Osc_I = (Osc_Vect_I * OSC_COS) +
-            (Osc_Vect_Q * OSC_SIN); // I channel of oscillator
-    Osc_Gain =
-        1.95 - ((Osc_Vect_Q * Osc_Vect_Q) +
-                (Osc_Vect_I * Osc_Vect_I)); // Amplitude control of oscillator
+    Osc_Q = (Osc_Vect_Q * OSC_COS) - (Osc_Vect_I * OSC_SIN);                   // Q channel of oscillator
+    Osc_I = (Osc_Vect_I * OSC_COS) + (Osc_Vect_Q * OSC_SIN);                   // I channel of oscillator
+    Osc_Gain = 1.95 - ((Osc_Vect_Q * Osc_Vect_Q) + (Osc_Vect_I * Osc_Vect_I)); // Amplitude control of oscillator
 
     // rotate vectors while maintaining constant oscillator amplitude
     Osc_Vect_Q = Osc_Gain * Osc_Q;
@@ -152,11 +150,8 @@ void FreqShift2() {
     //
     // do actual frequency conversion
     float freqAdjFactor = 1.1;
-    float_buffer_L[i] =
-        (float_buffer_L_3[i] * freqAdjFactor * Osc_Q) +
-        (float_buffer_R_3[i] * freqAdjFactor *
-         Osc_I); // multiply I/Q data by sine/cosine data to do translation
-    float_buffer_R[i] = (float_buffer_R_3[i] * freqAdjFactor * Osc_Q) -
-                        (float_buffer_L_3[i] * freqAdjFactor * Osc_I);
+    float_buffer_L[i] = (float_buffer_L_3[i] * freqAdjFactor * Osc_Q) +
+                        (float_buffer_R_3[i] * freqAdjFactor * Osc_I); // multiply I/Q data by sine/cosine data to do translation
+    float_buffer_R[i] = (float_buffer_R_3[i] * freqAdjFactor * Osc_Q) - (float_buffer_L_3[i] * freqAdjFactor * Osc_I);
   }
 }

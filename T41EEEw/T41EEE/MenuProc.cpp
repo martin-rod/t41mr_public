@@ -1,49 +1,41 @@
+#include "MenuProc.h"
 
+#include "AudioSignal.h"
+#include "Button.h"
+#include "CWProcessing.h"
+#include "CalibrationData.h"
+#include "ConfigurationData.h"
+#include "Display.h"
+#include "Eeprom.h"
+#include "Encoders.h"
+#include "Filter.h"
+#include "MyConfigurationFile.h"
+#include "SSB_Exciter.h"
+#include "T41EEE.h"
+#include "Tune.h"
+#include "Utility.h"
 
-// ShowMenu
-// CalibrateOptions
-// CWOptions
-// Spectrum Options
-// AGC Options
-// Receive Equalizer Options
-// SSB Options
-// RF Options
-// ConfigData Options
-// CalData Options
+constexpr int PIXELS_PER_EQUALIZER_DELTA = 10; // Number of pixels per detent of encoder for equalizer changes
 
-#include "SDT.h"
+constexpr int DEFAULT_EQUALIZER_BAR = 100; // Default equalizer bar height
+constexpr int VFOA_PIXEL_LENGTH = 275;
 
 int micChoice = 0;
 int splitOn = 0;
 int IQChoice = 0;
 
-/*****
-  Purpose: void ShowMenu()
+bool calibrateFlag = false;
+bool morseDecodeAdjustFlag = false;
 
-  Parameter list:
-    char *menuItem          pointers to the menu
-    int where               0 is a primary menu, 1 is a secondary menu
+int SubmenuSelectString(std::string options[], int numberOfChoices, int defaultStart);
 
-  Return value;
-    void
-*****/
-void ShowMenu(const char *menu[], int where) {
+void ShowMenu(const char *menu[]) {
   tft.setFontScale((enum RA8875tsize)1);
 
-  if (where == PRIMARY_MENU) { // Should print on left edge of top line
-    tft.fillRect(PRIMARY_MENU_X, MENUS_Y, 300, CHAR_HEIGHT,
-                 RA8875_BLUE); // Top-left of display
-    tft.setCursor(5, 0);
-    tft.setTextColor(RA8875_WHITE);
-    tft.print(*menu); // Primary Menu
-  } else {
-    tft.fillRect(SECONDARY_MENU_X, MENUS_Y, 300, CHAR_HEIGHT,
-                 RA8875_GREEN); // Right of primary display
-    tft.setCursor(35, 0);
-    tft.setTextColor(RA8875_WHITE);
-    tft.print(*menu); // Secondary Menu
-  }
-  return;
+  tft.fillRect(PRIMARY_MENU_X, MENUS_Y, 300, CHAR_HEIGHT, RA8875_BLUE); // Top-left of display
+  tft.setCursor(5, 0);
+  tft.setTextColor(RA8875_WHITE);
+  tft.print(*menu); // Primary Menu
 }
 
 // Updates by KF5N to CalibrateOptions() function.  Added SSB Carrier and SSB
@@ -67,29 +59,24 @@ void CalibrateOptions() {
   int32_t increment = 100L;
   MenuSelect menu;
   char freqCal[] = "Freq Cal: ";
-  tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH + 30, CHAR_HEIGHT,
-               RA8875_BLACK);
+  tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH + 30, CHAR_HEIGHT, RA8875_BLACK);
 
   // Select the type of calibration, and then skip this during the loop()
   // function. Note that some calibrate options run inside the loop() function!
-  if (calibrateFlag == 0) { //    0             1           2               3 4
-                            //    5             6              7 8 9 10 11 12 13
-                            //    14               15              16 17 18
+  if (calibrateFlag == false) { //    0             1           2               3 4
+                                //    5             6              7 8 9 10 11 12 13
+                                //    14               15              16 17 18
     const std::string IQOptions[]{
-        "Freq Cal",         "CW PA Cal",     "CW Rec Cal",    "CW Carrier Cal",
-        "CW Xmit Cal",      "SSB PA Cal",    "SSB Rec Cal",   "SSB Carrier Cal",
-        "SSB Transmit Cal", "CW Radio Cal",  "CW Refine Cal", "SSB Radio Cal",
-        "SSB Refine Cal",   "dBm Level Cal", "DAC Offset CW", "DAC Offset SSB",
-        "Btn Cal",          "Btn Repeat",    "Cancel"}; // AFP 10-21-22
-    IQChoice = SubmenuSelect(IQOptions, 19, 0);         // AFP 10-21-22
+        "Freq Cal",        "CW PA Cal",        "CW Rec Cal",   "CW Carrier Cal", "CW Xmit Cal",   "SSB PA Cal",     "SSB Rec Cal",
+        "SSB Carrier Cal", "SSB Transmit Cal", "CW Radio Cal", "CW Refine Cal",  "SSB Radio Cal", "SSB Refine Cal", "dBm Level Cal",
+        "DAC Offset CW",   "DAC Offset SSB",   "Btn Cal",      "Btn Repeat",     "Cancel"}; // AFP 10-21-22
+    IQChoice = SubmenuSelect(IQOptions, 19, 0);                                             // AFP 10-21-22
   }
   calibrateFlag = 1;
   switch (IQChoice) {
 
   case 0: // Calibrate Frequency  - uses WWV
-    CalData.freqCorrectionFactor =
-        GetEncoderValueLive(-200000, 200000, CalData.freqCorrectionFactor,
-                            increment, freqCal, false);
+    CalData.freqCorrectionFactor = GetEncoderValueLive(-200000, 200000, CalData.freqCorrectionFactor, increment, freqCal, false);
     if (CalData.freqCorrectionFactor != freqCorrectionFactorOld) {
       si5351.set_correction(CalData.freqCorrectionFactor, SI5351_PLL_INPUT_XO);
       freqCorrectionFactorOld = CalData.freqCorrectionFactor;
@@ -97,38 +84,32 @@ void CalibrateOptions() {
     menu = readButton();
     if (menu != MenuSelect::BOGUS_PIN_READ) {       // Any button press??
       if (menu == MenuSelect::MENU_OPTION_SELECT) { // Yep. Make a choice??
-        tft.fillRect(SECONDARY_MENU_X - 1, MENUS_Y, EACH_MENU_WIDTH + 35,
-                     CHAR_HEIGHT + 1, RA8875_BLACK);
+        tft.fillRect(SECONDARY_MENU_X - 1, MENUS_Y, EACH_MENU_WIDTH + 35, CHAR_HEIGHT + 1, RA8875_BLACK);
         eeprom.CalDataWrite();
-        calibrateFlag = 0;
+        calibrateFlag = false;
       }
     }
     break;
 
   case 1: // CW PA Cal
     CalData.CWPowerCalibrationFactor[ConfigData.currentBand] =
-        GetEncoderValueLive(
-            0.0, 1.0, CalData.CWPowerCalibrationFactor[ConfigData.currentBand],
-            0.01, (char *)"CW PA Cal: ", false);
+        GetEncoderValueLive(0.0, 1.0, CalData.CWPowerCalibrationFactor[ConfigData.currentBand], 0.01, (char *)"CW PA Cal: ", false);
     ConfigData.powerOutCW[ConfigData.currentBand] =
-        sqrt(ConfigData.transmitPowerLevel / 20.0) *
-        CalData.CWPowerCalibrationFactor[ConfigData.currentBand];
+        sqrt(ConfigData.transmitPowerLevel / 20.0) * CalData.CWPowerCalibrationFactor[ConfigData.currentBand];
     menu = readButton();
     if (menu != MenuSelect::BOGUS_PIN_READ) {       // Any button press??
       if (menu == MenuSelect::MENU_OPTION_SELECT) { // Yep. Make a choice??
-        tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH + 35,
-                     CHAR_HEIGHT, RA8875_BLACK);
+        tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH + 35, CHAR_HEIGHT, RA8875_BLACK);
         eeprom.ConfigDataWrite();
         eeprom.CalDataWrite();
-        calibrateFlag = 0;
+        calibrateFlag = false;
       }
     }
     break;
 
   case 2: // CW IQ Receive Cal - Gain and Phase
-    cwcalibrater.DoReceiveCalibrate(
-        0, false, false,
-        true); // This function was significantly revised.  KF5N August 16, 2023
+    cwcalibrater.DoReceiveCalibrate(0, false, false,
+                                    true); // This function was significantly revised.  KF5N August 16, 2023
     break;
 
   case 3: // CW Xmit Carrier calibration.
@@ -136,37 +117,31 @@ void CalibrateOptions() {
     break;
 
   case 4: // CW IQ Transmit Cal - Gain and Phase  //AFP 2-21-23
-    cwcalibrater.DoXmitCalibrate(
-        0, false, false,
-        true); // This function was significantly revised.  KF5N August 16, 2023
+    cwcalibrater.DoXmitCalibrate(0, false, false,
+                                 true); // This function was significantly revised.  KF5N August 16, 2023
     break;
 
   case 5: // SSB PA Cal
-    CalData.SSBPowerCalibrationFactor[ConfigData.currentBand] =
-        GetEncoderValueLive(
-            0.0, 1.0, CalData.SSBPowerCalibrationFactor[ConfigData.currentBand],
-            0.01, (char *)"SSB PA Cal: ", false);
+    CalData.SSBPowerCalibrationFactor[ConfigData.currentBand] = GetEncoderValueLive(
+        0.0, 1.0, CalData.SSBPowerCalibrationFactor[ConfigData.currentBand], 0.01, (char *)"SSB PA Cal: ", false);
     ConfigData.powerOutSSB[ConfigData.currentBand] =
-        sqrt(ConfigData.transmitPowerLevel / 20.0) *
-        CalData.SSBPowerCalibrationFactor[ConfigData.currentBand];
+        sqrt(ConfigData.transmitPowerLevel / 20.0) * CalData.SSBPowerCalibrationFactor[ConfigData.currentBand];
     menu = readButton();
     if (menu != MenuSelect::BOGUS_PIN_READ) {       // Any button press??
       if (menu == MenuSelect::MENU_OPTION_SELECT) { // Yep. Make a choice??
-        tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH + 35,
-                     CHAR_HEIGHT, RA8875_BLACK);
+        tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH + 35, CHAR_HEIGHT, RA8875_BLACK);
         eeprom.CalDataWrite();
         eeprom.ConfigDataWrite();
-        calibrateFlag = 0;
+        calibrateFlag = false;
       }
     }
     break; // Missing break.  KF5N August 12, 2023
 
   case 6: // SSB receive cal
-    cwcalibrater.DoReceiveCalibrate(
-        1, false, false,
-        true); // This function was significantly revised.  KF5N August 16, 2023
-               //      eeprom.CalDataWrite(); // Save calibration numbers and
-               //      configuration.  KF5N August 12, 2023
+    cwcalibrater.DoReceiveCalibrate(1, false, false,
+                                    true); // This function was significantly revised.  KF5N August 16, 2023
+                                           //      eeprom.CalDataWrite(); // Save calibration numbers and
+                                           //      configuration.  KF5N August 12, 2023
     break;
 
   case 7: // SSB Carrier Cal
@@ -176,42 +151,40 @@ void CalibrateOptions() {
     break;
 
   case 8: // SSB Transmit cal
-    ssbcalibrater.DoXmitCalibrate(
-        false, false,
-        true); // This function was significantly revised.  KF5N August 16, 2023
-               //      eeprom.CalDataWrite();  // Save calibration numbers and
-               //      configuration.  KF5N August 12, 2023
+    ssbcalibrater.DoXmitCalibrate(false, false,
+                                  true); // This function was significantly revised.  KF5N August 16, 2023
+                                         //      eeprom.CalDataWrite();  // Save calibration numbers and
+                                         //      configuration.  KF5N August 12, 2023
     break;
 
   case 9: // CW fully automatic radio calibration.
     cwcalibrater.RadioCal(false);
-    calibrateFlag = 0;
+    calibrateFlag = false;
     //      eeprom.CalDataWrite();  // Save calibration numbers and
     //      configuration.  KF5N August 12, 2023
     break;
 
   case 10: // CW full automatic calibration refinement.
     cwcalibrater.RadioCal(true);
-    calibrateFlag = 0;
+    calibrateFlag = false;
     //      eeprom.CalDataWrite();  // Save calibration numbers and
     //      configuration.  KF5N August 12, 2023
     break;
 
   case 11: // SSB fully automatic radio calibration.
     ssbcalibrater.RadioCal(false);
-    calibrateFlag = 0;
+    calibrateFlag = false;
     break;
 
   case 12: // SSB fully automatic calibration refinement.
     ssbcalibrater.RadioCal(true);
-    calibrateFlag = 0;
+    calibrateFlag = false;
     break;
 
   case 13: // dBm level cal.  Was choose CW calibration tone frequency.
            //      calibrater.SelectCalFreq();
-           //      calibrateFlag = 0;
-    CalData.dBm_calibration = GetEncoderValueLive(
-        0, 100, CalData.dBm_calibration, 1, (char *)"dBm Cal: ", false);
+           //      calibrateFlag = false;
+    CalData.dBm_calibration = GetEncoderValueLive(0, 100, CalData.dBm_calibration, 1, (char *)"dBm Cal: ", false);
     if (CalData.dBm_calibration != freqCorrectionFactorOld) {
       //        si5351.set_correction(ConfigData.freqCorrectionFactor,
       //        SI5351_PLL_INPUT_XO);
@@ -220,24 +193,21 @@ void CalibrateOptions() {
     menu = readButton();
     if (menu != MenuSelect::BOGUS_PIN_READ) {       // Any button press??
       if (menu == MenuSelect::MENU_OPTION_SELECT) { // Yep. Make a choice??
-        tft.fillRect(SECONDARY_MENU_X - 1, MENUS_Y, EACH_MENU_WIDTH + 35,
-                     CHAR_HEIGHT + 1, RA8875_BLACK);
+        tft.fillRect(SECONDARY_MENU_X - 1, MENUS_Y, EACH_MENU_WIDTH + 35, CHAR_HEIGHT + 1, RA8875_BLACK);
         eeprom.CalDataWrite();
-        calibrateFlag = 0;
+        calibrateFlag = false;
       }
     }
     break;
 
   case 14: // Set DAC offset for CW carrier cancellation.
-    CalData.dacOffsetCW = GetEncoderValueLiveQ15t(
-        -5000, 5000, CalData.dacOffsetCW, 50, (char *)"DC Offset:", false);
+    CalData.dacOffsetCW = GetEncoderValueLiveQ15t(-5000, 5000, CalData.dacOffsetCW, 50, (char *)"DC Offset:", false);
     menu = readButton();
     if (menu != MenuSelect::BOGUS_PIN_READ) {
       if (menu == MenuSelect::MENU_OPTION_SELECT) {
-        tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH + 35,
-                     CHAR_HEIGHT, RA8875_BLACK);
+        tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH + 35, CHAR_HEIGHT, RA8875_BLACK);
         eeprom.CalDataWrite();
-        calibrateFlag = 0;
+        calibrateFlag = false;
       }
     }
     //      eeprom.CalDataWrite();  // Save calibration numbers and
@@ -245,15 +215,13 @@ void CalibrateOptions() {
     break;
 
   case 15: // Set DAC offset for SSB carrier cancellation.
-    CalData.dacOffsetSSB = GetEncoderValueLiveQ15t(
-        -5000, 5000, CalData.dacOffsetSSB, 50, (char *)"DC Offset:", false);
+    CalData.dacOffsetSSB = GetEncoderValueLiveQ15t(-5000, 5000, CalData.dacOffsetSSB, 50, (char *)"DC Offset:", false);
     menu = readButton();
     if (menu != MenuSelect::BOGUS_PIN_READ) {
       if (menu == MenuSelect::MENU_OPTION_SELECT) {
-        tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH + 35,
-                     CHAR_HEIGHT, RA8875_BLACK);
+        tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH + 35, CHAR_HEIGHT, RA8875_BLACK);
         eeprom.CalDataWrite();
-        calibrateFlag = 0;
+        calibrateFlag = false;
       }
     }
     //      eeprom.CalDataWrite();  // Save calibration numbers and
@@ -262,7 +230,7 @@ void CalibrateOptions() {
 
   case 16: // Calibrate buttons
     SaveAnalogSwitchValues();
-    calibrateFlag = 0;
+    calibrateFlag = false;
     RedrawDisplayScreen();
     eeprom.CalDataWrite(); // Save calibration numbers and configuration.  KF5N
                            // August 12, 2023
@@ -270,15 +238,13 @@ void CalibrateOptions() {
 
   case 17: // Set button repeat rate
     CalData.buttonRepeatDelay =
-        1000 * GetEncoderValueLive(0, 5000, CalData.buttonRepeatDelay / 1000, 1,
-                                   (char *)"Btn Repeat:  ", false);
+        1000 * GetEncoderValueLive(0, 5000, CalData.buttonRepeatDelay / 1000, 1, (char *)"Btn Repeat:  ", false);
     menu = readButton();
     if (menu != MenuSelect::BOGUS_PIN_READ) {
       if (menu == MenuSelect::MENU_OPTION_SELECT) {
-        tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH + 35,
-                     CHAR_HEIGHT, RA8875_BLACK);
+        tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH + 35, CHAR_HEIGHT, RA8875_BLACK);
         eeprom.CalDataWrite();
-        calibrateFlag = 0;
+        calibrateFlag = false;
       }
     }
     break;
@@ -289,7 +255,7 @@ void CalibrateOptions() {
            //      DrawBandWidthIndicatorBar();  // AFP 10-20-22
            //      ShowFrequency();
            //      BandInformation();
-    calibrateFlag = 0;
+    calibrateFlag = false;
     break;
 
   default:
@@ -303,27 +269,21 @@ void CalibrateOptions() {
   int32_t increment = 100L;
   MenuSelect menu;
 
-  tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH + 30, CHAR_HEIGHT,
-               RA8875_BLACK);
+  tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH + 30, CHAR_HEIGHT, RA8875_BLACK);
 
-  // Select the type of calibration, and then skip this during the loop()
-  // function.
-  if (calibrateFlag == 0) {
-    const std::string IQOptions[15]{
-        "Freq Cal",         "CW PA Cal",      "CW Rec Cal",
-        "CW Xmit Cal",      "SSB PA Cal",     "SSB Rec Cal",
-        "SSB Transmit Cal", "CW Radio Cal",   "CW Refine Cal",
-        "SSB Radio Cal",    "SSB Refine Cal", "dBm Level Cal",
-        "Btn Cal",          "Btn Repeat",     "Cancel"}; // AFP 10-21-22
-    IQChoice = SubmenuSelect(IQOptions, 15, 0);          // AFP 10-21-22
+  // Select the type of calibration, and then skip this during the loop() function.
+  if (calibrateFlag == false) {
+    const std::string IQOptions[15]{"Freq Cal",       "CW PA Cal",        "CW Rec Cal",   "CW Xmit Cal",   "SSB PA Cal",
+                                    "SSB Rec Cal",    "SSB Transmit Cal", "CW Radio Cal", "CW Refine Cal", "SSB Radio Cal",
+                                    "SSB Refine Cal", "dBm Level Cal",    "Btn Cal",      "Btn Repeat",    "Cancel"};
+    IQChoice = SubmenuSelect(IQOptions, 15, 0);
   }
   calibrateFlag = true;
   switch (IQChoice) {
 
   case 0: // Calibrate Frequency  - uses WWV
     CalData.freqCorrectionFactor =
-        GetEncoderValueLive(-200000, 200000, CalData.freqCorrectionFactor,
-                            increment, (char *)"Freq Cal: ", false);
+        GetEncoderValueLive(-200000, 200000, CalData.freqCorrectionFactor, increment, (char *)"Freq Cal: ", false);
     if (CalData.freqCorrectionFactor != freqCorrectionFactorOld) {
       si5351.set_correction(CalData.freqCorrectionFactor, SI5351_PLL_INPUT_XO);
       freqCorrectionFactorOld = CalData.freqCorrectionFactor;
@@ -331,8 +291,7 @@ void CalibrateOptions() {
     menu = readButton();
     if (menu != MenuSelect::BOGUS_PIN_READ) {       // Any button press??
       if (menu == MenuSelect::MENU_OPTION_SELECT) { // Yep. Make a choice??
-        tft.fillRect(SECONDARY_MENU_X - 1, MENUS_Y, EACH_MENU_WIDTH + 35,
-                     CHAR_HEIGHT + 1, RA8875_BLACK);
+        tft.fillRect(SECONDARY_MENU_X - 1, MENUS_Y, EACH_MENU_WIDTH + 35, CHAR_HEIGHT + 1, RA8875_BLACK);
         eeprom.CalDataWrite();
         calibrateFlag = false;
       }
@@ -341,106 +300,88 @@ void CalibrateOptions() {
 
   case 1: // CW PA Cal
     CalData.CWPowerCalibrationFactor[ConfigData.currentBand] =
-        GetEncoderValueLive(
-            0.0, 1.0, CalData.CWPowerCalibrationFactor[ConfigData.currentBand],
-            0.01, (char *)"CW PA Cal: ", false);
+        GetEncoderValueLive(0.0, 1.0, CalData.CWPowerCalibrationFactor[ConfigData.currentBand], 0.01, (char *)"CW PA Cal: ", false);
     ConfigData.powerOutCW[ConfigData.currentBand] =
-        sqrt(ConfigData.transmitPowerLevel / 20.0) *
-        CalData.CWPowerCalibrationFactor[ConfigData.currentBand];
+        sqrt(ConfigData.transmitPowerLevel / 20.0) * CalData.CWPowerCalibrationFactor[ConfigData.currentBand];
     menu = readButton();
     if (menu != MenuSelect::BOGUS_PIN_READ) {       // Any button press??
       if (menu == MenuSelect::MENU_OPTION_SELECT) { // Yep. Make a choice??
-        tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH + 35,
-                     CHAR_HEIGHT, RA8875_BLACK);
+        tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH + 35, CHAR_HEIGHT, RA8875_BLACK);
         eeprom.ConfigDataWrite();
         eeprom.CalDataWrite();
-        calibrateFlag = 0;
+        calibrateFlag = false;
       }
     }
-
     break;
-
   case 2: // CW IQ Receive Cal - Gain and Phase
-    cwcalibrater.DoReceiveCalibrate(
-        0, false, false,
-        true); // This function was significantly revised.  KF5N August 16, 2023
-               //      eeprom.CalDataWrite();                             //
-               //      Save calibration numbers and configuration.  KF5N August
-               //      12, 2023
+    // This function was significantly revised.  KF5N August 16, 2023
+    cwcalibrater.DoReceiveCalibrate(0, false, false, true);
+    // Save calibration numbers and configuration.  KF5N August 12, 2023
+    // eeprom.CalDataWrite();
     break;
+  case 3: // CW IQ Transmit Cal - Gain and Phase
+    // This function was significantly revised.  KF5N August 16, 2023
+    cwcalibrater.DoXmitCalibrate(0, false, false, true);
 
-  case 3: // CW IQ Transmit Cal - Gain and Phase  //AFP 2-21-23
-    cwcalibrater.DoXmitCalibrate(
-        0, false, false,
-        true); // This function was significantly revised.  KF5N August 16, 2023
-               //      eeprom.CalDataWrite();                          // Save
-               //      calibration numbers and configuration.  KF5N August 12,
-               //      2023
+    // Save calibration numbers and configuration.  KF5N August 12, 2023
+    // eeprom.CalDataWrite();
     break;
-
   case 4: // SSB PA Cal
-    CalData.SSBPowerCalibrationFactor[ConfigData.currentBand] =
-        GetEncoderValueLive(
-            0.0, 1.0, CalData.SSBPowerCalibrationFactor[ConfigData.currentBand],
-            0.01, (char *)"SSB PA Cal: ", false);
+    CalData.SSBPowerCalibrationFactor[ConfigData.currentBand] = GetEncoderValueLive(
+        0.0, 1.0, CalData.SSBPowerCalibrationFactor[ConfigData.currentBand], 0.01, (char *)"SSB PA Cal: ", false);
     ConfigData.powerOutSSB[ConfigData.currentBand] =
-        sqrt(ConfigData.transmitPowerLevel / 20.0) *
-        CalData.SSBPowerCalibrationFactor[ConfigData.currentBand];
+        sqrt(ConfigData.transmitPowerLevel / 20.0) * CalData.SSBPowerCalibrationFactor[ConfigData.currentBand];
     menu = readButton();
     if (menu != MenuSelect::BOGUS_PIN_READ) {       // Any button press??
       if (menu == MenuSelect::MENU_OPTION_SELECT) { // Yep. Make a choice??
-        tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH + 35,
-                     CHAR_HEIGHT, RA8875_BLACK);
+        tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH + 35, CHAR_HEIGHT, RA8875_BLACK);
         eeprom.ConfigDataWrite();
         eeprom.CalDataWrite();
-        calibrateFlag = 0;
+        calibrateFlag = false;
       }
     }
 
     break; // Missing break.  KF5N August 12, 2023
 
   case 5: // SSB IQ Receive Cal - Gain and Phase
-    cwcalibrater.DoReceiveCalibrate(
-        1, false, false,
-        true); // This function was significantly revised.  KF5N August 16, 2023
-               //      eeprom.CalDataWrite();                             //
-               //      Save calibration numbers and configuration.  KF5N August
-               //      12, 2023
+    cwcalibrater.DoReceiveCalibrate(1, false, false,
+                                    true); // This function was significantly revised.  KF5N August 16, 2023
+                                           //      eeprom.CalDataWrite();                             //
+                                           //      Save calibration numbers and configuration.  KF5N August
+                                           //      12, 2023
     break;
 
   case 6:
-    ssbcalibrater.DoXmitCalibrate(
-        false, false, true); // SSB Transmit cal
-                             //      eeprom.CalDataWrite(); // Save calibration
-                             //      numbers and configuration.  KF5N August 12,
-                             //      2023
+    ssbcalibrater.DoXmitCalibrate(false, false, true); // SSB Transmit cal
+                                                       //      eeprom.CalDataWrite(); // Save calibration
+                                                       //      numbers and configuration.  KF5N August 12,
+                                                       //      2023
     break;
 
   case 7: //  CW fully automatic radio calibration.
     cwcalibrater.RadioCal(false);
-    calibrateFlag = 0;
+    calibrateFlag = false;
     break;
 
   case 8: // CW fully automatic calibration refinement.
     cwcalibrater.RadioCal(true);
-    calibrateFlag = 0;
+    calibrateFlag = false;
     break;
 
   case 9: // SSB fully automatic radio calibration.
     ssbcalibrater.RadioCal(false);
-    calibrateFlag = 0;
+    calibrateFlag = false;
     break;
 
   case 10: // SSB fully automatic calibration refinement.
     ssbcalibrater.RadioCal(true);
-    calibrateFlag = 0;
+    calibrateFlag = false;
     break;
 
   case 11: // dBm level cal.  Was choose CW calibration tone frequency.
            //      calibrater.SelectCalFreq();
-           //      calibrateFlag = 0;
-    CalData.dBm_calibration = GetEncoderValueLive(
-        0, 100, CalData.dBm_calibration, 1, (char *)"dBm Cal: ", false);
+           //      calibrateFlag = false;
+    CalData.dBm_calibration = GetEncoderValueLive(0, 100, CalData.dBm_calibration, 1, (char *)"dBm Cal: ", false);
     if (CalData.dBm_calibration != freqCorrectionFactorOld) {
       //        si5351.set_correction(ConfigData.freqCorrectionFactor,
       //        SI5351_PLL_INPUT_XO);
@@ -449,17 +390,16 @@ void CalibrateOptions() {
     menu = readButton();
     if (menu != MenuSelect::BOGUS_PIN_READ) {       // Any button press??
       if (menu == MenuSelect::MENU_OPTION_SELECT) { // Yep. Make a choice??
-        tft.fillRect(SECONDARY_MENU_X - 1, MENUS_Y, EACH_MENU_WIDTH + 35,
-                     CHAR_HEIGHT + 1, RA8875_BLACK);
+        tft.fillRect(SECONDARY_MENU_X - 1, MENUS_Y, EACH_MENU_WIDTH + 35, CHAR_HEIGHT + 1, RA8875_BLACK);
         eeprom.CalDataWrite();
-        calibrateFlag = 0;
+        calibrateFlag = false;
       }
     }
     break;
 
   case 12: // Calibrate buttons
     SaveAnalogSwitchValues();
-    calibrateFlag = 0;
+    calibrateFlag = false;
     RedrawDisplayScreen();
     //      ShowFrequency();
     //      DrawFrequencyBarValue();
@@ -469,21 +409,19 @@ void CalibrateOptions() {
 
   case 13: // Set button repeat rate
     CalData.buttonRepeatDelay =
-        1000 * GetEncoderValueLive(0, 5000, CalData.buttonRepeatDelay / 1000, 1,
-                                   (char *)"Btn Repeat:  ", false);
+        1000 * GetEncoderValueLive(0, 5000, CalData.buttonRepeatDelay / 1000, 1, (char *)"Btn Repeat:  ", false);
     menu = readButton();
     if (menu != MenuSelect::BOGUS_PIN_READ) {
       if (menu == MenuSelect::MENU_OPTION_SELECT) {
-        tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH + 35,
-                     CHAR_HEIGHT, RA8875_BLACK);
+        tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH + 35, CHAR_HEIGHT, RA8875_BLACK);
         eeprom.CalDataWrite();
-        calibrateFlag = 0;
+        calibrateFlag = false;
       }
     }
     break;
 
   case 14: // Cancelled choice
-    calibrateFlag = 0;
+    calibrateFlag = false;
     break;
 
   default:
@@ -492,7 +430,6 @@ void CalibrateOptions() {
 }
 #endif
 
-// ==============  AFP 10-22-22 ==================
 /*****
   Purpose: Present the CW options available to the user.  Change and store to
 ConfigData.
@@ -507,10 +444,8 @@ void CWOptions() // new option for Sidetone and Delay JJP 9/1/22
 {
   // const char *cwChoices[]{ "Decode Sens", "CW Filter", "CW Offset", "WPM",
   // "Sidetone Volume", "Key Type", "Paddle Flip", "Transmit Delay", "Cancel" };
-  std::string cwChoices[]{"Decode Sens", "CW Filter",        "CW Offset",
-                          "WPM",         "Sidetone Speaker", "Sidetone Headpho",
-                          "Key Type",    "Paddle Flip",      "Transmit Delay",
-                          "Cancel"};
+  std::string cwChoices[]{"Decode Sens", "CW Filter",   "CW Offset",      "WPM",   "Sidetone Speaker", "Sidetone Headpho",
+                          "Key Type",    "Paddle Flip", "Transmit Delay", "Cancel"};
   int CWChoice = 0;
   uint32_t morseDecodeSensitivityOld = 0;
   //  uint32_t increment = 10;
@@ -528,16 +463,14 @@ void CWOptions() // new option for Sidetone and Delay JJP 9/1/22
 
   case 0: // Set Morse decoder sensitivity.
     ConfigData.morseDecodeSensitivity =
-        GetEncoderValueLiveString(0, 10000, ConfigData.morseDecodeSensitivity,
-                                  100, cwChoices[CWChoice], false);
+        GetEncoderValueLiveString(0, 10000, ConfigData.morseDecodeSensitivity, 100, cwChoices[CWChoice], false);
     if (ConfigData.morseDecodeSensitivity != morseDecodeSensitivityOld) {
       morseDecodeSensitivityOld = ConfigData.morseDecodeSensitivity;
     }
     menu = readButton();
     if (menu != MenuSelect::BOGUS_PIN_READ) {       // Any button press??
       if (menu == MenuSelect::MENU_OPTION_SELECT) { // Yep. Make a choice??
-        tft.fillRect(SECONDARY_MENU_X - 1, MENUS_Y, EACH_MENU_WIDTH + 35,
-                     CHAR_HEIGHT + 1, RA8875_BLACK);
+        tft.fillRect(SECONDARY_MENU_X - 1, MENUS_Y, EACH_MENU_WIDTH + 35, CHAR_HEIGHT + 1, RA8875_BLACK);
         eeprom.ConfigDataWrite();
         morseDecodeAdjustFlag = false;
       }
@@ -554,8 +487,7 @@ void CWOptions() // new option for Sidetone and Delay JJP 9/1/22
 
   case 3: // WPM
     SetWPM();
-    SetTransmitDitLength(
-        ConfigData.currentWPM); // Afp 09-22-22     // JJP 8/19/23
+    SetTransmitDitLength(ConfigData.currentWPM); // Afp 09-22-22     // JJP 8/19/23
     break;
 
   case 4: // Sidetone volume for speaker.
@@ -623,43 +555,9 @@ void SpectrumOptions() { /*
 
   Return value
     void
-*****
+*****/
 void AGCOptions() {
-  const char *AGCChoices[] = { "AGC Off", "AGC Long", "AGC Slow", "AGC Medium",
-"AGC Fast", "Cancel" };  // G0ORX (Added Long) September 5, 2023
-
-  ConfigData.AGCMode = SubmenuSelect(AGCChoices, 6, ConfigData.AGCMode);  //
-G0ORX if (ConfigData.AGCMode == 5) { return;
-  }
-
-  AGCLoadValues();         // G0ORX September 5, 2023
-  ConfigData.ConfigDataWrite();    // ...save it
-  UpdateAGCField();
-}
-void AGCOptions() {
-//  const char *AGCChoices[] = { "AGC Off", "AGC Long", "AGC Slow", "AGC
-Medium", "AGC Fast", "Cancel" };  // G0ORX (Added Long) September 5, 2023 const
-char *AGCChoices[] = { "AGC Off", "AGC On", "Cancel" };  // AGC revised.  Greg
-KF5N February 26, 2025
-
-//  ConfigData.AGCMode = SubmenuSelect(AGCChoices, 6, ConfigData.AGCMode);  //
-G0ORX ConfigData.AGCMode = SubmenuSelect(AGCChoices, 3, ConfigData.AGCMode);  //
-AGC revised.  Greg KF5N February 26, 2025
-
-  if (ConfigData.AGCMode == 2) {
-    return;
-  }
-SetAudioOperatingState(radioState);
-
-  eeprom.ConfigDataWrite();    // ...save it
-  UpdateAGCField();
-}
-*/
-
-void AGCOptions() {
-  const std::string AGCChoices[] = {
-      "AGC On", "AGC Off", "AGC Threshold",
-      "Cancel"}; // G0ORX (Added Long) September 5, 2023
+  const std::string AGCChoices[] = {"AGC On", "AGC Off", "AGC Threshold", "Cancel"}; // G0ORX (Added Long) September 5, 2023
   int agcSet = 0;
 
   agcSet = SubmenuSelect(AGCChoices, 4, ConfigData.AGCMode); // G0ORX
@@ -683,8 +581,7 @@ void AGCOptions() {
           //      ConfigData.AGCThreshold, 1, "AGC Threshold"));
           //      ConfigData.AGCThreshold = GetEncoderValueLiveString(-60.0,
           //      -20.0, ConfigData.AGCThreshold, 1.0, "AGC Thr ", false);
-    ConfigData.AGCThreshold = static_cast<float32_t>(GetEncoderValue(
-        -60, -20, ConfigData.AGCThreshold, 1, "AGC Threshold "));
+    ConfigData.AGCThreshold = static_cast<float32_t>(GetEncoderValue(-60, -20, ConfigData.AGCThreshold, 1, "AGC Threshold "));
 
     initializeAudioPaths();
     break;
@@ -712,12 +609,10 @@ void ProcessEqualizerChoices(int EQType, char *title) {
   //  for (int i = 0; i < EQUALIZER_CELL_COUNT; i++) {
   //  }
 
-  std::string rXeqFreq[14]{" 200", " 250", " 315", " 400", " 500",
-                           " 630", " 800", "1000", "1250", "1600",
-                           "2000", "2500", "3150", "4000"};
-  std::string tXeqFreq[14]{"  50", "  71", " 100", " 141", " 200",
-                           " 283", " 400", " 566", " 800", "1131",
-                           "1600", "2263", "3200", "4526"};
+  std::string rXeqFreq[14]{" 200", " 250", " 315", " 400", " 500", " 630", " 800",
+                           "1000", "1250", "1600", "2000", "2500", "3150", "4000"};
+  std::string tXeqFreq[14]{"  50", "  71", " 100", " 141", " 200", " 283", " 400",
+                           " 566", " 800", "1131", "1600", "2263", "3200", "4526"};
 
   int yLevel[EQUALIZER_CELL_COUNT]; // EQUALIZER_CELL_COUNT 14
 
@@ -761,32 +656,26 @@ void ProcessEqualizerChoices(int EQType, char *title) {
   tft.setFontScale((enum RA8875tsize)0);
 
   tft.setTextColor(RA8875_WHITE);
-  tft.setCursor(xOrigin - 4 - tft.getFontWidth() * 3,
-                yOrigin + tft.getFontHeight());
+  tft.setCursor(xOrigin - 4 - tft.getFontWidth() * 3, yOrigin + tft.getFontHeight());
   tft.print("+12");
-  tft.setCursor(xOrigin - 4 - tft.getFontWidth() * 3,
-                yOrigin + (high / 2) - tft.getFontHeight());
+  tft.setCursor(xOrigin - 4 - tft.getFontWidth() * 3, yOrigin + (high / 2) - tft.getFontHeight());
   tft.print(" 0");
-  tft.setCursor(xOrigin - 4 - tft.getFontWidth() * 3,
-                yOrigin + high - tft.getFontHeight() * 2);
+  tft.setCursor(xOrigin - 4 - tft.getFontWidth() * 3, yOrigin + high - tft.getFontHeight() * 2);
   tft.print("-12");
 
   barTopY = yOrigin + (high / 2);               // 50 + (300 / 2) = 200
   barBottomY = barTopY + DEFAULT_EQUALIZER_BAR; // Default 200 + 100
 
   for (iFreq = 0; iFreq < EQUALIZER_CELL_COUNT; iFreq++) {
-    tft.fillRect(xOrigin + (barWidth + 4) * iFreq,
-                 barTopY - (yLevel[iFreq] - DEFAULT_EQUALIZER_BAR), barWidth,
-                 yLevel[iFreq], RA8875_CYAN);
-    tft.setCursor(xOrigin + (barWidth + 4) * iFreq,
-                  yOrigin + high - tft.getFontHeight() * 2);
+    tft.fillRect(xOrigin + (barWidth + 4) * iFreq, barTopY - (yLevel[iFreq] - DEFAULT_EQUALIZER_BAR), barWidth, yLevel[iFreq],
+                 RA8875_CYAN);
+    tft.setCursor(xOrigin + (barWidth + 4) * iFreq, yOrigin + high - tft.getFontHeight() * 2);
     if (EQType == 0) {
       tft.print(rXeqFreq[iFreq].c_str());
     } else {
       tft.print(tXeqFreq[iFreq].c_str());
     }
-    tft.setCursor(xOrigin + (barWidth + 4) * iFreq + tft.getFontWidth() * 1.5,
-                  yOrigin + high + tft.getFontHeight() * 2);
+    tft.setCursor(xOrigin + (barWidth + 4) * iFreq + tft.getFontWidth() * 1.5, yOrigin + high + tft.getFontHeight() * 2);
     if (EQType == 0) {
       tft.print(yLevel[iFreq]);
     }
@@ -798,18 +687,15 @@ void ProcessEqualizerChoices(int EQType, char *title) {
   columnIndex = 0; // Get ready to set values for columns
   newValue = 0;
   while (columnIndex < EQUALIZER_CELL_COUNT) {
-    xOffset =
-        xOrigin +
-        (barWidth + 4) *
-            columnIndex; // Just do the math once
-                         //    tft.fillRect(xOffset, // Indent to proper bar...
-                         //    Removed this rectangle.  Seems unnecessary.  KF5N
-                         //    November 12, 2023
-                         //                 barBottomY - yLevel[columnIndex] -
-                         //                 1,  // Start at red line barBottomY
-                         //                 - 1, barWidth, // Set bar width
-                         //                 newValue + 1, // Erase old bar -100,
-                         //                 RA8875_BLACK);
+    xOffset = xOrigin + (barWidth + 4) * columnIndex; // Just do the math once
+                                                      //    tft.fillRect(xOffset, // Indent to proper bar...
+                                                      //    Removed this rectangle.  Seems unnecessary.  KF5N
+                                                      //    November 12, 2023
+                                                      //                 barBottomY - yLevel[columnIndex] -
+                                                      //                 1,  // Start at red line barBottomY
+                                                      //                 - 1, barWidth, // Set bar width
+                                                      //                 newValue + 1, // Erase old bar -100,
+                                                      //                 RA8875_BLACK);
 
     tft.fillRect(xOffset,                          // Indent to proper bar...
                  barBottomY - yLevel[columnIndex], // Start at red line
@@ -829,7 +715,7 @@ void ProcessEqualizerChoices(int EQType, char *title) {
         //        // Find new bar height. OK since filterEncoderMove equals 1 or
         //        -1. PIXELS_PER_EQUALIZER_DELTA = 10
         yLevel[columnIndex] += (PIXELS_PER_EQUALIZER_DELTA * filterEncoderMove);
-        tft.fillRect(xOffset, // Indent to proper bar...
+        tft.fillRect(xOffset,                          // Indent to proper bar...
                      barBottomY - yLevel[columnIndex], // Start at red line
                      barWidth,                         // Set bar width
                      yLevel[columnIndex],              // Draw new bar
@@ -837,18 +723,15 @@ void ProcessEqualizerChoices(int EQType, char *title) {
         //        yLevel[columnIndex] = newValue;
 
         tft.fillRect(xOffset + tft.getFontWidth() * 1.5 - 1,
-                     yOrigin + high +
-                         tft.getFontHeight() * 2, // Update bottom number
+                     yOrigin + high + tft.getFontHeight() * 2, // Update bottom number
                      barWidth, CHAR_HEIGHT, RA8875_BLACK);
-        tft.setCursor(xOffset + tft.getFontWidth() * 1.5,
-                      yOrigin + high + tft.getFontHeight() * 2);
+        tft.setCursor(xOffset + tft.getFontWidth() * 1.5, yOrigin + high + tft.getFontHeight() * 2);
         if (EQType == 0) {
           tft.print(yLevel[columnIndex]);
         } else {
           tft.print((yLevel[columnIndex] - 100) / 10);
         }
-        if (yLevel[columnIndex] <
-            DEFAULT_EQUALIZER_BAR) { // Repaint red center line if erased
+        if (yLevel[columnIndex] < DEFAULT_EQUALIZER_BAR) { // Repaint red center line if erased
           tft.drawFastHLine(xOrigin - 4, yOrigin + (high / 2), wide + 4,
                             RA8875_RED); // Clear hole in display center
         }
@@ -867,8 +750,7 @@ void ProcessEqualizerChoices(int EQType, char *title) {
           ConfigData.equalizerRec[columnIndex] = newValue;
         } else {
           if (EQType == 1) {
-            ConfigData.equalizerXmt[columnIndex] =
-                (yLevel[columnIndex] - 100) / 10;
+            ConfigData.equalizerXmt[columnIndex] = (yLevel[columnIndex] - 100) / 10;
           }
         }
 
@@ -893,8 +775,7 @@ void ProcessEqualizerChoices(int EQType, char *title) {
     int           an index into the band array
 *****/
 void EqualizerRecOptions() {
-  const std::string RecEQChoices[] = {"RX EQ On", "RX EQ Off", "RX EQSet",
-                                      "Cancel"}; // Add code practice oscillator
+  const std::string RecEQChoices[] = {"RX EQ On", "RX EQ Off", "RX EQSet", "Cancel"}; // Add code practice oscillator
   int EQChoice = 0;
 
   EQChoice = SubmenuSelect(RecEQChoices, 4, 0);
@@ -929,8 +810,7 @@ void EqualizerRecOptions() {
     int           an index into the band array
 *****/
 void EqualizerXmtOptions() {
-  const std::string XmtEQChoices[] = {"TX EQ On", "TX EQ Off", "TX EQSet",
-                                      "Cancel"}; // Add code practice oscillator
+  const std::string XmtEQChoices[] = {"TX EQ On", "TX EQ Off", "TX EQSet", "Cancel"}; // Add code practice oscillator
   int EQChoice = 0;
 
   EQChoice = SubmenuSelect(XmtEQChoices, 4, 0);
@@ -968,10 +848,8 @@ void SSBOptions() // AFP 09-22-22 All new
   float imdAmplitude = 0.0;
   int imdAmplitudedB = 100;
   MenuSelect menu = MenuSelect::BOGUS_PIN_READ;
-  const std::string micChoices[] = {"CESSB",          "SSB",        "FT8",
-                                    "Comp On",        "Comp Off",   "Mic Gain",
-                                    "Comp Threshold", "Comp Ratio", "IMD Test",
-                                    "Cancel"};
+  const std::string micChoices[] = {"CESSB",          "SSB",        "FT8",      "Comp On", "Comp Off", "Mic Gain",
+                                    "Comp Threshold", "Comp Ratio", "IMD Test", "Cancel"};
 
   micChoice = SubmenuSelect(micChoices, 10, micChoice);
   switch (micChoice) {
@@ -1033,11 +911,8 @@ void SSBOptions() // AFP 09-22-22 All new
     while (menu != MenuSelect::MENU_OPTION_SELECT) {
       menu = readButton(); // Use this to quit.
       // Return IMD amplitude in dB.
-      imdAmplitudedB = GetEncoderValueLive(0.0, 200.0, imdAmplitudedB, 1.0,
-                                           micChoices[8], false);
-      imdAmplitude =
-          pow(10.0, (static_cast<float>(imdAmplitudedB) - 1.0) / 40.0) *
-          0.00001;
+      imdAmplitudedB = GetEncoderValueLive(0.0, 200.0, imdAmplitudedB, 1.0, micChoices[8], false);
+      imdAmplitude = pow(10.0, (static_cast<float>(imdAmplitudedB) - 1.0) / 40.0) * 0.00001;
       AudioNoInterrupts();
       toneSSBCal1.amplitude(imdAmplitude);
       toneSSBCal2.amplitude(imdAmplitude);
@@ -1051,8 +926,7 @@ void SSBOptions() // AFP 09-22-22 All new
     ShowTransmitReceiveStatus();
     if (menu != MenuSelect::BOGUS_PIN_READ) {       // A button press?
       if (menu == MenuSelect::MENU_OPTION_SELECT) { // Exit.
-        tft.fillRect(SECONDARY_MENU_X - 1, MENUS_Y, EACH_MENU_WIDTH + 35,
-                     CHAR_HEIGHT + 1, RA8875_BLACK);
+        tft.fillRect(SECONDARY_MENU_X - 1, MENUS_Y, EACH_MENU_WIDTH + 35, CHAR_HEIGHT + 1, RA8875_BLACK);
       }
     }
     break;
@@ -1082,20 +956,14 @@ void RFOptions() {
   //  const char *rfOptions[] = { "TX Power Set", "RF Gain Set", "RF Auto-Gain
   //  On", "RF Auto-Gain Off", "Auto-Spectrum On", "AutoSpectrum Off", "Cancel"
   //  };
-  const std::string rfOptions[] = {"TX Power Set",
-                                   "RF Gain Set",
-                                   "RF Auto-Gain On",
-                                   "RF Auto-Gain Off",
-                                   "Auto-Spectrum On",
-                                   "AutoSpectrum Off",
-                                   "Cancel"};
+  const std::string rfOptions[] = {"TX Power Set",     "RF Gain Set",      "RF Auto-Gain On", "RF Auto-Gain Off",
+                                   "Auto-Spectrum On", "AutoSpectrum Off", "Cancel"};
   int rfSet = 0;
   rfSet = SubmenuSelect(rfOptions, 7, rfSet);
 
   switch (rfSet) {
   case 0: // TX Power Set.  AFP 10-21-22
-    ConfigData.transmitPowerLevel = static_cast<float32_t>(
-        GetEncoderValue(1, 20, ConfigData.transmitPowerLevel, 1, "Power: "));
+    ConfigData.transmitPowerLevel = static_cast<float32_t>(GetEncoderValue(1, 20, ConfigData.transmitPowerLevel, 1, "Power: "));
     // When the transmit power level is set, this means ALL of the power
     // coefficients must be revised! powerOutCW and powerOutSSB must be updated.
     initPowerCoefficients();
@@ -1106,8 +974,7 @@ void RFOptions() {
 
   case 1: // Manual gain set.
     ConfigData.rfGain[ConfigData.currentBand] =
-        GetEncoderValue(-60, 20, ConfigData.rfGain[ConfigData.currentBand], 5,
-                        (char *)"RF Gain dB: ");
+        GetEncoderValue(-60, 20, ConfigData.rfGain[ConfigData.currentBand], 5, (char *)"RF Gain dB: ");
     eeprom.ConfigDataWrite();
     break;
 
@@ -1164,8 +1031,7 @@ void DoPaddleFlip() {
   choice = lastChoice = 0;
 
   tft.setTextColor(RA8875_BLACK);
-  tft.fillRect(SECONDARY_MENU_X - 100, MENUS_Y, EACH_MENU_WIDTH + 100,
-               CHAR_HEIGHT, RA8875_GREEN);
+  tft.fillRect(SECONDARY_MENU_X - 100, MENUS_Y, EACH_MENU_WIDTH + 100, CHAR_HEIGHT, RA8875_GREEN);
   tft.setCursor(SECONDARY_MENU_X - 93, MENUS_Y + 1);
   tft.print(paddleState[choice]); // Show the default (right paddle = dah
 
@@ -1175,27 +1041,26 @@ void DoPaddleFlip() {
     //    if (valPin != -1) {                                    // button was
     //    pushed
     pushButtonSwitchIndex = readButton(); // Winner, winner...chicken dinner!
-    if (pushButtonSwitchIndex == MenuSelect::MAIN_MENU_UP ||
-        pushButtonSwitchIndex == MenuSelect::MAIN_MENU_DN) {
+    if (pushButtonSwitchIndex == MenuSelect::MAIN_MENU_UP || pushButtonSwitchIndex == MenuSelect::MAIN_MENU_DN) {
       choice = !choice; // Reverse the last choice
-      tft.fillRect(SECONDARY_MENU_X - 100, MENUS_Y, EACH_MENU_WIDTH + 100,
-                   CHAR_HEIGHT, RA8875_GREEN);
+      tft.fillRect(SECONDARY_MENU_X - 100, MENUS_Y, EACH_MENU_WIDTH + 100, CHAR_HEIGHT, RA8875_GREEN);
       tft.setCursor(SECONDARY_MENU_X - 93, MENUS_Y + 1);
       tft.print(paddleState[choice]);
     }
-    if (pushButtonSwitchIndex ==
-        MenuSelect::MENU_OPTION_SELECT) { // Made a choice??
-      if (choice) {                       // Means right-paddle dit
+    if (pushButtonSwitchIndex == MenuSelect::MENU_OPTION_SELECT) {
+      if (choice) {
+        // Means right-paddle dit
         ConfigData.paddleDit = KEYER_DAH_INPUT_RING;
         ConfigData.paddleDah = KEYER_DIT_INPUT_TIP;
-        ConfigData.paddleFlip = 1; // KD0RC
+        ConfigData.paddleFlip = PaddleFlipEnum::RIGHT_PADDLE_DIT;
       } else {
         ConfigData.paddleDit = KEYER_DIT_INPUT_TIP;
         ConfigData.paddleDah = KEYER_DAH_INPUT_RING;
-        ConfigData.paddleFlip = 0; // KD0RC
+        ConfigData.paddleFlip = PaddleFlipEnum::RIGHT_PADDLE_DAH;
+        ;
       }
       EraseMenus();
-      UpdateWPMField(); // KD0RC
+      UpdateWPMField();
       break;
     }
   }
@@ -1213,65 +1078,61 @@ void DoPaddleFlip() {
 *****/
 void VFOSelect() {
   const std::string VFOOptions[] = {"VFO A", "VFO B", "VFO Split", "Cancel"};
-  int toggle;
-  int choice, lastChoice;
+  VfoState toggle;
+  VfoState choice;
+  VfoState lastChoice;
 
   choice = lastChoice = toggle = ConfigData.activeVFO;
   splitOn = 0;
 
   tft.setTextColor(RA8875_BLACK);
-  tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT,
-               RA8875_GREEN);
+  tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT, RA8875_GREEN);
   tft.setCursor(SECONDARY_MENU_X + 7, MENUS_Y + 1);
-  tft.print(VFOOptions[choice].c_str()); // Show the default (right paddle = dah
+  tft.print(VFOOptions[static_cast<size_t>(choice)].c_str());
 
-  choice = SubmenuSelect(VFOOptions, 4, 0);
+  choice = static_cast<VfoState>(SubmenuSelect(VFOOptions, 4, 0));
   delay(10);
   NCOFreq = 0L;
   switch (choice) {
-  case VFO_A: // VFO A
+  case VfoState::VFO_A: // VFO A
     ConfigData.centerFreq = TxRxFreq = ConfigData.currentFreqA;
-    ConfigData.activeVFO = VFO_A;
+    ConfigData.activeVFO = VfoState::VFO_A;
     ConfigData.currentBand = ConfigData.currentBandA;
-    tft.fillRect(FILTER_PARAMETERS_X + 180, FILTER_PARAMETERS_Y, 150, 20,
-                 RA8875_BLACK); // Erase split message
+    // tft.fillRect(FILTER_PARAMETERS_X + 180, FILTER_PARAMETERS_Y, 150, 20, RA8875_BLACK); // Erase split message
     splitOn = 0;
     break;
-
-  case VFO_B: // VFO B
+  case VfoState::VFO_B: // VFO B
     ConfigData.centerFreq = TxRxFreq = ConfigData.currentFreqB;
-    ConfigData.activeVFO = VFO_B;
+    ConfigData.activeVFO = VfoState::VFO_B;
     ConfigData.currentBand = ConfigData.currentBandB;
-    tft.fillRect(FILTER_PARAMETERS_X + 180, FILTER_PARAMETERS_Y, 150, 20,
-                 RA8875_BLACK); // Erase split message
+    // tft.fillRect(FILTER_PARAMETERS_X + 180, FILTER_PARAMETERS_Y, 150, 20, RA8875_BLACK); // Erase split message
     splitOn = 0;
     break;
-
-  case VFO_SPLIT: // Split
+  case VfoState::VFO_SPLIT: // Split
     DoSplitVFO();
+    ConfigData.activeVFO = VfoState::VFO_SPLIT;
     splitOn = 1;
     break;
 
   default: // Cancel
     break;
   }
+
   bands.bands[ConfigData.currentBand].freq = TxRxFreq;
   //  SetBand();           // KF5N July 12, 2023
   SetBandRelay(); // Required when switching VFOs. KF5N July 12, 2023
   SetFreq();
-  //  RedrawDisplayScreen();
+  RedrawDisplayScreen();
   //  BandInformation();
   //  ShowBandwidth();
   FilterBandwidth();
-  tft.fillRect(FREQUENCY_X_SPLIT, FREQUENCY_Y - 12, VFOB_PIXEL_LENGTH,
-               FREQUENCY_PIXEL_HI, RA8875_BLACK); // delete old digit
-  tft.fillRect(FREQUENCY_X, FREQUENCY_Y - 12, VFOA_PIXEL_LENGTH,
-               FREQUENCY_PIXEL_HI,
-               RA8875_BLACK); // delete old digit  tft.setFontScale( (enum
-                              // RA8875tsize) 0);
-                              //  ShowFrequency();
-  // Draw or not draw CW filter graphics to audio spectrum area.  KF5N July 30,
-  // 2023
+  // delete old digit
+  tft.fillRect(FREQUENCY_X_SPLIT, FREQUENCY_Y - 12, VFOB_PIXEL_LENGTH, FREQUENCY_PIXEL_HI, RA8875_BLACK);
+  // delete old digit
+  tft.fillRect(FREQUENCY_X, FREQUENCY_Y - 12, VFOA_PIXEL_LENGTH, FREQUENCY_PIXEL_HI, RA8875_BLACK);
+  // tft.setFontScale( (enum RA8875tsize) 0);
+  ShowFrequency();
+  // Draw or not draw CW filter graphics to audio spectrum area.  KF5N July 30, 2023
   tft.writeTo(L2);
   tft.clearMemory();
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE) {
@@ -1292,101 +1153,87 @@ default settings.
   Return value
     void
 *****/
-void ConfigDataOptions() { //           0               1                2 3 4
-                           //           5                  6                  7
-                           //           8              9           10
-  const std::string ConfigDataOpts[] = {
-      "Save Current",    "Load Defaults",   "Get Favorite",   "Set Favorite",
-      "Copy Config->SD", "Copy SD->Config", "Config->Serial", "Default->Serial",
-      "Stack->Serial",   "SD->Serial",      "Cancel"};
-  int defaultOpt = 0;
-  config_t
-      tempConfig; // A temporary config_t struct to copy ConfigData data into.
-  config_t defaultConfig; // The configuration defaults.
-  defaultOpt = SubmenuSelect(ConfigDataOpts, 11, defaultOpt);
+void ConfigDataOptions() {
+  const std::string ConfigDataOpts[11] = {
+      "Save RAM->EEPROM", "Load Def.->RAM",  "Get Favorite", "Set Favorite", "EEPROM->SD", "SD->RAM->EEPROM",
+      "EEPROM->Serial",   "Default->Serial", "RAM->Serial",  "SD->Serial",   "Cancel",
+  };
+  int defaultOpt = SubmenuSelect(ConfigDataOpts, 11, 0);
   switch (defaultOpt) {
-  case 0: // Save current ConfigData struct to ConfigData non-volatile memory.
-          // Also save the bands struct at the same time!
+  case 0:
+    // Save RAM->EEPROM - Save current configs to ConfigData non-volatile memory.
     eeprom.ConfigDataWrite();
     eeprom.BandsWrite();
     break;
-
   case 1:
-    eeprom.ConfigDataDefaults(); // Restore defaults to ConfigData struct and
-                                 // refresh display.
+    // Load Def.->RAM - Restore defaults to ConfigData struct and refresh display.
+    eeprom.ConfigDataDefaults();
     break;
-
   case 2:
-    eeprom.GetFavoriteFrequency(); // Get a stored frequency and store in active
-                                   // VFO
+    // Get a stored frequency and store in active VFO
+    eeprom.GetFavoriteFrequency();
     break;
-
   case 3:
-    eeprom.SetFavoriteFrequency(); // Set favorites
+    // Set favorites
+    eeprom.SetFavoriteFrequency();
     break;
-
-  case 4:                                            // Copy ConfigData->SD.
-    EEPROM.get(EEPROM_BASE_ADDRESS + 4, tempConfig); // Read as one large chunk
-    json.saveConfiguration(configFilename, tempConfig,
-                           true); // Save ConfigData struct to SD
+  case 4:
+    // Copy EEPROM->SD
+    {
+      config_t tempConfig;
+      EEPROM.get(EEPROM_BASE_ADDRESS + 4, tempConfig);
+      configurationData.saveConfiguration(configFilename, tempConfig, true);
+    }
     break;
-
-  case 5: // Copy SD->ConfigData
-    json.loadConfiguration(configFilename,
-                           ConfigData); // Copy from SD to struct in active
-                                        // memory (on the stack) ConfigData.
+  case 5:
+    // SD->RAM->EEPROM
+    configurationData.loadConfiguration(configFilename, ConfigData);
+    loadMyConfigutation(myConfigFilename, ConfigData);
     eeprom.ConfigDataWrite(); // Write to ConfigData non-volatile memory.
-    initUserDefinedStuff();   // Various things must be initialized.  This is
-                            // normally done in setup().  KF5N February 21, 2024
-    tft.writeTo(L2); // This is specifically to clear the bandwidth indicator
-                     // bar.  KF5N August 7, 2023
+    initUserDefinedStuff();   // Various things must be initialized.  This is normally done in setup().  KF5N February 21, 2024
+    tft.writeTo(L2);          // This is specifically to clear the bandwidth indicator bar.  KF5N August 7, 2023
     tft.clearMemory();
     tft.writeTo(L1);
-    RedrawDisplayScreen(); // Assume there are lots of changes and do a
-                           // heavy-duty refresh.  KF5N August 7, 2023
+    RedrawDisplayScreen(); // Assume there are lots of changes and do a heavy-duty refresh.  KF5N August 7, 2023
+    break;
+  case 6:
+    // EEPROM->Serial
+    {
+      Serial.println(F("Begin EEPROM->Serial"));
+      config_t ConfigData_temp;
+      EEPROM.get(EEPROM_BASE_ADDRESS + 4, ConfigData_temp);
+      // Write the temporary struct to the serial monitor.
+      configurationData.saveConfiguration(configFilename, ConfigData_temp, false);
+      Serial.println(F("End EEPROM->Serial"));
+    }
+    break;
+  case 7:
+    // Defaults->Serial
+    {
+      Serial.println(F("Begin Defaults->Serial"));
+      config_t defaultConfig;
+      // Write default ConfigData struct to the Serial monitor.
+      configurationData.saveConfiguration(configFilename, defaultConfig, false);
+      Serial.println(F("End Defaults->Serial"));
+    }
     break;
 
-  case 6: // ConfigData->Serial
-  {
-    Serial.println(F("\nBegin ConfigData from ConfigData"));
-    // Don't want to overwrite the stack.  Need a temporary struct, read the
-    // ConfigData data into that.
-    config_t ConfigData_temp;
-    EEPROM.get(EEPROM_BASE_ADDRESS + 4, ConfigData_temp);
-    json.saveConfiguration(
-        configFilename, ConfigData_temp,
-        false); // Write the temporary struct to the serial monitor.
-    Serial.println(F("\nEnd ConfigData from ConfigData\n"));
-  } break;
-
-  case 7: // Defaults->Serial
-    Serial.println(F("\nBegin ConfigData defaults"));
-    json.saveConfiguration(
-        configFilename, defaultConfig,
-        false); // Write default ConfigData struct to the Serial monitor.
-    Serial.println(F("\nEnd ConfigData defaults\n"));
+  case 8:
+    // RAM->Serial
+    Serial.println(F("Begin RAM->Serial"));
+    configurationData.saveConfiguration(configFilename, ConfigData, false);
+    Serial.println(F("End RAM->Serial"));
     break;
-
-  case 8: // Current->Serial
-    Serial.println(F("Begin ConfigData on the stack"));
-    json.saveConfiguration(
-        configFilename, ConfigData,
-        false); // Write current ConfigData struct to the Serial monitor.
-    Serial.println(F("\nEnd ConfigData on the stack\n"));
+  case 9:
+    // SD->Serial
+    Serial.println(F("Begin SD->Serial print file"));
+    printFile(configFilename);
+    printFile(myConfigFilename);
+    Serial.println(F("End SD->Serial print file"));
     break;
-
-  case 9: // SDConfigData->Serial
-    Serial.println(F("Begin ConfigData on the SD card"));
-    json.printFile(configFilename); // Write SD card ConfigData struct to the
-                                    // Serial monitor.
-    Serial.println(F("End ConfigData on the SD card\n"));
-    break;
-
   default:
-    defaultOpt = -1; // No choice made
     break;
   }
-  //  return defaultOpt;
 }
 
 /*****
@@ -1399,89 +1246,72 @@ settings.
   Return value
     void
 *****/
-void CalDataOptions() { //           0               1                2 3 4 5 6
-                        //           7          8
-  const std::string CalDataOpts[] = {
-      "Save Current",  "Load Defaults", "Copy Cal->SD",
-      "Copy SD->Cal",  "Cal->Serial",   "Default->Serial",
-      "Stack->Serial", "SD->Serial",    "Cancel"};
-  int defaultOpt = 0;
-  calibration_t
-      tempCal; // A temporary calibration_t struct to copy CalData data into.
-  calibration_t defaultCal; // The configuration defaults.
-  defaultOpt = SubmenuSelect(CalDataOpts, 9, defaultOpt);
+void CalDataOptions() {
+  const std::string CalDataOpts[9] = {"Save RAM->EEPROM", "Load Def.->RAM", "EEPROM->SD", "SD->RAM->EEPROM", "EEPROM->Serial",
+                                      "Default->Serial",  "RAM->Serial",    "SD->Serial", "Cancel"};
+  int defaultOpt = SubmenuSelect(CalDataOpts, 9, 0);
   switch (defaultOpt) {
-  case 0: // Save current CalData struct to ConfigData non-volatile memory.
+  case 0: // Save RAM->EEPROM - Save current CalData struct to ConfigData non-volatile memory.
     eeprom.CalDataWrite();
     break;
-
   case 1:
-    eeprom.CalDataDefaults(); // Restore defaults to CalData struct and refresh
-                              // display.
+    // Load Def.->RAM - Restore defaults to CalData struct and refresh display.
+    eeprom.CalDataDefaults();
     break;
-
-  case 2:                                      // Copy CalData->SD.
-    EEPROM.get(CAL_BASE_ADDRESS + 4, tempCal); // Read as one large chunk
-    json.saveCalibration(calFilename, tempCal,
-                         true); // Save ConfigData struct to SD
+  case 2:
+    // Copy EEPROM->SD
+    {
+      calibration_t tempCal; // A temporary calibration_t struct to copy CalData data into.
+      EEPROM.get(CAL_BASE_ADDRESS + 4, tempCal);
+      calibrationData.saveCalibration(calFilename, tempCal, true);
+    }
     break;
-
-  case 3: // Copy SD->CalData
-    json.loadCalibration(calFilename,
-                         CalData); // Copy from SD to struct in active memory
-                                   // (on the stack) ConfigData.
-    eeprom.CalDataWrite();         // Write to ConfigData non-volatile memory.
-    initUserDefinedStuff(); // Various things must be initialized.  This is
-                            // normally done in setup().  KF5N February 21, 2024
-    tft.writeTo(L2); // This is specifically to clear the bandwidth indicator
-                     // bar.  KF5N August 7, 2023
+  case 3:
+    // SD->RAM->EEPROM
+    calibrationData.loadCalibration(calFilename, CalData);
+    loadMyCalibration(myCalFilename, CalData);
+    eeprom.CalDataWrite();
+    initUserDefinedStuff(); // Various things must be initialized.  This is normally done in setup().  KF5N February 21, 2024
+    tft.writeTo(L2);        // This is specifically to clear the bandwidth indicator bar.  KF5N August 7, 2023
     tft.clearMemory();
     tft.writeTo(L1);
-    RedrawDisplayScreen(); // Assume there are lots of changes and do a
-                           // heavy-duty refresh.  KF5N August 7, 2023
+    RedrawDisplayScreen(); // Assume there are lots of changes and do a heavy-duty refresh.  KF5N August 7, 2023
     break;
-
-  case 4: // CalData->Serial
-  {
-    Serial.println(F("\nBegin CalData from CalData"));
-    // Don't want to overwrite the stack.  Need a temporary struct, read the
-    // CalData data into that.
-    calibration_t CalData_temp;
-    EEPROM.get(CAL_BASE_ADDRESS + 4, CalData_temp);
-    json.saveCalibration(
-        calFilename, CalData_temp,
-        false); // Write the temporary struct to the serial monitor.
-    Serial.println(F("\nEnd CalData from CalData\n"));
-  } break;
-
-  case 5: // Defaults->Serial
-    Serial.println(F("\nBegin CalData defaults"));
-    json.saveCalibration(
-        calFilename, defaultCal,
-        false); // Write default CalData struct to the Serial monitor.
-    Serial.println(F("\nEnd CalData defaults\n"));
+  case 4:
+    // EEPROM->Serial
+    {
+      Serial.println(F("Begin EEPROM->Serial"));
+      calibration_t CalData_temp;
+      EEPROM.get(CAL_BASE_ADDRESS + 4, CalData_temp);
+      calibrationData.saveCalibration(calFilename, CalData_temp, false); // Write the temporary struct to the serial monitor.
+      Serial.println(F("End EEPROM->Serial"));
+    }
     break;
-
-  case 6: // Current->Serial
-    Serial.println(F("Begin CalData on the stack"));
-    json.saveCalibration(
-        calFilename, CalData,
-        false); // Write current CalData struct to the Serial monitor.
-    Serial.println(F("\nEnd CalData on the stack\n"));
+  case 5:
+    // Defaults->Serial
+    {
+      Serial.println(F("Begin Defaults->Serial"));
+      calibration_t defaultCal;
+      calibrationData.saveCalibration(calFilename, defaultCal, false); // Write default CalData struct to the Serial monitor.
+      Serial.println(F("End Defaults->Serial"));
+    }
     break;
-
-  case 7: // SD CalData->Serial
-    Serial.println(F("Begin CalData on the SD card"));
-    json.printFile(
-        calFilename); // Write SD card CalData struct to the Serial monitor.
-    Serial.println(F("End CalData on the SD card\n"));
+  case 6:
+    // RAM->Serial
+    Serial.println(F("Begin RAM->Serial"));
+    calibrationData.saveCalibration(calFilename, CalData, false);
+    Serial.println(F("End RAM->Serial"));
     break;
-
+  case 7:
+    // SD->Serial
+    Serial.println(F("Begin SD->Serial print file"));
+    printFile(calFilename);
+    printFile(myCalFilename);
+    Serial.println(F("End SD->Serial print file"));
+    break;
   default:
-    defaultOpt = -1; // No choice made
     break;
   }
-  //  return defaultOpt;
 }
 
 /*****
@@ -1497,8 +1327,7 @@ void CalDataOptions() { //           0               1                2 3 4 5 6
 *****/
 // int SubmenuSelect(const char *options[], int numberOfChoices, int
 // defaultStart) {
-int SubmenuSelect(const std::string options[], int numberOfChoices,
-                  int defaultStart) {
+int SubmenuSelect(const std::string options[], int numberOfChoices, int defaultStart) {
   int refreshFlag = 0;
   MenuSelect menu;
   int encoderReturnValue;
@@ -1508,21 +1337,15 @@ int SubmenuSelect(const std::string options[], int numberOfChoices,
 
   tft.setFontScale((enum RA8875tsize)1);
   if (refreshFlag == 0) {
-    tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT,
-                 RA8875_GREEN); // Show the option in the second field
+    // Show the option in the second field
+    tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT, RA8875_GREEN);
     tft.setCursor(SECONDARY_MENU_X + 1, MENUS_Y + 1);
     tft.print(options[encoderReturnValue].c_str()); // Secondary Menu
     refreshFlag = 1;
   }
-  //  delay(150L);
 
   while (true) {
-    menu = readButton(); // Read the ladder value
-                         //    delay(150L);
-                         //    if (val != -1 && val <
-                         //    (ConfigData.switchValues[0] + WIGGLE_ROOM)) {
-                         //      menu = ProcessButtonPress(val);  // Use ladder
-                         //      value to get menu choice
+    menu = readButton();                      // Read the ladder value
     if (menu != MenuSelect::BOGUS_PIN_READ) { // Valid choice?
       switch (menu) {
       case MenuSelect::MENU_OPTION_SELECT: // They made a choice
@@ -1550,12 +1373,10 @@ int SubmenuSelect(const std::string options[], int numberOfChoices,
         break;
       }
       if (encoderReturnValue != -1) {
-        tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT,
-                     RA8875_GREEN); // Show the option in the second field
+        tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT, RA8875_GREEN); // Show the option in the second field
         tft.setTextColor(RA8875_BLACK);
         tft.setCursor(SECONDARY_MENU_X + 1, MENUS_Y + 1);
         tft.print(options[encoderReturnValue].c_str());
-        //          delay(50L);
         refreshFlag = 0;
       }
     }
@@ -1573,8 +1394,7 @@ int SubmenuSelect(const std::string options[], int numberOfChoices,
   Return value
     int           an index into the band array
 *****/
-int SubmenuSelectString(std::string options[], int numberOfChoices,
-                        int defaultStart) {
+int SubmenuSelectString(std::string options[], int numberOfChoices, int defaultStart) {
   int refreshFlag = 0;
   MenuSelect menu;
   int encoderReturnValue;
@@ -1593,12 +1413,7 @@ int SubmenuSelectString(std::string options[], int numberOfChoices,
   //  delay(150L);
 
   while (true) {
-    menu = readButton(); // Read the ladder value
-                         //    delay(150L);
-                         //    if (val != -1 && val <
-                         //    (ConfigData.switchValues[0] + WIGGLE_ROOM)) {
-                         //      menu = ProcessButtonPress(val);  // Use ladder
-                         //      value to get menu choice
+    menu = readButton();                      // Read the ladder value
     if (menu != MenuSelect::BOGUS_PIN_READ) { // Valid choice?
       switch (menu) {
       case MenuSelect::MENU_OPTION_SELECT: // They made a choice
@@ -1626,12 +1441,11 @@ int SubmenuSelectString(std::string options[], int numberOfChoices,
         break;
       }
       if (encoderReturnValue != -1) {
-        tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT,
-                     RA8875_GREEN); // Show the option in the second field
+        // Show the option in the second field
+        tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT, RA8875_GREEN);
         tft.setTextColor(RA8875_BLACK);
         tft.setCursor(SECONDARY_MENU_X + 1, MENUS_Y + 1);
         tft.print(options[encoderReturnValue].c_str());
-        //          delay(50L);
         refreshFlag = 0;
       }
     }

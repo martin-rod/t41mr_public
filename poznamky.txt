@@ -1,0 +1,61 @@
+qtcreator
+---------
+
+Preferences / C++ / Clangd
+
+/home/rod/qtcreator-16.0.0/libexec/qtcreator/clang/bin/clangd --query-driver="/home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/arm-none-eabi-g*"
+
+??? --query-driver="/home/rod/wrk_ham/t41/t41mr/teensy/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/arm-none-eabi-g*"
+
+nebo ?
+
+-CompileFlags:
+-  BuiltinHeaders: QueryDriver
+
+---
+#if 0
+  TRACE_T41(TR_L_ERROR, "versionSettings size:%u", sizeof(ConfigData.versionSettings));
+  TRACE_T41(TR_L_ERROR, "mapFileName size:%u", sizeof(ConfigData.mapFileName));
+
+  if (doc["versionSettings"].is<const char *>()) {
+    strlcpy(ConfigData.versionSettings, doc["versionSettings"], 10);
+  } else {
+    TRACE_T41(TR_L_ERROR, "versionSettings not found ");
+  }
+
+  if (doc["xxx"].is<const char *>()) {
+    strlcpy(ConfigData.versionSettings, doc["xxx"], 10);
+  } else {
+    TRACE_T41(TR_L_ERROR, "xxx not found ");
+  }
+#endif
+
+#if 0
+template <typename J> void jsonLoadIfExist(J j, const char *name, char *dst, size_t length) {
+  if (j[name].template is<const char *>()) {
+    strlcpy(dst, j[name], length);
+  } else {
+    TRACE_LEVEL(TR_L_TRACE);
+    TRACE_T41(TR_L_ERROR, "%s not found", name);
+  }
+}
+
+template <typename J> void jsonLoadIfExist(J j, const char *name, bool &dst) {
+  if (j[name].template is<bool>()) {
+    dst = j[name];
+  } else {
+    TRACE_LEVEL(TR_L_TRACE);
+    TRACE_T41(TR_L_ERROR, "%s not found", name);
+  }
+}
+
+template <typename J> void jsonLoadIfExist(J j, const char *name, int &dst) {
+  if (j[name].template is<int>()) {
+    dst = j[name];
+  } else {
+    TRACE_LEVEL(TR_L_TRACE);
+    TRACE_T41(TR_L_ERROR, "%s not found", name);
+  }
+}
+
+#endif

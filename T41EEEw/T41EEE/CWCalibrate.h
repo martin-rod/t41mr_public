@@ -1,6 +1,8 @@
-// Class Calibrate replaces Process2.cpp.  Greg KF5N June 16, 2024
-
 #pragma once
+
+#include "SDT.h"
+
+// Class Calibrate replaces Process2.cpp.  Greg KF5N June 16, 2024
 
 // Re-factoring into class Calibrate.  Greg KF5N June 15, 2024.
 // Automatic calibration added.  Greg KF5N June 11, 2024
@@ -9,14 +11,14 @@
 // August 3, 2023 Major clean-up of calibration.  KF5N August 16, 2023
 
 // #include <vector>
-#include <algorithm>
+// #include <algorithm>
 
 class CWCalibrate {
 public:
   int IQCalType;
   int val;
   float correctionIncrement; // AFP 2-7-23
-  int userScale, userZoomIndex, userxmtMode;
+  int userScale, userZoomIndex;
   int transmitPowerLevelTemp, cwFreqOffsetTemp, calFreqTemp;
   uint16_t base_y = 460; // 247
   int calTypeFlag = 0;
@@ -67,11 +69,9 @@ public:
   void CalibrateEpilogue(bool radioCal, bool saveToEeprom);
   void DoReceiveCalibrate(int mode, bool radioCal, bool shortCal,
                           bool saveToEeprom); // Mode determines CW versus SSB.
-  void DoXmitCalibrate(int mode, bool radioCal, bool shortCal,
-                       bool saveToEeprom);
+  void DoXmitCalibrate(int mode, bool radioCal, bool shortCal, bool saveToEeprom);
 #ifdef QSE2
-  void DoXmitCarrierCalibrate(int mode, bool radioCal, bool shortCal,
-                              bool saveToEeprom);
+  void DoXmitCarrierCalibrate(int mode, bool radioCal, bool shortCal, bool saveToEeprom);
 #endif
   void ShowSpectrum2(int mode);
   float PlotCalSpectrum(int mode, int x1, int cal_bins[3], int capture_bins);

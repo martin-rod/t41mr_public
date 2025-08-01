@@ -1,7 +1,35 @@
+#include "SSB_Exciter.h"
 
-#include "SDT.h"
+#include "Band.h"
+#include "Button.h"
+#include "CalibrationData.h"
+#include "ConfigurationData.h"
+#include "Display.h"
+#include "Eeprom.h"
+#include "Encoders.h"
+#include "MenuProc.h"
+#include "T41EEE.h"
+
+// Class SSBCalibrate.  Greg KF5N July 10, 2024
 
 // int micGainChoice;
+
+int bandswitchPins[] = {
+    // 80M
+    30,
+    // 40M
+    31,
+    // 20M
+    28,
+    // 17M
+    29,
+    // 15M
+    29,
+    // 12M  Note that 12M and 10M both use the 10M filter, which is always in
+    0,
+    // (no relay).  KF5N September 27, 2023.
+    // 10M
+    0};
 
 // This function sets the microphone gain and compressor parameters.  Greg KF5N
 // March 9, 2025.
@@ -9,17 +37,14 @@ void updateMic() {
 
   micGain.setGain_dB(ConfigData.micGain); // Set the microphone gain.
 
-  struct compressionCurve crv = {
-      -3.0,
-      0.0, // margin, offset
-      {0.0, -10.0, ConfigData.micThreshold, -1000.0f, -1000.0f},
-      {10.0, ConfigData.micCompRatio, 1.0f, 1.0, 1.0}};
+  struct compressionCurve crv = {-3.0,
+                                 0.0, // margin, offset
+                                 {0.0, -10.0, ConfigData.micThreshold, -1000.0f, -1000.0f},
+                                 {10.0, ConfigData.micCompRatio, 1.0f, 1.0, 1.0}};
 
-  int16_t delaySize = 256; // Any power of 2, i.e., 256, 128, 64, etc.
-  compressor1.setDelayBufferSize(
-      delaySize); // Improves transient response of compressor.
-  compressor1.setAttackReleaseSec(
-      0.005f, 2.0f); // Same as used in Tiny Ten by Bob W7PUA.
+  int16_t delaySize = 256;                       // Any power of 2, i.e., 256, 128, 64, etc.
+  compressor1.setDelayBufferSize(delaySize);     // Improves transient response of compressor.
+  compressor1.setAttackReleaseSec(0.005f, 2.0f); // Same as used in Tiny Ten by Bob W7PUA.
   compressor1.setCompressionCurve(&crv);
   compressor1.begin();
 }
@@ -45,7 +70,7 @@ outputs at 48ksps.
 *****/
 
 void ExciterIQData() {
-  uint32_t N_BLOCKS_EX = N_B_EX;
+  uint32_t N_BLOCKS_EX = 16;
   float32_t powerScale;
 
   /**********************************************************************************
@@ -57,15 +82,11 @@ void ExciterIQData() {
      with DF == 8 and FFT_L = 512 BUFFER_SIZE * N_BLOCKS = 2048 samples
      **********************************************************************************/
   // are there at least N_BLOCKS buffers in each channel available ?
-  if ((uint32_t)Q_in_L_Ex.available() < 32 or
-      (uint32_t) Q_in_R_Ex.available() < 32) {
-    Serial.printf("Q_in_L_Ex.available() = %d Q_in_R_Ex.available() = %d\n",
-                  Q_in_L_Ex.available(), Q_in_R_Ex.available());
+  if ((uint32_t)Q_in_L_Ex.available() < 32 or (uint32_t) Q_in_R_Ex.available() < 32) {
+    Serial.printf("Q_in_L_Ex.available() = %d Q_in_R_Ex.available() = %d\n", Q_in_L_Ex.available(), Q_in_R_Ex.available());
     return;
   }
-  Serial.printf(
-      "Norm Op: Q_in_L_Ex.available() = %d Q_in_R_Ex.available() = %d\n",
-      Q_in_L_Ex.available(), Q_in_R_Ex.available());
+  Serial.printf("Norm Op: Q_in_L_Ex.available() = %d Q_in_R_Ex.available() = %d\n", Q_in_L_Ex.available(), Q_in_R_Ex.available());
   // get audio samples from the audio  buffers and convert them to float
   // read in 32 blocks of 128 samples in I and Q
   for (unsigned i = 0; i < N_BLOCKS_EX; i++) {
@@ -74,12 +95,10 @@ void ExciterIQData() {
     AFP 12-31-20 Using arm_Math library, convert to float one buffer_size.
         Float_buffer samples are now standardized from > -1.0 to < 1.0
     **********************************************************************************/
-    arm_q15_to_float(Q_in_L_Ex.readBuffer(),
-                     &float_buffer_L_EX[BUFFER_SIZE * i],
+    arm_q15_to_float(Q_in_L_Ex.readBuffer(), &float_buffer_L_EX[BUFFER_SIZE * i],
                      BUFFER_SIZE); // convert int_buffer to float 32bit
-    arm_q15_to_float(
-        Q_in_R_Ex.readBuffer(), &float_buffer_R_EX[BUFFER_SIZE * i],
-        BUFFER_SIZE); // Right channel not used.  KF5N March 11, 2024
+    arm_q15_to_float(Q_in_R_Ex.readBuffer(), &float_buffer_R_EX[BUFFER_SIZE * i],
+                     BUFFER_SIZE); // Right channel not used.  KF5N March 11, 2024
     Q_in_L_Ex.freeBuffer();
     Q_in_R_Ex.freeBuffer(); // Right channel not used.  KF5N March 11, 2024
   }
@@ -96,25 +115,19 @@ void ExciterIQData() {
   // always USB.
   if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER) {
     if (bands.bands[ConfigData.currentBand].mode == RadioMode::SSB_MODE) {
-      cessb1.setIQCorrections(
-          true, CalData.IQSSBAmpCorrectionFactorLSB[ConfigData.currentBand],
-          CalData.IQSSBPhaseCorrectionFactorLSB[ConfigData.currentBand], 0.0);
-    } else if (bands.bands[ConfigData.currentBand].mode ==
-               RadioMode::FT8_MODE) {
-      cessb1.setIQCorrections(
-          true, CalData.IQCWAmpCorrectionFactorUSB[ConfigData.currentBand],
-          CalData.IQCWPhaseCorrectionFactorUSB[ConfigData.currentBand], 0.0);
+      cessb1.setIQCorrections(true, CalData.IQSSBAmpCorrectionFactorLSB[ConfigData.currentBand],
+                              CalData.IQSSBPhaseCorrectionFactorLSB[ConfigData.currentBand], 0.0);
+    } else if (bands.bands[ConfigData.currentBand].mode == RadioMode::FT8_MODE) {
+      cessb1.setIQCorrections(true, CalData.IQCWAmpCorrectionFactorUSB[ConfigData.currentBand],
+                              CalData.IQCWPhaseCorrectionFactorUSB[ConfigData.currentBand], 0.0);
     }
   } else if (bands.bands[ConfigData.currentBand].sideband == Sideband::UPPER) {
     if (bands.bands[ConfigData.currentBand].mode == RadioMode::SSB_MODE) {
-      cessb1.setIQCorrections(
-          true, CalData.IQSSBAmpCorrectionFactorUSB[ConfigData.currentBand],
-          CalData.IQSSBPhaseCorrectionFactorUSB[ConfigData.currentBand], 0.0);
-    } else if (bands.bands[ConfigData.currentBand].mode ==
-               RadioMode::FT8_MODE) {
-      cessb1.setIQCorrections(
-          true, CalData.IQCWAmpCorrectionFactorUSB[ConfigData.currentBand],
-          CalData.IQCWPhaseCorrectionFactorUSB[ConfigData.currentBand], 0.0);
+      cessb1.setIQCorrections(true, CalData.IQSSBAmpCorrectionFactorUSB[ConfigData.currentBand],
+                              CalData.IQSSBPhaseCorrectionFactorUSB[ConfigData.currentBand], 0.0);
+    } else if (bands.bands[ConfigData.currentBand].mode == RadioMode::FT8_MODE) {
+      cessb1.setIQCorrections(true, CalData.IQCWAmpCorrectionFactorUSB[ConfigData.currentBand],
+                              CalData.IQCWPhaseCorrectionFactorUSB[ConfigData.currentBand], 0.0);
     }
   }
 
@@ -140,23 +153,13 @@ void ExciterIQData() {
   arm_float_to_q15(float_buffer_R_EX, q15_buffer_RTemp, 2048);
 #ifdef QSE2
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::SSB_MODE) {
-    arm_offset_q15(q15_buffer_LTemp,
-                   CalData.iDCoffsetSSB[ConfigData.currentBand] +
-                       CalData.dacOffsetSSB,
-                   q15_buffer_LTemp, 2048); // Carrier suppression offset.
-    arm_offset_q15(q15_buffer_RTemp,
-                   CalData.qDCoffsetSSB[ConfigData.currentBand] +
-                       CalData.dacOffsetSSB,
-                   q15_buffer_RTemp, 2048);
+    arm_offset_q15(q15_buffer_LTemp, CalData.iDCoffsetSSB[ConfigData.currentBand] + CalData.dacOffsetSSB, q15_buffer_LTemp,
+                   2048); // Carrier suppression offset.
+    arm_offset_q15(q15_buffer_RTemp, CalData.qDCoffsetSSB[ConfigData.currentBand] + CalData.dacOffsetSSB, q15_buffer_RTemp, 2048);
   } else if (bands.bands[ConfigData.currentBand].mode == RadioMode::FT8_MODE) {
-    arm_offset_q15(q15_buffer_LTemp,
-                   CalData.iDCoffsetCW[ConfigData.currentBand] +
-                       CalData.dacOffsetCW,
-                   q15_buffer_LTemp, 2048); // Carrier suppression offset.
-    arm_offset_q15(q15_buffer_RTemp,
-                   CalData.qDCoffsetCW[ConfigData.currentBand] +
-                       CalData.dacOffsetCW,
-                   q15_buffer_RTemp, 2048);
+    arm_offset_q15(q15_buffer_LTemp, CalData.iDCoffsetCW[ConfigData.currentBand] + CalData.dacOffsetCW, q15_buffer_LTemp,
+                   2048); // Carrier suppression offset.
+    arm_offset_q15(q15_buffer_RTemp, CalData.qDCoffsetCW[ConfigData.currentBand] + CalData.dacOffsetCW, q15_buffer_RTemp, 2048);
   }
 #endif
   //  Q_out_L_Ex.setBehaviour(AudioPlayQueue::NON_STALLING);
@@ -188,10 +191,9 @@ void SetBandRelay() {
     if (i == ConfigData.currentBand) {
       digitalWrite(bandswitchPins[ConfigData.currentBand], HIGH);
     } else {
-      if (bandswitchPins[i] !=
-          bandswitchPins[ConfigData.currentBand]) { // Skip if the pins are the
-                                                    // same.
-        digitalWrite(bandswitchPins[i], LOW);       // Set band relay low.
+      if (bandswitchPins[i] != bandswitchPins[ConfigData.currentBand]) { // Skip if the pins are the
+                                                                         // same.
+        digitalWrite(bandswitchPins[i], LOW);                            // Set band relay low.
       }
     }
   }
@@ -210,8 +212,7 @@ void SetCompressionThreshold() {
   MenuSelect menu, lastUsedTask = MenuSelect::DEFAULT;
 
   tft.setFontScale((enum RA8875tsize)1);
-  tft.fillRect(SECONDARY_MENU_X - 50, MENUS_Y, EACH_MENU_WIDTH + 50,
-               CHAR_HEIGHT, RA8875_MAGENTA);
+  tft.fillRect(SECONDARY_MENU_X - 50, MENUS_Y, EACH_MENU_WIDTH + 50, CHAR_HEIGHT, RA8875_MAGENTA);
   tft.setTextColor(RA8875_WHITE);
   tft.setCursor(SECONDARY_MENU_X - 48, MENUS_Y + 1);
   tft.print("Comp Thresh dB:");
@@ -227,8 +228,7 @@ void SetCompressionThreshold() {
         ConfigData.micThreshold = 0;
       }
 
-      tft.fillRect(SECONDARY_MENU_X + 195, MENUS_Y, 80, CHAR_HEIGHT,
-                   RA8875_MAGENTA);
+      tft.fillRect(SECONDARY_MENU_X + 195, MENUS_Y, 80, CHAR_HEIGHT, RA8875_MAGENTA);
       tft.setCursor(SECONDARY_MENU_X + 195, MENUS_Y + 1);
       tft.print(ConfigData.micThreshold, 0);
       filterEncoderMove = 0;
@@ -263,8 +263,7 @@ void SetCompressionRatio() {
 
   tft.setFontScale((enum RA8875tsize)1);
 
-  tft.fillRect(SECONDARY_MENU_X - 50, MENUS_Y, EACH_MENU_WIDTH + 50,
-               CHAR_HEIGHT, RA8875_MAGENTA);
+  tft.fillRect(SECONDARY_MENU_X - 50, MENUS_Y, EACH_MENU_WIDTH + 50, CHAR_HEIGHT, RA8875_MAGENTA);
   tft.setTextColor(RA8875_WHITE);
   tft.setCursor(SECONDARY_MENU_X - 48, MENUS_Y + 1);
   tft.print("Comp Ratio:");
@@ -280,8 +279,7 @@ void SetCompressionRatio() {
         ConfigData.micCompRatio = 1;
       }
 
-      tft.fillRect(SECONDARY_MENU_X + 180, MENUS_Y, 80, CHAR_HEIGHT,
-                   RA8875_MAGENTA);
+      tft.fillRect(SECONDARY_MENU_X + 180, MENUS_Y, 80, CHAR_HEIGHT, RA8875_MAGENTA);
       tft.setCursor(SECONDARY_MENU_X + 180, MENUS_Y + 1);
       tft.print(ConfigData.micCompRatio, 0);
       filterEncoderMove = 0;
@@ -315,8 +313,7 @@ void SetCompressionRatio() {
 void MicGainSet() {
   MenuSelect menu, lastUsedTask = MenuSelect::DEFAULT;
   tft.setFontScale((enum RA8875tsize)1);
-  tft.fillRect(SECONDARY_MENU_X - 50, MENUS_Y, EACH_MENU_WIDTH + 50,
-               CHAR_HEIGHT, RA8875_MAGENTA);
+  tft.fillRect(SECONDARY_MENU_X - 50, MENUS_Y, EACH_MENU_WIDTH + 50, CHAR_HEIGHT, RA8875_MAGENTA);
   tft.setTextColor(RA8875_WHITE);
   tft.setCursor(SECONDARY_MENU_X - 48, MENUS_Y + 1);
   tft.print("Mic Gain dB:");
@@ -330,8 +327,7 @@ void MicGainSet() {
       } else if (ConfigData.micGain > 20) { // 100% max
         ConfigData.micGain = 20;
       }
-      tft.fillRect(SECONDARY_MENU_X + 160, MENUS_Y, 80, CHAR_HEIGHT,
-                   RA8875_MAGENTA);
+      tft.fillRect(SECONDARY_MENU_X + 160, MENUS_Y, 80, CHAR_HEIGHT, RA8875_MAGENTA);
       tft.setCursor(SECONDARY_MENU_X + 160, MENUS_Y + 1);
       tft.print(ConfigData.micGain, 1);
       filterEncoderMove = 0;
@@ -348,105 +344,3 @@ void MicGainSet() {
     }
   }
 }
-
-/*****
-  Purpose: Allow user to set the mic Attack in sec
-
-  Parameter list:
-    void
-
-  Return value;
-    void
-*****
-void SetCompressionAttack()
-{
-  int val;
-
-  tft.setFontScale( (enum RA8875tsize) 1);
-
-  tft.fillRect(SECONDARY_MENU_X - 50, MENUS_Y, EACH_MENU_WIDTH + 50,
-CHAR_HEIGHT, RA8875_MAGENTA); tft.setTextColor(RA8875_WHITE);
-  tft.setCursor(SECONDARY_MENU_X  - 48, MENUS_Y + 1);
-  tft.print("Attack Sec:");
-  tft.setCursor(SECONDARY_MENU_X + 180, MENUS_Y + 1);
-  tft.print(ConfigData.currentMicAttack, 1);
-
-  while (true) {
-    if (filterEncoderMove != 0) {
-      ConfigData.currentMicAttack += ((float) filterEncoderMove * 0.1);
-      if (ConfigData.currentMicAttack > 10)
-        ConfigData.currentMicAttack = 10;
-      else if (ConfigData.currentMicAttack < .1)                 // 100% max
-        ConfigData.currentMicAttack = .1;
-
-      tft.fillRect(SECONDARY_MENU_X + 180, MENUS_Y, 80, CHAR_HEIGHT,
-RA8875_MAGENTA); tft.setCursor(SECONDARY_MENU_X + 180, MENUS_Y + 1);
-      tft.print(ConfigData.currentMicAttack, 1);
-      filterEncoderMove = 0;
-    }
-
-    val = ReadSelectedPushButton();                                  // Read pin
-that controls all switches val = ProcessButtonPress(val); delay(150L);
-
-    if (val == MENU_OPTION_SELECT) {                             // Make a
-choice??
-      //ConfigData.ConfigData.currentMicAttack = ConfigData.currentMicAttack;
-      EEPROMWrite();
-
-      break;
-    }
-  }
-  EraseMenus();
-}
-*/
-
-/*****
-  Purpose: Allow user to set the mic compression ratio
-
-  Parameter list:
-    void
-
-  Return value;
-    void
-*****
-void SetCompressionRelease()
-{
-  int val;
-
-  tft.setFontScale( (enum RA8875tsize) 1);
-
-  tft.fillRect(SECONDARY_MENU_X - 50, MENUS_Y, EACH_MENU_WIDTH + 50,
-CHAR_HEIGHT, RA8875_MAGENTA); tft.setTextColor(RA8875_WHITE);
-  tft.setCursor(SECONDARY_MENU_X  - 48, MENUS_Y + 1);
-  tft.print("Decay Sec:");
-  tft.setCursor(SECONDARY_MENU_X + 180, MENUS_Y + 1);
-  tft.print(ConfigData.currentMicRelease, 1);
-
-  while (true) {
-    if (filterEncoderMove != 0) {
-      ConfigData.currentMicRelease += ((float) filterEncoderMove * 0.1);
-      if (ConfigData.currentMicRelease > 10)
-        ConfigData.currentMicRelease = 10;
-      else if (ConfigData.currentMicRelease < 0.1)                 // 100% max
-        ConfigData.currentMicRelease = 0.1;
-
-      tft.fillRect(SECONDARY_MENU_X + 180, MENUS_Y, 80, CHAR_HEIGHT,
-RA8875_MAGENTA); tft.setCursor(SECONDARY_MENU_X + 180, MENUS_Y + 1);
-      tft.print(ConfigData.currentMicRelease, 1);
-      filterEncoderMove = 0;
-    }
-
-    val = ReadSelectedPushButton();                                  // Read pin
-that controls all switches val = ProcessButtonPress(val); delay(150L);
-
-    if (val == MENU_OPTION_SELECT) {                             // Make a
-choice??
-      //ConfigData.ConfigData.micCompRatio = ConfigData.micCompRatio;
-      EEPROMWrite();
-
-      break;
-    }
-  }
-  EraseMenus();
-}
-*/

@@ -1,10 +1,41 @@
+#include "FFT.h"
 
-#include "SDT.h"
+#include "ConfigurationData.h"
+#include "Display.h"
+#include "FIR.h"
+#include "T41EEE.h"
+#include "Utility.h"
 
 int Zoom_FFT_M1;
 int Zoom_FFT_M2;
 int zoom_sample_ptr = 0;
 float32_t LPF_spectrum = 0.82;
+
+float32_t DMAMEM FFT_spec_old[1024] = {0};
+const size_t FFT_spec_old_size = sizeof(FFT_spec_old);
+
+float32_t DMAMEM buffer_spec_FFT[1024] __attribute__((aligned(4)));
+const size_t buffer_spec_FFT_size = sizeof(buffer_spec_FFT);
+
+float32_t DMAMEM FFT_spec[1024] = {0};
+
+// Decimation with FIR lowpass for Zoom FFT
+arm_fir_decimate_instance_f32 Fir_Zoom_FFT_Decimate_I1;
+arm_fir_decimate_instance_f32 Fir_Zoom_FFT_Decimate_Q1;
+float32_t DMAMEM Fir_Zoom_FFT_Decimate_I1_state[12 + BUFFER_SIZE * N_B - 1];
+float32_t DMAMEM Fir_Zoom_FFT_Decimate_Q1_state[12 + BUFFER_SIZE * N_B - 1];
+float32_t DMAMEM Fir_Zoom_FFT_Decimate1_coeffs[12];
+
+arm_fir_decimate_instance_f32 Fir_Zoom_FFT_Decimate_I2;
+arm_fir_decimate_instance_f32 Fir_Zoom_FFT_Decimate_Q2;
+float32_t DMAMEM Fir_Zoom_FFT_Decimate_I2_state[12 + BUFFER_SIZE * N_B - 1];
+float32_t DMAMEM Fir_Zoom_FFT_Decimate_Q2_state[12 + BUFFER_SIZE * N_B - 1];
+float32_t DMAMEM Fir_Zoom_FFT_Decimate2_coeffs[12];
+
+void InitilizeFFT() {
+  memset(FFT_spec_old, 0, FFT_spec_old_size);
+  memset(buffer_spec_FFT, 0, buffer_spec_FFT_size);
+}
 
 void ZoomFFTPrep() { // take value of spectrum_zoom and initialize FIR
                      // decimation filters for the right values
@@ -14,23 +45,23 @@ void ZoomFFTPrep() { // take value of spectrum_zoom and initialize FIR
   ****************************************************************************************/
   // Two-stage decimation.  These are decimation factors.
   switch (ConfigData.spectrum_zoom) {
-  case SPECTRUM_ZOOM_1:
+  case SpectrumZoomState::SPECTRUM_ZOOM_1:
     Zoom_FFT_M1 = 1;
     Zoom_FFT_M2 = 1;
     break;
-  case SPECTRUM_ZOOM_2:
+  case SpectrumZoomState::SPECTRUM_ZOOM_2:
     Zoom_FFT_M1 = 2;
     Zoom_FFT_M2 = 1;
     break;
-  case SPECTRUM_ZOOM_4:
+  case SpectrumZoomState::SPECTRUM_ZOOM_4:
     Zoom_FFT_M1 = 2;
     Zoom_FFT_M2 = 2;
     break;
-  case SPECTRUM_ZOOM_8:
+  case SpectrumZoomState::SPECTRUM_ZOOM_8:
     Zoom_FFT_M1 = 4;
     Zoom_FFT_M2 = 2;
     break;
-  case SPECTRUM_ZOOM_16:
+  case SpectrumZoomState::SPECTRUM_ZOOM_16:
     Zoom_FFT_M1 = 8;
     Zoom_FFT_M2 = 2;
     break;
@@ -40,18 +71,17 @@ void ZoomFFTPrep() { // take value of spectrum_zoom and initialize FIR
     break;
   }
   // init 1st stage
-  float32_t Fstop_Zoom =
-      0.5 * (float32_t)SR[SampleRate].rate /
-      (1 << ConfigData.spectrum_zoom); // Fstop should be the stop band at the
-                                       // final sample rate
+  float32_t Fstop_Zoom = 0.5 * (float32_t)SR[static_cast<size_t>(SampleRate)].rate /
+                         (1 << static_cast<int>(ConfigData.spectrum_zoom)); // Fstop should be the stop band at
+                                                                            // the final sample rate
 
 #define Zoom_FFT_no_coeff1 12
 #define Zoom_FFT_no_coeff2 8
   // did not do proper calculation of the number of taps, just took a number for
   // the start attenuation 70dB should be sufficient for the spectrum display
   // 1st decimation stage
-  CalcFIRCoeffs(Fir_Zoom_FFT_Decimate1_coeffs, Zoom_FFT_no_coeff1, Fstop_Zoom,
-                60, 0, 0.0, (float32_t)SR[SampleRate].rate);
+  CalcFIRCoeffs(Fir_Zoom_FFT_Decimate1_coeffs, Zoom_FFT_no_coeff1, Fstop_Zoom, 60, 0, 0.0,
+                (float32_t)SR[static_cast<size_t>(SampleRate)].rate);
 
   //[in,out]  S points to an instance of the floating-point FIR decimator
   // structure [in]  numTaps number of coefficients in the filter [in]  M
@@ -59,41 +89,33 @@ void ZoomFFTPrep() { // take value of spectrum_zoom and initialize FIR
   // pState  points to the state buffer [in]  blockSize number of input samples
   // to process per call
 
-  if (arm_fir_decimate_init_f32(&Fir_Zoom_FFT_Decimate_I1, Zoom_FFT_no_coeff1,
-                                Zoom_FFT_M1, Fir_Zoom_FFT_Decimate1_coeffs,
-                                Fir_Zoom_FFT_Decimate_I1_state,
-                                BUFFER_SIZE * N_BLOCKS)) {
+  if (arm_fir_decimate_init_f32(&Fir_Zoom_FFT_Decimate_I1, Zoom_FFT_no_coeff1, Zoom_FFT_M1, Fir_Zoom_FFT_Decimate1_coeffs,
+                                Fir_Zoom_FFT_Decimate_I1_state, BUFFER_SIZE * N_B)) {
     Serial.println("Init of decimation failed");
     while (1)
       ;
   }
   // same coefficients, but specific state variables
-  if (arm_fir_decimate_init_f32(&Fir_Zoom_FFT_Decimate_Q1, Zoom_FFT_no_coeff1,
-                                Zoom_FFT_M1, Fir_Zoom_FFT_Decimate1_coeffs,
-                                Fir_Zoom_FFT_Decimate_Q1_state,
-                                BUFFER_SIZE * N_BLOCKS)) {
+  if (arm_fir_decimate_init_f32(&Fir_Zoom_FFT_Decimate_Q1, Zoom_FFT_no_coeff1, Zoom_FFT_M1, Fir_Zoom_FFT_Decimate1_coeffs,
+                                Fir_Zoom_FFT_Decimate_Q1_state, BUFFER_SIZE * N_B)) {
     Serial.println("Init of decimation failed");
     while (1)
       ;
   }
 
   // 2nd decimation stage
-  CalcFIRCoeffs(Fir_Zoom_FFT_Decimate2_coeffs, Zoom_FFT_no_coeff2, Fstop_Zoom,
-                60, 0, 0.0, (float32_t)SR[SampleRate].rate / Zoom_FFT_M1);
+  CalcFIRCoeffs(Fir_Zoom_FFT_Decimate2_coeffs, Zoom_FFT_no_coeff2, Fstop_Zoom, 60, 0, 0.0,
+                (float32_t)SR[static_cast<size_t>(SampleRate)].rate / Zoom_FFT_M1);
 
-  if (arm_fir_decimate_init_f32(&Fir_Zoom_FFT_Decimate_I2, Zoom_FFT_no_coeff2,
-                                Zoom_FFT_M2, Fir_Zoom_FFT_Decimate2_coeffs,
-                                Fir_Zoom_FFT_Decimate_I2_state,
-                                BUFFER_SIZE * N_BLOCKS / Zoom_FFT_M1)) {
+  if (arm_fir_decimate_init_f32(&Fir_Zoom_FFT_Decimate_I2, Zoom_FFT_no_coeff2, Zoom_FFT_M2, Fir_Zoom_FFT_Decimate2_coeffs,
+                                Fir_Zoom_FFT_Decimate_I2_state, BUFFER_SIZE * N_B / Zoom_FFT_M1)) {
     Serial.println("Init of decimation failed");
     while (1)
       ;
   }
   // same coefficients, but specific state variables
-  if (arm_fir_decimate_init_f32(&Fir_Zoom_FFT_Decimate_Q2, Zoom_FFT_no_coeff2,
-                                Zoom_FFT_M2, Fir_Zoom_FFT_Decimate2_coeffs,
-                                Fir_Zoom_FFT_Decimate_Q2_state,
-                                BUFFER_SIZE * N_BLOCKS / Zoom_FFT_M1)) {
+  if (arm_fir_decimate_init_f32(&Fir_Zoom_FFT_Decimate_Q2, Zoom_FFT_no_coeff2, Zoom_FFT_M2, Fir_Zoom_FFT_Decimate2_coeffs,
+                                Fir_Zoom_FFT_Decimate_Q2_state, BUFFER_SIZE * N_B / Zoom_FFT_M1)) {
     Serial.println("Init of decimation failed");
     while (1)
       ;
@@ -106,9 +128,8 @@ void ZoomFFTExe(uint32_t blockSize) {
   // totally rebuilt 27.8.2020 DD4WH
   // however, I did not manage to implement a correct routine for magnifications
   // > 2048x maybe the next days
-  float32_t
-      x_buffer[blockSize]; // can be 2048 (FFT length == 512), or 4096 [FFT
-                           // length == 1024] or even 8192 [FFT length == 2048]
+  float32_t x_buffer[blockSize]; // can be 2048 (FFT length == 512), or 4096 [FFT
+                                 // length == 1024] or even 8192 [FFT length == 2048]
   float32_t y_buffer[blockSize];
 
   //  NOTE THESE ARE STATIC
@@ -119,23 +140,19 @@ void ZoomFFTExe(uint32_t blockSize) {
   // sample_no is 256, in high magnify modes it is smaller!
   // but it must never be > 256
 
-  sample_no = BUFFER_SIZE * N_BLOCKS / (1 << ConfigData.spectrum_zoom);
+  sample_no = BUFFER_SIZE * N_B / (1 << static_cast<int>(ConfigData.spectrum_zoom));
 
   if (sample_no > fftWidth) {
     sample_no = fftWidth;
   }
 
   // decimation stage 1
-  arm_fir_decimate_f32(&Fir_Zoom_FFT_Decimate_I1, float_buffer_L, x_buffer,
-                       blockSize);
-  arm_fir_decimate_f32(&Fir_Zoom_FFT_Decimate_Q1, float_buffer_R, y_buffer,
-                       blockSize);
+  arm_fir_decimate_f32(&Fir_Zoom_FFT_Decimate_I1, float_buffer_L, x_buffer, blockSize);
+  arm_fir_decimate_f32(&Fir_Zoom_FFT_Decimate_Q1, float_buffer_R, y_buffer, blockSize);
   //  if (high_Zoom == 1) flag_2nd_decimation++;
   // decimation stage 2
-  arm_fir_decimate_f32(&Fir_Zoom_FFT_Decimate_I2, x_buffer, x_buffer,
-                       blockSize / Zoom_FFT_M1);
-  arm_fir_decimate_f32(&Fir_Zoom_FFT_Decimate_Q2, y_buffer, y_buffer,
-                       blockSize / Zoom_FFT_M1);
+  arm_fir_decimate_f32(&Fir_Zoom_FFT_Decimate_I2, x_buffer, x_buffer, blockSize / Zoom_FFT_M1);
+  arm_fir_decimate_f32(&Fir_Zoom_FFT_Decimate_Q2, y_buffer, y_buffer, blockSize / Zoom_FFT_M1);
 
   // this puts the sample_no samples into the ringbuffer -->
   //  the right order has to be thought about!
@@ -167,21 +184,16 @@ void ZoomFFTExe(uint32_t blockSize) {
   // Nuttall window
   // zoom_sample_ptr points to the oldest sample now
 
-  float32_t multiplier = static_cast<float32_t>(ConfigData.spectrum_zoom) *
-                         static_cast<float32_t>(ConfigData.spectrum_zoom);
+  float32_t multiplier = static_cast<float32_t>(ConfigData.spectrum_zoom) * static_cast<float32_t>(ConfigData.spectrum_zoom);
 
   for (int idx = 0; idx < fftWidth; idx++) {
     //   buffer_spec_FFT[idx * 2 + 0] =  multiplier *
     //   FFT_ring_buffer_x[zoom_sample_ptr] * nuttallWindow256[idx];
     //   buffer_spec_FFT[idx * 2 + 1] =  multiplier *
     //   FFT_ring_buffer_y[zoom_sample_ptr] * nuttallWindow256[idx];
-    buffer_spec_FFT[idx * 2 + 0] =
-        multiplier * FFT_ring_buffer_x[zoom_sample_ptr] *
-        (0.5 -
-         0.5 * cos(6.28 * idx / SPECTRUM_RES)); // Hanning Window AFP 03-12-21
-    buffer_spec_FFT[idx * 2 + 1] = multiplier *
-                                   FFT_ring_buffer_y[zoom_sample_ptr] *
-                                   (0.5 - 0.5 * cos(6.28 * idx / SPECTRUM_RES));
+    buffer_spec_FFT[idx * 2 + 0] = multiplier * FFT_ring_buffer_x[zoom_sample_ptr] *
+                                   (0.5 - 0.5 * cos(6.28 * idx / SPECTRUM_RES)); // Hanning Window AFP 03-12-21
+    buffer_spec_FFT[idx * 2 + 1] = multiplier * FFT_ring_buffer_y[zoom_sample_ptr] * (0.5 - 0.5 * cos(6.28 * idx / SPECTRUM_RES));
     zoom_sample_ptr++;
     if (zoom_sample_ptr >= fftWidth) {
       zoom_sample_ptr = 0;
@@ -193,7 +205,7 @@ void ZoomFFTExe(uint32_t blockSize) {
   // "spectrum display smoothness" is the same across the different sample rates
   // and the same across different magnify modes . . .
   //    float32_t LPFcoeff = LPF_spectrum * (AUDIO_SAMPLE_RATE_EXACT /
-  //    SR[SampleRate].rate);
+  //    SR[static_cast<size_t>(SampleRate)].rate);
   float32_t LPFcoeff = 0.6;
   if (LPFcoeff > 1.0) {
     LPFcoeff = 1.0;
@@ -218,12 +230,9 @@ void ZoomFFTExe(uint32_t blockSize) {
     // and simultaneously put them into the right order
     for (int i = 0; i < fftWidth / 2; i++) {
       FFT_spec[i + fftWidth / 2] =
-          (buffer_spec_FFT[i * 2] * buffer_spec_FFT[i * 2] +
-           buffer_spec_FFT[i * 2 + 1] * buffer_spec_FFT[i * 2 + 1]);
-      FFT_spec[i] = (buffer_spec_FFT[(i + fftWidth / 2) * 2] *
-                         buffer_spec_FFT[(i + fftWidth / 2) * 2] +
-                     buffer_spec_FFT[(i + fftWidth / 2) * 2 + 1] *
-                         buffer_spec_FFT[(i + fftWidth / 2) * 2 + 1]);
+          (buffer_spec_FFT[i * 2] * buffer_spec_FFT[i * 2] + buffer_spec_FFT[i * 2 + 1] * buffer_spec_FFT[i * 2 + 1]);
+      FFT_spec[i] = (buffer_spec_FFT[(i + fftWidth / 2) * 2] * buffer_spec_FFT[(i + fftWidth / 2) * 2] +
+                     buffer_spec_FFT[(i + fftWidth / 2) * 2 + 1] * buffer_spec_FFT[(i + fftWidth / 2) * 2 + 1]);
     }
     // apply low pass filter and scale the magnitude values and convert to int
     // for spectrum display apply spectrum AGC
@@ -235,15 +244,12 @@ void ZoomFFTExe(uint32_t blockSize) {
     // Write the FFT bins into the display buffer.
     if (calOnFlag) { // Expanded dynamic range during calibration.
       for (int16_t x = 0; x < fftWidth; x++) {
-        pixelnew[x] = displayScale[ConfigData.currentScale].baseOffset +
-                      (int16_t)(40.0 * log10f_fast(FFT_spec[x]));
+        pixelnew[x] = displayScale[ConfigData.currentScale].baseOffset + (int16_t)(40.0 * log10f_fast(FFT_spec[x]));
       }
     } else {
       for (int16_t x = 0; x < fftWidth; x++) {
         pixelnew[x] = displayScale[ConfigData.currentScale].baseOffset +
-                      (int16_t)(displayScale[ConfigData.currentScale].dBScale *
-                                log10f_fast(FFT_spec[x])) +
-                      fftOffset;
+                      (int16_t)(displayScale[ConfigData.currentScale].dBScale * log10f_fast(FFT_spec[x])) + fftOffset;
       }
     }
   }
@@ -268,13 +274,10 @@ void CalcZoom1Magn() {
       pixelold[i] = pixelCurrent[i];
     }
 
-    for (int i = 0; i < fftWidth;
-         i++) { // interleave real and imaginary input values [real, imag, real,
-                // imag . . .]
-      buffer_spec_FFT[i * 2] =
-          float_buffer_L[i] * (0.5 - 0.5 * cos(6.28 * i / fftWidth)); // Hanning
-      buffer_spec_FFT[i * 2 + 1] =
-          float_buffer_R[i] * (0.5 - 0.5 * cos(6.28 * i / fftWidth));
+    for (int i = 0; i < fftWidth; i++) { // interleave real and imaginary input values [real, imag, real,
+                                         // imag . . .]
+      buffer_spec_FFT[i * 2] = float_buffer_L[i] * (0.5 - 0.5 * cos(6.28 * i / fftWidth)); // Hanning
+      buffer_spec_FFT[i * 2 + 1] = float_buffer_R[i] * (0.5 - 0.5 * cos(6.28 * i / fftWidth));
     }
     // perform complex FFT
     // calculation is performed in-place the FFT_buffer [re, im, re, im, re, im
@@ -289,36 +292,27 @@ void CalcZoom1Magn() {
 
     for (int i = 0; i < SPECTRUM_RES / 2; i++) {
       FFT_spec[i + SPECTRUM_RES / 2] =
-          (buffer_spec_FFT[i * 2] * buffer_spec_FFT[i * 2] +
-           buffer_spec_FFT[i * 2 + 1] * buffer_spec_FFT[i * 2 + 1]);
-      FFT_spec[i] = (buffer_spec_FFT[(i + SPECTRUM_RES / 2) * 2] *
-                         buffer_spec_FFT[(i + SPECTRUM_RES / 2) * 2] +
-                     buffer_spec_FFT[(i + SPECTRUM_RES / 2) * 2 + 1] *
-                         buffer_spec_FFT[(i + SPECTRUM_RES / 2) * 2 + 1]);
+          (buffer_spec_FFT[i * 2] * buffer_spec_FFT[i * 2] + buffer_spec_FFT[i * 2 + 1] * buffer_spec_FFT[i * 2 + 1]);
+      FFT_spec[i] = (buffer_spec_FFT[(i + SPECTRUM_RES / 2) * 2] * buffer_spec_FFT[(i + SPECTRUM_RES / 2) * 2] +
+                     buffer_spec_FFT[(i + SPECTRUM_RES / 2) * 2 + 1] * buffer_spec_FFT[(i + SPECTRUM_RES / 2) * 2 + 1]);
     }
     // apply low pass filter and scale the magnitude values and convert to int
     // for spectrum display
 
     for (int16_t x = 0; x < SPECTRUM_RES; x++) {
-      spec_help = ConfigData.LPFcoeff * FFT_spec[x] +
-                  (1.0 - ConfigData.LPFcoeff) * FFT_spec_old[x];
+      spec_help = ConfigData.LPFcoeff * FFT_spec[x] + (1.0 - ConfigData.LPFcoeff) * FFT_spec_old[x];
       FFT_spec_old[x] = spec_help;
 
 #ifdef USE_LOG10FAST
-      if (calOnFlag) { // Higher dynamic range spectral display during
-                       // calibration.
-        pixelnew[x] = displayScale[ConfigData.currentScale].baseOffset +
-                      (int16_t)(40.0 * log10f_fast(FFT_spec[x]));
+      if (calOnFlag) { // Higher dynamic range spectral display during calibration.
+        pixelnew[x] = displayScale[ConfigData.currentScale].baseOffset + (int16_t)(40.0 * log10f_fast(FFT_spec[x]));
       } else {
         pixelnew[x] = displayScale[ConfigData.currentScale].baseOffset +
-                      (int16_t)(displayScale[ConfigData.currentScale].dBScale *
-                                log10f_fast(FFT_spec[x])) +
-                      fftOffset;
+                      (int16_t)(displayScale[ConfigData.currentScale].dBScale * log10f_fast(FFT_spec[x])) + fftOffset;
       }
 #else
       pixelnew[x] = displayScale[ConfigData.currentScale].baseOffset +
-                    (int16_t)(displayScale[ConfigData.currentScale].dBScale *
-                              log10f(spec_help));
+                    (int16_t)(displayScale[ConfigData.currentScale].dBScale * log10f(spec_help));
 #endif
     }
   }

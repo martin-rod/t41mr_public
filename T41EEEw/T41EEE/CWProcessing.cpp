@@ -1,18 +1,27 @@
-// Morse decode and other Morse related utilities.
+#include "CWProcessing.h"
 
-#include "SDT.h"
+#include "Button.h"
+#include "CWExciter.h"
+#include "ConfigurationData.h"
+#include "Display.h"
+#include "Eeprom.h"
+#include "Encoders.h"
+#include "MenuProc.h"
+#include "T41EEE.h"
+#include "Utility.h"
+
+float goertzel_mag(int numSamples, int TARGET_FREQUENCY, int SAMPLING_RATE, float *data);
 
 #define HISTOGRAM_ELEMENTS 750
-#define MAX_DECODE_CHARS                                                       \
-  32 // Max chars that can appear on decoder line.  Increased to 32.  KF5N
-     // October 29, 2023
-#define DECODER_BUFFER_SIZE 128 // Max chars in binary search string with , . ?
+// Max chars that can appear on decoder line.  Increased to 32.  KF5N October 29, 2023
+#define MAX_DECODE_CHARS 32
+// Max chars in binary search string with , . ?
+#define DECODER_BUFFER_SIZE 128
 
 byte currentDashJump = DECODER_BUFFER_SIZE;
 byte currentDecoderIndex = 0;
 
-float32_t
-    aveCorrResultR; // Used in running averages; must not be inside function.
+float32_t aveCorrResultR; // Used in running averages; must not be inside function.
 float32_t aveCorrResultL;
 // float32_t float_Corr_BufferR[511] = {0};  // DMAMEM may cause problems with
 // these two buffers and CW decode. float32_t float_Corr_BufferL[511] = {0};
@@ -21,8 +30,7 @@ float32_t *float_Corr_BufferL = new float32_t[511];
 float CWLevelTimer;
 float CWLevelTimerOld;
 float goertzelMagnitude;
-char decodeBuffer[33] = {0}; // The buffer for holding the decoded characters.
-                             // Increased to 33.  KF5N October 29, 2023
+char decodeBuffer[33] = {0}; // The buffer for holding the decoded characters. Increased to 33.  KF5N October 29, 2023
 int endGapFlag = 0;
 int topGapIndex;
 int topGapIndexOld;
@@ -40,6 +48,7 @@ long aveDahLength = 200;
 float thresholdGeometricMean = 140.0; // This changes as decoder runs
 float thresholdArithmeticMean;
 int dahLength;
+unsigned long ditLength;
 int gapAtom; // Space between atoms
 int gapChar; // Space between characters
 long signalElapsedTime;
@@ -48,9 +57,20 @@ long signalEnd; // Start-end of dit or dah
 uint32_t gapLength;
 float freq[4] = {562.5, 656.5, 750.0, 843.75};
 
+unsigned long transmitDitLength;
+unsigned long transmitDitUnshapedBlocks;
+unsigned long transmitDahUnshapedBlocks;
+
+constexpr int LOWEST_ATOM_TIME = 20;                                  // 60WPM has an atom of 20ms
+constexpr int ADAPTIVE_SCALE_FACTOR = 0.8;                            // The amount of old histogram values are presesrved
+constexpr int SCALE_CONSTANT = (1.0 / (1.0 - ADAPTIVE_SCALE_FACTOR)); // Insure array has enough observations to scale
+
 // This enum is used by an experimental Morse decoder.
 enum states { state0, state1, state2, state3, state4, state5, state6 };
 states decodeStates = state0;
+
+float32_t DMAMEM float_buffer_L_CW[256];
+float32_t DMAMEM float_buffer_R_CW[256];
 
 /*****
   Purpose: This function replaces the arm_max_float32() function that finds the
@@ -71,8 +91,7 @@ included in the measure. Must be an odd integer > 1.
   Return value;
     void
 *****/
-void JackClusteredArrayMax(int32_t *array, int32_t elements, int32_t *maxCount,
-                           int32_t *maxIndex, int32_t *firstNonZero,
+void JackClusteredArrayMax(int32_t *array, int32_t elements, int32_t *maxCount, int32_t *maxIndex, int32_t *firstNonZero,
                            int32_t spread) {
   int32_t i, j, clusteredIndex;
   int32_t clusteredMax, temp;
@@ -83,8 +102,7 @@ void JackClusteredArrayMax(int32_t *array, int32_t elements, int32_t *maxCount,
   clusteredMax = 0;
   clusteredIndex = -1; // Now we can check for an error
 
-  for (i = spread; i < elements - spread;
-       i++) { // Start with 1 so we can look at the previous element's value
+  for (i = spread; i < elements - spread; i++) { // Start with 1 so we can look at the previous element's value
     temp = 0;
     for (j = i - spread; j <= i + spread; j++) {
       temp += array[j];
@@ -118,18 +136,14 @@ void JackClusteredArrayMax(int32_t *array, int32_t elements, int32_t *maxCount,
     void
 *****/
 FLASHMEM void SelectCWFilter() {
-  const std::string CWFilter[] = {"0.8kHz", "1.0kHz", "1.3kHz",
-                                  "1.8kHz", "2.0kHz", " Off "};
-  ConfigData.CWFilterIndex = SubmenuSelect(
-      CWFilter, 6,
-      ConfigData.CWFilterIndex); // CWFilter is an array of strings.
+  const std::string CWFilter[] = {"0.8kHz", "1.0kHz", "1.3kHz", "1.8kHz", "2.0kHz", " Off "};
+  ConfigData.CWFilterIndex = SubmenuSelect(CWFilter, 6, ConfigData.CWFilterIndex);
   //  BandInformation();
 
   if (ConfigData.CWFilterIndex != 5) {
     switchFilterSideband = true; // Sets current delimiter to FLow.
   }
-  UpdateAudioGraphics(); // This draws decoder delimiters and CW bandwidth box
-                         // (red);
+  UpdateAudioGraphics(); // This draws decoder delimiters and CW bandwidth box (red);
   eeprom.ConfigDataWrite();
 }
 
@@ -145,18 +159,15 @@ FLASHMEM void SelectCWFilter() {
 FLASHMEM void SelectCWOffset() {
   bool tempDecoderFlag;
   int tempCWOffset;
-  const std::string CWOffsets[] = {"562.5 Hz", "656.5 Hz", "750 Hz",
-                                   "843.75 Hz", " Cancel "};
+  const std::string CWOffsets[] = {"562.5 Hz", "656.5 Hz", "750 Hz", "843.75 Hz", " Cancel "};
   const int numCycles[4] = {6, 7, 8, 9};
 
   tempCWOffset = ConfigData.CWOffset;
-  tempDecoderFlag =
-      ConfigData.decoderFlag;     // Remember current status of decoder.
-  ConfigData.decoderFlag = false; // Set to false to erase decoder delimiters.
-  UpdateAudioGraphics();          // Erase graphics if they exist.
-  ConfigData.decoderFlag = tempDecoderFlag; // Restore the decoder flag value.
-  ConfigData.CWOffset = SubmenuSelect(
-      CWOffsets, 5, ConfigData.CWOffset); // CWFilter is an array of strings.
+  tempDecoderFlag = ConfigData.decoderFlag;                               // Remember current status of decoder.
+  ConfigData.decoderFlag = false;                                         // Set to false to erase decoder delimiters.
+  UpdateAudioGraphics();                                                  // Erase graphics if they exist.
+  ConfigData.decoderFlag = tempDecoderFlag;                               // Restore the decoder flag value.
+  ConfigData.CWOffset = SubmenuSelect(CWOffsets, 5, ConfigData.CWOffset); // CWFilter is an array of strings.
 
   //  If user selects cancel, CWOffset will be set to the bogus value of 4.  So
   //  keep the old value.
@@ -184,7 +195,8 @@ FLASHMEM void SelectCWOffset() {
     void
 
 *****/
-void DoCWReceiveProcessing() { // All New AFP 09-19-22
+void DoCWReceiveProcessing() {
+  // All New AFP 09-19-22
   float goertzelMagnitude1;
   float goertzelMagnitude2;
   float32_t aveCorrResult;
@@ -197,9 +209,8 @@ void DoCWReceiveProcessing() { // All New AFP 09-19-22
 
   if (ConfigData.decoderFlag) { // JJP 7/20/23
 
-    arm_fir_f32(
-        &FIR_CW_DecodeL, float_buffer_L, float_buffer_L_CW,
-        256); // AFP 10-25-22  Park McClellan FIR filter const Group delay
+    arm_fir_f32(&FIR_CW_DecodeL, float_buffer_L, float_buffer_L_CW,
+                256); // AFP 10-25-22  Park McClellan FIR filter const Group delay
     arm_fir_f32(&FIR_CW_DecodeR, float_buffer_R, float_buffer_R_CW,
                 256); // AFP 10-25-22
 
@@ -207,13 +218,11 @@ void DoCWReceiveProcessing() { // All New AFP 09-19-22
     // -------------------------
     // Calculate correlation between calc sine and incoming signal
 
-    arm_correlate_f32(float_buffer_R_CW, 256, sinBuffer, 256,
-                      float_Corr_BufferR);
+    arm_correlate_f32(float_buffer_R_CW, 256, sinBuffer, 256, float_Corr_BufferR);
     arm_max_f32(float_Corr_BufferR, 511, &corrResultR, &corrResultIndexR);
     // Running average of corr coeff. R
     aveCorrResultR = .7 * corrResultR + .3 * aveCorrResultR;
-    arm_correlate_f32(float_buffer_L_CW, 256, sinBuffer, 256,
-                      float_Corr_BufferL);
+    arm_correlate_f32(float_buffer_L_CW, 256, sinBuffer, 256, float_Corr_BufferL);
     // Get max value of correlation
     arm_max_f32(float_Corr_BufferL, 511, &corrResultL, &corrResultIndexL);
     // Running average of corr coeff. L
@@ -227,8 +236,7 @@ void DoCWReceiveProcessing() { // All New AFP 09-19-22
     goertzelMagnitude = (goertzelMagnitude1 + goertzelMagnitude2) / 2;
     // Combine Correlation and Gowetzel Coefficients.  Tuning coefficient added.
     // Greg KF5N March 9, 2025
-    combinedCoeff = static_cast<float32_t>(ConfigData.morseDecodeSensitivity) *
-                    aveCorrResult * goertzelMagnitude;
+    combinedCoeff = static_cast<float32_t>(ConfigData.morseDecodeSensitivity) * aveCorrResult * goertzelMagnitude;
     //    Serial.printf("combinedCoeff = %f\n", combinedCoeff);  // Use this to
     //    tune decoder.
     //  Changed CW decode "lock" indicator
@@ -285,10 +293,8 @@ void SetTransmitDitLength(int wpm) {
     transmitDitUnshapedBlocks = 0;
     transmitDahUnshapedBlocks = 0;
   } else {
-    transmitDitUnshapedBlocks =
-        (unsigned long)rint(((double)transmitDitLength - 20.0) / 10.0);
-    transmitDahUnshapedBlocks =
-        (unsigned long)rint((((double)transmitDitLength * 3.0) - 20.0) / 10.0);
+    transmitDitUnshapedBlocks = (unsigned long)rint(((double)transmitDitLength - 20.0) / 10.0);
+    transmitDahUnshapedBlocks = (unsigned long)rint((((double)transmitDitLength * 3.0) - 20.0) / 10.0);
   }
 }
 
@@ -304,11 +310,10 @@ void SetTransmitDitLength(int wpm) {
 void SetKeyType() {
   const std::string keyChoice[] = {"Straight Key", "Keyer"};
 
-  ConfigData.keyType = SubmenuSelect(keyChoice, 2, ConfigData.keyType);
-  // Make sure the ConfigData.paddleDit and ConfigData.paddleDah variables are
-  // set correctly for straight key. Paddle flip can reverse these, making the
-  // straight key inoperative.  KF5N August 9, 2023
-  if (ConfigData.keyType == 0) {
+  ConfigData.keyType = static_cast<KeyTypeEnum>(SubmenuSelect(keyChoice, 2, static_cast<int>(ConfigData.keyType)));
+  // Make sure the ConfigData.paddleDit and ConfigData.paddleDah variables are set correctly for straight key. Paddle flip can
+  // reverse these, making the straight key inoperative.  KF5N August 9, 2023
+  if (ConfigData.keyType == KeyTypeEnum::STRAIGHT_KEY) {
     ConfigData.paddleDit = KEYER_DIT_INPUT_TIP;
     ConfigData.paddleDah = KEYER_DAH_INPUT_RING;
   }
@@ -325,12 +330,13 @@ void SetKeyType() {
     void
 *****/
 FLASHMEM void SetKeyPowerUp() {
-  if (ConfigData.keyType == 0) {
+  if (ConfigData.keyType == KeyTypeEnum::STRAIGHT_KEY) {
     ConfigData.paddleDit = KEYER_DIT_INPUT_TIP;
     ConfigData.paddleDah = KEYER_DAH_INPUT_RING;
     return;
   }
-  if (ConfigData.paddleFlip) { // Means right-paddle dit
+  if (ConfigData.paddleFlip == PaddleFlipEnum::RIGHT_PADDLE_DIT) {
+    // Means right-paddle dit
     ConfigData.paddleDit = KEYER_DAH_INPUT_RING;
     ConfigData.paddleDah = KEYER_DIT_INPUT_TIP;
   } else {
@@ -355,8 +361,7 @@ void SetSideToneVolume(bool speaker) {
 
   SetAudioOperatingState(RadioState::SET_CW_SIDETONE);
   tft.setFontScale((enum RA8875tsize)1);
-  tft.fillRect(SECONDARY_MENU_X - 50, MENUS_Y, EACH_MENU_WIDTH + 60,
-               CHAR_HEIGHT, RA8875_MAGENTA);
+  tft.fillRect(SECONDARY_MENU_X - 50, MENUS_Y, EACH_MENU_WIDTH + 60, CHAR_HEIGHT, RA8875_MAGENTA);
   tft.setTextColor(RA8875_WHITE);
   tft.setCursor(SECONDARY_MENU_X - 48, MENUS_Y + 1);
   tft.print("Sidetone Volume:");
@@ -370,8 +375,7 @@ void SetSideToneVolume(bool speaker) {
   tft.print(sidetoneDisplay); // Display in range of 0 to 100.
 
   while (true) {
-    if (digitalRead(ConfigData.paddleDit) == LOW ||
-        digitalRead(ConfigData.paddleDah) == LOW) {
+    if (digitalRead(ConfigData.paddleDit) == LOW || digitalRead(ConfigData.paddleDah) == LOW) {
       if (keyDown) {
         CW_ExciterIQData(CW_SHAPING_NONE);
       } else {
@@ -386,17 +390,14 @@ void SetSideToneVolume(bool speaker) {
     }
 
     if (filterEncoderMove != 0) {
-      sidetoneDisplay =
-          sidetoneDisplay +
-          filterEncoderMove; // * 0.001;  // ConfigData.sidetoneVolume range is
-                             // 0.0 to 1.0 in 0.001 steps.  KF5N August 29, 2023
+      // ConfigData.sidetoneVolume range is 0.0 to 1.0 in 0.001 steps.  KF5N August 29, 2023
+      sidetoneDisplay = sidetoneDisplay + filterEncoderMove;
       if (sidetoneDisplay < 0) {
         sidetoneDisplay = 0;
       } else if (sidetoneDisplay > 100) { // 100% max
         sidetoneDisplay = 100;
       }
-      tft.fillRect(SECONDARY_MENU_X + 200, MENUS_Y, 70, CHAR_HEIGHT,
-                   RA8875_MAGENTA);
+      tft.fillRect(SECONDARY_MENU_X + 200, MENUS_Y, 70, CHAR_HEIGHT, RA8875_MAGENTA);
       tft.setCursor(SECONDARY_MENU_X + 220, MENUS_Y + 1);
       if (speaker) {
         ConfigData.sidetoneSpeaker = sidetoneDisplay;
@@ -408,23 +409,19 @@ void SetSideToneVolume(bool speaker) {
       filterEncoderMove = 0;
     }
     speakerVolume.setGain(volumeLog[ConfigData.sidetoneSpeaker]);
-    sgtl5000_1.volume(static_cast<float32_t>(ConfigData.sidetoneHeadphone) /
-                      100.0); // This control has a range of 0.0 to 1.0.
+    sgtl5000_1.volume(static_cast<float32_t>(ConfigData.sidetoneHeadphone) / 100.0); // This control has a range of 0.0 to 1.0.
     menu = readButton();
-    if (menu ==
-        MenuSelect::
-            MENU_OPTION_SELECT) { // Make a choice??
-                                  // ConfigData.ConfigData.sidetoneVolume
-                                  // = ConfigData.sidetoneVolume;
+    if (menu == MenuSelect::MENU_OPTION_SELECT) { // Make a choice??
+                                                  // ConfigData.ConfigData.sidetoneVolume
+                                                  // = ConfigData.sidetoneVolume;
       eeprom.ConfigDataWrite();
       break;
     }
   }
   EraseMenus();
-  lastState =
-      RadioState::NOSTATE; // This is required due to the function deactivating
-                           // the receiver.  This forces a pass through the
-                           // receiver set-up code.  KF5N October 7, 2023
+  lastState = RadioState::NOSTATE; // This is required due to the function deactivating
+                                   // the receiver.  This forces a pass through the
+                                   // receiver set-up code.  KF5N October 7, 2023
 }
 
 //==================================== Decoder =================
@@ -468,8 +465,7 @@ void MorseCharacterDisplay(char currentLetter) {
     decodeBuffer[col - 1] = currentLetter; // Add to end
     decodeBuffer[col] = '\0';              // Make is a string
   }
-  tft.fillRect(CW_TEXT_START_X, CW_TEXT_START_Y, CW_MESSAGE_WIDTH,
-               CW_MESSAGE_HEIGHT * 2, RA8875_BLACK);
+  tft.fillRect(CW_TEXT_START_X, CW_TEXT_START_Y, CW_MESSAGE_WIDTH, CW_MESSAGE_HEIGHT * 2, RA8875_BLACK);
   tft.setFontScale((enum RA8875tsize)1);
   tft.setTextColor(RA8875_WHITE);
   tft.setCursor(CW_TEXT_START_X, CW_TEXT_START_Y);
@@ -489,8 +485,7 @@ time the tune endcoder is changed
 void ResetHistograms() {
   gapAtom = ditLength = transmitDitLength;
   gapChar = dahLength = transmitDitLength * 3;
-  thresholdGeometricMean = (ditLength + dahLength) /
-                           2; // Use simple mean for starters so we don't have 0
+  thresholdGeometricMean = (ditLength + dahLength) / 2; // Use simple mean for starters so we don't have 0
   aveDitLength = ditLength;
   aveDahLength = dahLength;
   valRef1 = 0;
@@ -523,9 +518,8 @@ signal. Same for inter-atom.
 // blank has already been printed.
 bool charProcessFlag, blankFlag;
 int currentTime, interElementGap, noSignalTimeStamp;
-char *bigMorseCodeTree =
-    (char *)"-EISH5--4--V---3--UF--------?-2--ARL---------.--.WP------J---1--"
-            "TNDB6--.--X/-----KC------Y------MGZ7----,Q------O-8------9--0----";
+char *bigMorseCodeTree = (char *)"-EISH5--4--V---3--UF--------?-2--ARL---------.--.WP------J---1--"
+                                 "TNDB6--.--X/-----KC------Y------MGZ7----,Q------O-8------9--0----";
 void DoCWDecoding(int audioValue) {
 
   for (int i = 0; i < 2; i = i + 1) {
@@ -534,55 +528,47 @@ void DoCWDecoding(int audioValue) {
     case state0:
       // Detect signal and redirect to appropriate state.
       if (audioValue == 1) {
-        signalStart = millis(); // Time stamp beginning of signal.
-        gapLength = signalStart -
-                    signalEnd; // Calculate the time gap between the start of
-                               // this new signal and the end of the last one.
-                               //        Serial.printf("gapLength state0 =
-                               //        %d\n", gapLength);
-        if (gapLength > LOWEST_ATOM_TIME &&
-            gapLength < (uint32_t)(thresholdGeometricMean *
-                                   3)) { // range  LOWEST_ATOM_TIME = 20
-          DoGapHistogram(gapLength);     // Map the gap in the signal
+        signalStart = millis();              // Time stamp beginning of signal.
+        gapLength = signalStart - signalEnd; // Calculate the time gap between the start of
+                                             // this new signal and the end of the last one.
+                                             //        Serial.printf("gapLength state0 =
+                                             //        %d\n", gapLength);
+        if (gapLength > LOWEST_ATOM_TIME && gapLength < (uint32_t)(thresholdGeometricMean * 3)) { // range  LOWEST_ATOM_TIME = 20
+          DoGapHistogram(gapLength);                                                              // Map the gap in the signal
         }
         decodeStates = state1; // Go to "signalStart" state.
         break;                 // Go to state1;
       }
       noSignalTimeStamp = millis();
       interElementGap = noSignalTimeStamp - signalEnd;
-      if ((interElementGap > (gapAtom * 2)) &&
-          charProcessFlag) { // use thresholdGeometricMean??? was ditLength. End
-                             // of character!  65 * 2
-        decodeStates = state3; // Character ended, print it!
+      if ((interElementGap > (gapAtom * 2)) && charProcessFlag) { // use thresholdGeometricMean??? was ditLength. End
+                                                                  // of character!  65 * 2
+        decodeStates = state3;                                    // Character ended, print it!
         break;
       }
-      if (interElementGap > (gapAtom * 5) && not blankFlag &&
-          not charProcessFlag) { // A big gap, print a blank, but don't repeat a
-                                 // blank.  85 * 3.5
+      if (interElementGap > (gapAtom * 5) && not blankFlag && not charProcessFlag) { // A big gap, print a blank, but don't repeat a
+                                                                                     // blank.  85 * 3.5
         decodeStates = state4;
         break;
       }
       decodeStates = state0; // Stay in state0; no signal.
       break;                 // End state0
-    case state1: // This state times a signal and measures its duration.  The
-                 // next state determines if the signal is a dit or a dah.
+    case state1:             // This state times a signal and measures its duration.  The
+                             // next state determines if the signal is a dit or a dah.
       if (audioValue == 0) {
         currentTime = millis();
-        signalElapsedTime =
-            currentTime - signalStart; // Calculate the duration of the signal.
+        signalElapsedTime = currentTime - signalStart; // Calculate the duration of the signal.
         // Ignore short noisy signal bursts:
-        if (signalElapsedTime <
-            LOWEST_ATOM_TIME) {  // A hiccup or a real signal?  Make this a
-                                 // fraction of ditLength instead???
-          decodeStates = state0; // False signal, start over.
+        if (signalElapsedTime < LOWEST_ATOM_TIME) { // A hiccup or a real signal?  Make this a
+                                                    // fraction of ditLength instead???
+          decodeStates = state0;                    // False signal, start over.
           break;
         }
         //        Serial.printf("SET = %d TGM = %f dit = %d dah = %d gapChar =
         //        %d gapAtom =%d\n", signalElapsedTime, thresholdGeometricMean,
         //        ditLength, dahLength, gapChar, gapAtom);
-        if (signalElapsedTime > LOWEST_ATOM_TIME &&
-            signalElapsedTime < HISTOGRAM_ELEMENTS) { // Valid elapsed time?
-          DoSignalHistogram(signalElapsedTime);       // Yep
+        if (signalElapsedTime > LOWEST_ATOM_TIME && signalElapsedTime < HISTOGRAM_ELEMENTS) { // Valid elapsed time?
+          DoSignalHistogram(signalElapsedTime);                                               // Yep
         }
         signalEnd = currentTime; // Time gap to next signal.
         decodeStates = state2;   // Proceed to state2.  A timed signal is
@@ -594,12 +580,10 @@ void DoCWDecoding(int audioValue) {
 
     case state2: // Determine if a timed signal was a dit or a dah and increment
                  // the decode tree.
-      if (signalElapsedTime > (0.5 * ditLength) &&
-          signalElapsedTime <
-              (1.5 * dahLength)) { // All this does is provide a wide boundary
-                                   // for dit and dah lengths.
-        currentDashJump = currentDashJump >> 1; // Fast divide by 2
-        if (signalElapsedTime < (int)thresholdGeometricMean) { // It was a dit
+      if (signalElapsedTime > (0.5 * ditLength) && signalElapsedTime < (1.5 * dahLength)) { // All this does is provide a wide
+                                                                                            // boundary for dit and dah lengths.
+        currentDashJump = currentDashJump >> 1;                                             // Fast divide by 2
+        if (signalElapsedTime < (int)thresholdGeometricMean) {                              // It was a dit
           charProcessFlag = true;
           currentDecoderIndex++;
         } else { // It's a dah!
@@ -610,10 +594,9 @@ void DoCWDecoding(int audioValue) {
       decodeStates = state0; // Begin process again.
       break;                 // End state2
     case state3:
-      MorseCharacterDisplay(
-          bigMorseCodeTree[currentDecoderIndex]); // This always prints.  How do
-                                                  // blanks get printed.
-      currentDecoderIndex = 0; // Reset everything if char or word
+      MorseCharacterDisplay(bigMorseCodeTree[currentDecoderIndex]); // This always prints.  How do
+                                                                    // blanks get printed.
+      currentDecoderIndex = 0;                                      // Reset everything if char or word
       currentDashJump = DECODER_BUFFER_SIZE;
       charProcessFlag = false; // Char printed and no longer in progress.
       decodeStates = state0;   // Start process for next incoming character.
@@ -625,8 +608,7 @@ void DoCWDecoding(int audioValue) {
 
       tft.setFontScale((enum RA8875tsize)0); // Show estimated WPM
       tft.setTextColor(RA8875_GREEN);
-      tft.fillRect(DECODER_X + 75, DECODER_Y - 5, tft.getFontWidth() * 3,
-                   tft.getFontHeight(), RA8875_BLACK); // Erase old WPM.
+      tft.fillRect(DECODER_X + 75, DECODER_Y - 5, tft.getFontWidth() * 3, tft.getFontHeight(), RA8875_BLACK); // Erase old WPM.
       tft.setCursor(DECODER_X + 75, DECODER_Y - 5);
       //        tft.print("(");
       tft.writeTo(L1);
@@ -663,8 +645,7 @@ void DoGapHistogram(long gapLen) {
   int32_t atomIndex, charIndex, firstDit, temp;
   uint32_t offset;
 
-  if (gapHistogram[gapLen] >
-      10) { // Need over 1 so we don't have fractional value
+  if (gapHistogram[gapLen] > 10) { // Need over 1 so we don't have fractional value
     for (int k = 0; k < HISTOGRAM_ELEMENTS; k++) {
       gapHistogram[k] = (uint32_t)(.8 * (float)gapHistogram[k]);
     }
@@ -674,20 +655,16 @@ void DoGapHistogram(long gapLen) {
 
   atomIndex = charIndex = 0;
   if (gapLen <= thresholdGeometricMean) { // Find new dit length
-    JackClusteredArrayMax(gapHistogram, (uint32_t)thresholdGeometricMean,
-                          &tempAtom, &atomIndex, &firstDit,
+    JackClusteredArrayMax(gapHistogram, (uint32_t)thresholdGeometricMean, &tempAtom, &atomIndex, &firstDit,
                           (int32_t)1); // Find max dit gap
     if (atomIndex) {                   // if something found
       gapAtom = atomIndex;
     }
-    for (int j = 0; j < HISTOGRAM_ELEMENTS; j++) { // count down
-      if (gapHistogram[HISTOGRAM_ELEMENTS - j] > 0 &&
-          endGapFlag == 0) { // Look for non-zero entries in the histogram
-        if (HISTOGRAM_ELEMENTS - j <
-            gapAtom * 2) { // limit search to probable gapAtom entries
-          topGapIndex = HISTOGRAM_ELEMENTS - j; // Upper end of gapAtom range
-          endGapFlag =
-              1; // set flag so we know tha this is the top of the gapAtom range
+    for (int j = 0; j < HISTOGRAM_ELEMENTS; j++) {                       // count down
+      if (gapHistogram[HISTOGRAM_ELEMENTS - j] > 0 && endGapFlag == 0) { // Look for non-zero entries in the histogram
+        if (HISTOGRAM_ELEMENTS - j < gapAtom * 2) {                      // limit search to probable gapAtom entries
+          topGapIndex = HISTOGRAM_ELEMENTS - j;                          // Upper end of gapAtom range
+          endGapFlag = 1; // set flag so we know tha this is the top of the gapAtom range
         }
       }
       if (topGapIndex > 2 * gapAtom) {
@@ -698,10 +675,8 @@ void DoGapHistogram(long gapLen) {
     topGapIndexOld = topGapIndex; // Keep good value for reference
   } else {                        // dah calculation
     if (gapLen <= thresholdGeometricMean * 2) {
-      offset = (uint32_t)(thresholdGeometricMean *
-                          2); // Find number of elements to check
-      JackClusteredArrayMax(&gapHistogram[(int32_t)thresholdGeometricMean + 1],
-                            offset, &tempChar, &charIndex, &temp, (int32_t)3);
+      offset = (uint32_t)(thresholdGeometricMean * 2); // Find number of elements to check
+      JackClusteredArrayMax(&gapHistogram[(int32_t)thresholdGeometricMean + 1], offset, &tempChar, &charIndex, &temp, (int32_t)3);
       if (charIndex) { // if something found
         gapChar = charIndex;
       }
@@ -746,28 +721,20 @@ void DoSignalHistogram(long val) {
     valFlag = 0;
   }
 
-  if ((valRef2 >= valRef1 * compareFactor &&
-       gapRef1 <= valRef1 * compareFactor) ||
-      (valRef1 >= valRef2 * compareFactor &&
-       gapRef1 <= valRef2 * compareFactor)) {
+  if ((valRef2 >= valRef1 * compareFactor && gapRef1 <= valRef1 * compareFactor) ||
+      (valRef1 >= valRef2 * compareFactor && gapRef1 <= valRef2 * compareFactor)) {
     // See if consecutive signal lengths in approximate dit to dah ratio and
     // which one is larger
     if (valRef2 >= valRef1) {
-      aveDitLength = (long)(0.9 * aveDitLength +
-                            0.1 * valRef1); // Do some dit length averaging
+      aveDitLength = (long)(0.9 * aveDitLength + 0.1 * valRef1); // Do some dit length averaging
       aveDahLength = (long)(0.9 * aveDahLength + 0.1 * valRef2);
     } else {
-      aveDitLength =
-          (long)(0.9 * aveDitLength +
-                 0.1 * valRef2); // Use larger one. Note reversal of calc order
-      aveDahLength = (long)(0.9 * aveDahLength +
-                            0.1 * valRef1); // Do some dah length averaging
+      aveDitLength = (long)(0.9 * aveDitLength + 0.1 * valRef2); // Use larger one. Note reversal of calc order
+      aveDahLength = (long)(0.9 * aveDahLength + 0.1 * valRef1); // Do some dah length averaging
     }
   }
-  thresholdGeometricMean =
-      sqrt(aveDitLength * aveDahLength); // calculate geometric mean
-  thresholdArithmeticMean =
-      (aveDitLength + aveDahLength) >> 1; // Fast divide by 2 on integer data
+  thresholdGeometricMean = sqrt(aveDitLength * aveDahLength);   // calculate geometric mean
+  thresholdArithmeticMean = (aveDitLength + aveDahLength) >> 1; // Fast divide by 2 on integer data
 
   signalHistogram[val]++; // Don't care which half it's in, just put it in
 
@@ -782,17 +749,14 @@ void DoSignalHistogram(long val) {
     }
   }
 
-  JackClusteredArrayMax(signalHistogram, offset, &tempDit,
-                        (int32_t *)&ditLength, &firstNonEmpty, (int32_t)1);
+  JackClusteredArrayMax(signalHistogram, offset, &tempDit, (int32_t *)&ditLength, &firstNonEmpty, (int32_t)1);
   // dah calculation
   // Elements above the geomean. Note larger spread: higher variance
-  JackClusteredArrayMax(&signalHistogram[offset], HISTOGRAM_ELEMENTS - offset,
-                        &tempDah, (int32_t *)&dahLength, &firstNonEmpty,
+  JackClusteredArrayMax(&signalHistogram[offset], HISTOGRAM_ELEMENTS - offset, &tempDah, (int32_t *)&dahLength, &firstNonEmpty,
                         (uint32_t)3);
   dahLength += (uint32_t)offset;
 
-  if (tempDit > SCALE_CONSTANT &&
-      tempDah > SCALE_CONSTANT) { // Adaptive dit signalHistogram[]
+  if (tempDit > SCALE_CONSTANT && tempDah > SCALE_CONSTANT) { // Adaptive dit signalHistogram[]
     for (int k = 0; k < HISTOGRAM_ELEMENTS; k++) {
       signalHistogram[k] = ADAPTIVE_SCALE_FACTOR * signalHistogram[k];
     }
@@ -803,17 +767,16 @@ void DoSignalHistogram(long val) {
   Purpose: Calculate Goertzel Algorithn to enable decoding CW
 
   Parameter list:
-    int numSamples,         // number of sample in data array
-    int TARGET_FREQUENCY,   // frequency for which the magnitude of the
-transform is to be found int SAMPLING_RATE,      // Sampling rate in our case
-24ksps float* data             // pointer to input data array
+    int numSamples,         number of sample in data array
+    int TARGET_FREQUENCY,   frequency for which the magnitude of the transform is to be found
+    int SAMPLING_RATE,      Sampling rate in our case 24ksps
+    float* data             pointer to input data array
 
   Return value;
-    float magnitude     //magnitude of the transform at the target frequency
+    float magnitude     magnitude of the transform at the target frequency
 
 *****/
-float goertzel_mag(int numSamples, int TARGET_FREQUENCY, int SAMPLING_RATE,
-                   float *data) {
+float goertzel_mag(int numSamples, int TARGET_FREQUENCY, int SAMPLING_RATE, float *data) {
   int k, i;
   float floatnumSamples;
   float omega, sine, cosine, coeff, q0, q1, q2, magnitude, real, imag;
@@ -835,8 +798,7 @@ float goertzel_mag(int numSamples, int TARGET_FREQUENCY, int SAMPLING_RATE,
     q2 = q1;
     q1 = q0;
   }
-  real = (q1 - q2 * cosine) / scalingFactor; // calculate the real and imaginary
-                                             // results scaling appropriately
+  real = (q1 - q2 * cosine) / scalingFactor; // calculate the real and imaginary esults scaling appropriately
   imag = (q2 * sine) / scalingFactor;
 
   magnitude = sqrtf(real * real + imag * imag);

@@ -1,0 +1,52 @@
+[
+    {
+        "fileName": "a480480.bmp",
+        "qthLatitude": 49.16781998,
+        "qthLongitude": 13.80369663
+    },
+    {
+        "fileName": "a800480.bmp",
+        "qthLatitude": 49.16781998,
+        "qthLongitude": 13.80369663
+    },
+    {
+        "fileName": "cesticec1.bmp",
+        "qthLatitude": 49.16781998,
+        "qthLongitude": 13.80369663
+    },
+    {
+        "fileName": "cesticec2.bmp",
+        "qthLatitude": 49.16781998,
+        "qthLongitude": 13.80369663
+    },
+    {
+        "fileName": "cesticec3.bmp",
+        "qthLatitude": 49.16781998,
+        "qthLongitude": 13.80369663
+    },
+    {
+        "fileName": "cesticec4.bmp",
+        "qthLatitude": 49.16781998,
+        "qthLongitude": 13.80369663
+    },
+    {
+        "fileName": "cesticek3.bmp",
+        "qthLatitude": 49.16781998,
+        "qthLongitude": 13.80369663
+    },
+    {
+        "fileName": "cesticek5.bmp",
+        "qthLatitude": 49.16781998,
+        "qthLongitude": 13.80369663
+    },
+    {
+        "fileName": "cesticek10.bmp",
+        "qthLatitude": 49.16781998,
+        "qthLongitude": 13.80369663
+    },
+    {
+        "fileName": "cesticek15.bmp",
+        "qthLatitude": 49.16781998,
+        "qthLongitude": 13.80369663
+    }
+]

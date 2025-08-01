@@ -1,0 +1,164 @@
+{
+  "versionSettings": "T41EEE.9",
+  "AGCMode": true,
+  "audioVolume": 65,
+  "rfGainCurrent": 0,
+  "autoGain": false,
+  "autoSpectrum": true,
+  "centerTuneStep": 10000,
+  "fineTuneStep": 10,
+  "transmitPowerLevel": 15,
+  "audioOut": 0,
+  "nrOptionSelect": 0,
+  "currentScale": 1,
+  "spectrum_zoom": 4,
+  "CWFilterIndex": 0,
+  "paddleDit": 36,
+  "paddleDah": 35,
+  "decoderFlag": 1,
+  "morseDecodeSensitivity": 500,
+  "keyType": 0,
+  "currentWPM": 15,
+  "CWOffset": 0,
+  "sidetoneSpeaker": 50,
+  "sidetoneHeadphone": 41,
+  "cwTransmitDelay": 1000,
+  "activeVFO": 0,
+  "currentBand": 0,
+  "currentBandA": 0,
+  "currentBandB": 1,
+  "currentFreqA": 3768890,
+  "currentFreqB": 7030000,
+  "micThreshold": -15,
+  "micCompRatio": 5,
+  "micGain": 0,
+  "LPFcoeff": 0,
+  "NR_PSI": 0,
+  "NR_alpha": 0.949999988,
+  "NR_beta": 0.850000024,
+  "omegaN": 200,
+  "pll_fmax": 4000,
+  "centerFreq": 3768890,
+  "mapFileName": "Cincinnati.bmp",
+  "myTimeZone": "UTC: ",
+  "separationCharacter": 46,
+  "paddleFlip": 0,
+  "myLong": 13.80369663,
+  "myLat": 49.16781998,
+  "compressorFlag": false,
+  "xmitEQFlag": true,
+  "receiveEQFlag": false,
+  "rfGain": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "powerOutCW": [
+    0.225167215,
+    0.433012694,
+    0.433012694,
+    0.433012694,
+    0.433012694,
+    0.433012694,
+    0.433012694
+  ],
+  "powerOutSSB": [
+    0.433013111,
+    0.433012694,
+    0.433012694,
+    0.433012694,
+    0.433012694,
+    0.433012694,
+    0.433012694
+  ],
+  "lastFrequencies": [
+    [
+      3768890,
+      3560000
+    ],
+    [
+      7076450,
+      7030000
+    ],
+    [
+      14292400,
+      14060000
+    ],
+    [
+      18122000,
+      18096000
+    ],
+    [
+      21334500,
+      21060000
+    ],
+    [
+      24945500,
+      24906000
+    ],
+    [
+      28053960,
+      28060000
+    ]
+  ],
+  "lastSideband": [
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1
+  ],
+  "equalizerRec": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+  ],
+  "equalizerXmt": [
+    -51,
+    -50,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    -11
+  ],
+  "favoriteFreqs": [
+    3560000,
+    3690000,
+    7030000,
+    7200000,
+    14060000,
+    14200000,
+    21060000,
+    21285000,
+    28060000,
+    28365000,
+    5000000,
+    10000000,
+    15000000
+  ]
+}

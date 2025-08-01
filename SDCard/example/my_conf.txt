@@ -1,0 +1,13 @@
+{
+  "mapFileName": "Cestice.bmp",
+  "myLong": 13.80369663,
+  "myLat": 49.16781998,
+  "myCallsign": "OK4MR",
+  "myTimeZone": "UTC: ",
+  "keyType": 0,
+  "paddleFlip": 0,
+  "speakerScale": 1.0,
+  "headphoneScale": 10.0,
+  "rfgainScale": 3000.0,
+  "hwVersion": 1
+}

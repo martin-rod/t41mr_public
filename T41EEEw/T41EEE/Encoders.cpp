@@ -1,22 +1,41 @@
-// #include <charconv>
+#include "Encoders.h"
 
-#include "SDT.h"
+#include "Band.h"
+#include "Button.h"
+#include "CWProcessing.h"
+#include "ConfigurationData.h"
+#include "Display.h"
+#include "Eeprom.h"
+#include "Filter.h"
+#include "MenuProc.h"
+#include "T41EEE.h"
+#include "Tune.h"
 
 float adjustVolEncoder;
+volatile int filterEncoderMove = 0;
+volatile long fineTuneEncoderMove = 0L;
 
-#ifdef FAST_TUNE
-bool FastTune = true;    //  HMB
-uint32_t FT_last_time;   // millis() of last fine tune step   HMB
-bool FT_ON = false;      // In fast tunung mode HMB
-int FT_step_counter = 0; // how many fast steps have there been continuously HMB
-int last_FT_step_size = 1; // so can go back HMB
-const unsigned long FT_on_ms =
-    30; // time between FTsteps below which increases the step size
-const unsigned long FT_cancel_ms =
-    400;                 // time between steps above which FT is cancelled
-const int FT_trig = 4;   // number of short steps to trigger fast tune,
-const int FT_step = 500; // Hz step in Fast Tune
-#endif
+constexpr int MAX_WPM = 60;
+// Use 0.25f with cheap encoders that have 4 detents per step. For other encoders or libs we use 1.0f.
+constexpr float ENCODER_FACTOR = 0.25;
+
+int centerTuneFlag = 0;
+int resetTuningFlag = 0;
+
+int last_filter_pos = 0;
+int filter_pos = 1;
+
+// variable speed fast tune by Harry GM3RVL
+bool VARIABLE_SPEED_FAST_TUNE = true;
+
+uint32_t FT_last_time;                      // millis() of last fine tune step   HMB
+bool FT_ON = false;                         // In fast tunung mode HMB
+int FT_step_counter = 0;                    // how many fast steps have there been continuously HMB
+int last_FT_step_size = 1;                  // so can go back HMB
+constexpr unsigned long FT_on_ms = 30;      // time between FTsteps below which increases the step size
+constexpr unsigned long FT_cancel_ms = 400; // time between steps above which FT is cancelled
+constexpr int FT_trig = 4;                  // number of short steps to trigger fast tune,
+constexpr int FT_step = 500;                // Hz step in Fast Tune
 
 /*****
   Purpose: Audio filter adjust with encoder.
@@ -64,23 +83,17 @@ void FilterSetSSB() {
         bands.bands[ConfigData.currentBand].sideband == Sideband::UPPER) {
       if (switchFilterSideband == true) { // Adjust and limit FLoCut
         bands.bands[ConfigData.currentBand].FLoCut =
-            bands.bands[ConfigData.currentBand].FLoCut +
-            filterEncoderMove * 100 * ENCODER_FACTOR;
+            bands.bands[ConfigData.currentBand].FLoCut + filterEncoderMove * 100 * ENCODER_FACTOR;
         // Don't allow FLoCut to be less than 100 Hz below FHiCut.
-        if (bands.bands[ConfigData.currentBand].FLoCut >=
-            (bands.bands[ConfigData.currentBand].FHiCut - 100)) {
-          bands.bands[ConfigData.currentBand].FLoCut =
-              bands.bands[ConfigData.currentBand].FHiCut - 100;
+        if (bands.bands[ConfigData.currentBand].FLoCut >= (bands.bands[ConfigData.currentBand].FHiCut - 100)) {
+          bands.bands[ConfigData.currentBand].FLoCut = bands.bands[ConfigData.currentBand].FHiCut - 100;
         }
       } else { // Adjust and limit FHiCut.
         bands.bands[ConfigData.currentBand].FHiCut =
-            bands.bands[ConfigData.currentBand].FHiCut +
-            filterEncoderMove * 100 * ENCODER_FACTOR;
+            bands.bands[ConfigData.currentBand].FHiCut + filterEncoderMove * 100 * ENCODER_FACTOR;
         // Don't allow FHiCut to be less than 100 Hz above FLoCut.
-        if (bands.bands[ConfigData.currentBand].FHiCut <=
-            (bands.bands[ConfigData.currentBand].FLoCut + 100)) {
-          bands.bands[ConfigData.currentBand].FHiCut =
-              bands.bands[ConfigData.currentBand].FLoCut + 100;
+        if (bands.bands[ConfigData.currentBand].FHiCut <= (bands.bands[ConfigData.currentBand].FLoCut + 100)) {
+          bands.bands[ConfigData.currentBand].FHiCut = bands.bands[ConfigData.currentBand].FLoCut + 100;
         }
       }
     }
@@ -88,18 +101,17 @@ void FilterSetSSB() {
     if (bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_AM or
         bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_SAM) {
       bands.bands[ConfigData.currentBand].FAMCut =
-          bands.bands[ConfigData.currentBand].FAMCut +
-          filterEncoderMove * 100 * ENCODER_FACTOR;
+          bands.bands[ConfigData.currentBand].FAMCut + filterEncoderMove * 100 * ENCODER_FACTOR;
     }
 
     FilterBandwidth();
     volumeChangeFlag = true;
   }
 
-  UpdateAudioGraphics();   // Redraw Morse decoder graphics because they get
-                           // erased due to filter graphics updates.
-  DrawFrequencyBarValue(); // This calls ShowBandwidth().  YES, this function is
-                           // useful here.
+  // Redraw Morse decoder graphics because they get erased due to filter graphics updates.
+  UpdateAudioGraphics();
+  // This calls ShowBandwidth(). YES, this function is useful here.
+  DrawFrequencyBarValue();
   DrawBandWidthIndicatorBar();
 }
 
@@ -113,15 +125,15 @@ void FilterSetSSB() {
 void EncoderCenterTune() {
   long tuneChange = 0L;
 
-  unsigned char result = tuneEncoder.process(); // Read the encoder
+  unsigned char result = tuneEncoder->process(); // Read the encoder
 
-  if (result == 0) { // Nothing read
+  if (result == 0) {
+    // Nothing read
     return;
   }
 
-  if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE &&
-      ConfigData.decoderFlag) { // No reason to reset if we're not doing decoded
-                                // CW AFP 09-27-22
+  if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE && ConfigData.decoderFlag) {
+    // No reason to reset if we're not doing decoded CW AFP 09-27-22
     ResetHistograms();
   }
 
@@ -135,15 +147,13 @@ void EncoderCenterTune() {
     break;
   }
 
-  ConfigData.centerFreq +=
-      (ConfigData.centerTuneStep * tuneChange); // tune the master vfo
+  ConfigData.centerFreq += (ConfigData.centerTuneStep * tuneChange); // tune the master vfo
   if (ConfigData.centerFreq < 300000) {
     ConfigData.centerFreq = 300000;
   }
   TxRxFreq = ConfigData.centerFreq + NCOFreq;
-  ConfigData.lastFrequencies[ConfigData.currentBand][ConfigData.activeVFO] =
-      TxRxFreq;
-  SetFreq(); //  Change to receiver tuning process.  KF5N July 22, 2023
+  ConfigData.lastFrequencies[ConfigData.currentBand][static_cast<size_t>(ConfigData.activeVFO)] = TxRxFreq;
+  SetFreq();                   //  Change to receiver tuning process.  KF5N July 22, 2023
   DrawBandWidthIndicatorBar(); // AFP 10-20-22
   ShowFrequency();
   BandInformation();
@@ -159,12 +169,12 @@ void EncoderCenterTune() {
   Return value;
     void
 *****/
-void EncoderVolume() //============================== AFP 10-22-22  Begin new
-{
+void EncoderVolume() {
   char result;
   [[maybe_unused]] int increment = 0;
 
-  result = volumeEncoder.process(); // Read the encoder
+  // Read the encoder
+  result = volumeEncoder->process();
 
   if (result == 0) { // Nothing read
     return;
@@ -188,8 +198,8 @@ void EncoderVolume() //============================== AFP 10-22-22  Begin new
     }
   }
 
-  volumeChangeFlag =
-      true; // Need this because of unknown timing in display updating.
+  // Need this because of unknown timing in display updating.
+  volumeChangeFlag = true;
 }
 
 /*****
@@ -202,22 +212,17 @@ function This function does not have a while loop.  Thus it must be used inside
     int maxValue                the largest value allowed
     int startValue              the numeric value to begin the count
     int increment               the amount by which each increment changes the
-value char prompt[]               the input prompt Return value; int the new
-value
+value char prompt[]               the input prompt Return value; int the new value
 *****/
-float GetEncoderValueLive(float minValue, float maxValue, float startValue,
-                          float increment, std::string prompt,
-                          bool left) // AFP 10-22-22
-{
+float GetEncoderValueLive(float minValue, float maxValue, float startValue, float increment, std::string prompt, bool left) {
   float currentValue = startValue;
   tft.setFontScale((enum RA8875tsize)1);
   tft.setTextColor(RA8875_WHITE);
   if (left) {
     tft.fillRect(160, 0, 85, CHAR_HEIGHT, RA8875_BLACK);
   } else {
-    tft.fillRect(250, 0, 285, CHAR_HEIGHT,
-                 RA8875_BLACK); // Increased rectangle size to full erase value.
-                                // KF5N August 12, 2023
+    // Increased rectangle size to full erase value. KF5N August 12, 2023
+    tft.fillRect(250, 0, 285, CHAR_HEIGHT, RA8875_BLACK);
   }
   if (left) {
     tft.setCursor(0, 1);
@@ -260,30 +265,24 @@ float GetEncoderValueLive(float minValue, float maxValue, float startValue,
 
 /*****
   Purpose: Use the encoder to change the value of a number in some other
-function. This function does not have a while loop.  Thus it must be used inside
-           some other loop.
+function. This function does not have a while loop.  Thus it must be used inside some other loop.
 
   Parameter list:
     int minValue                the lowest value allowed
     int maxValue                the largest value allowed
     int startValue              the numeric value to begin the count
     int increment               the amount by which each increment changes the
-value char prompt[]               the input prompt Return value; int the new
-value
+value char prompt[]             the input prompt Return value; int the new value
 *****/
-float GetEncoderValueLiveString(float minValue, float maxValue,
-                                float startValue, float increment,
-                                std::string prompt, bool left) // AFP 10-22-22
-{
+float GetEncoderValueLiveString(float minValue, float maxValue, float startValue, float increment, std::string prompt, bool left) {
   float currentValue = startValue;
   tft.setFontScale((enum RA8875tsize)1);
   tft.setTextColor(RA8875_WHITE);
   if (left) {
     tft.fillRect(160, 0, 85, CHAR_HEIGHT, RA8875_BLACK);
   } else {
-    tft.fillRect(250, 0, 285, CHAR_HEIGHT,
-                 RA8875_BLACK); // Increased rectangle size to full erase value.
-                                // KF5N August 12, 2023
+    // Increased rectangle size to full erase value. KF5N August 12, 2023
+    tft.fillRect(250, 0, 285, CHAR_HEIGHT, RA8875_BLACK);
   }
   if (left) {
     tft.setCursor(0, 1);
@@ -326,21 +325,16 @@ float GetEncoderValueLiveString(float minValue, float maxValue,
 
 /*****
   Purpose: Use the encoder to change the value of a number in some other
-function This function does not have a while loop.  Thus it must be used inside
-           some other loop.
+function This function does not have a while loop.  Thus it must be used inside some other loop.
 
   Parameter list:
     int minValue                the lowest value allowed
     int maxValue                the largest value allowed
     int startValue              the numeric value to begin the count
     int increment               the amount by which each increment changes the
-value char prompt[]               the input prompt Return value; int the new
-value
+value char prompt[]               the input prompt Return value; int the new value
 *****/
-q15_t GetEncoderValueLiveQ15t(int minValue, int maxValue, int startValue,
-                              int increment, char prompt[],
-                              bool left) // AFP 10-22-22
-{
+q15_t GetEncoderValueLiveQ15t(int minValue, int maxValue, int startValue, int increment, char prompt[], bool left) {
   int currentValue = startValue;
   tft.setFontScale((enum RA8875tsize)1);
   tft.setTextColor(RA8875_WHITE);
@@ -403,10 +397,8 @@ function. This function has a while loop, and it can be used independently.
 value char prompt[]               the input prompt Return value; int the new
 value
 *****/
-// int GetEncoderValue(int minValue, int maxValue, int startValue, int
-// increment, char prompt[]) {
-int GetEncoderValue(int minValue, int maxValue, int startValue, int increment,
-                    std::string prompt) {
+
+int GetEncoderValue(int minValue, int maxValue, int startValue, int increment, std::string prompt) {
   int currentValue = startValue;
   MenuSelect menu;
 
@@ -434,7 +426,7 @@ int GetEncoderValue(int minValue, int maxValue, int startValue, int increment,
       filterEncoderMove = 0;
     }
 
-    menu = readButton(); // Use ladder value to get menu choice
+    menu = readButton();                          // Use ladder value to get menu choice
     if (menu == MenuSelect::MENU_OPTION_SELECT) { // Make a choice??
       return currentValue;
     }
@@ -457,8 +449,7 @@ int SetWPM() {
 
   tft.setFontScale((enum RA8875tsize)1);
 
-  tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT,
-               RA8875_MAGENTA);
+  tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT, RA8875_MAGENTA);
   tft.setTextColor(RA8875_WHITE);
   tft.setCursor(SECONDARY_MENU_X + 1, MENUS_Y + 1);
   tft.print("current WPM:");
@@ -469,15 +460,13 @@ int SetWPM() {
     if (filterEncoderMove != 0) {                 // Changed encoder?
       ConfigData.currentWPM += filterEncoderMove; // Yep
       lastWPM = ConfigData.currentWPM;
-      if (lastWPM <
-          5) { // Set minimum keyer speed to 5 wpm.  KF5N August 20, 2023
+      if (lastWPM < 5) { // Set minimum keyer speed to 5 wpm.  KF5N August 20, 2023
         lastWPM = 5;
       } else if (lastWPM > MAX_WPM) {
         lastWPM = MAX_WPM;
       }
 
-      tft.fillRect(SECONDARY_MENU_X + 200, MENUS_Y + 1, 50, CHAR_HEIGHT,
-                   RA8875_MAGENTA);
+      tft.fillRect(SECONDARY_MENU_X + 200, MENUS_Y + 1, 50, CHAR_HEIGHT, RA8875_MAGENTA);
       tft.setCursor(SECONDARY_MENU_X + 200, MENUS_Y + 1);
       tft.print(lastWPM);
       filterEncoderMove = 0;
@@ -513,8 +502,8 @@ uint32_t SetTransmitDelay() {
 
   tft.setFontScale((enum RA8875tsize)1);
 
-  tft.fillRect(SECONDARY_MENU_X - 150, MENUS_Y, EACH_MENU_WIDTH + 150,
-               CHAR_HEIGHT, RA8875_MAGENTA); // scoot left cuz prompt is long
+  tft.fillRect(SECONDARY_MENU_X - 150, MENUS_Y, EACH_MENU_WIDTH + 150, CHAR_HEIGHT,
+               RA8875_MAGENTA); // scoot left cuz prompt is long
   tft.setTextColor(RA8875_WHITE);
   tft.setCursor(SECONDARY_MENU_X - 149, MENUS_Y + 1);
   tft.print("current delay:");
@@ -528,8 +517,7 @@ uint32_t SetTransmitDelay() {
         lastDelay = 250L;
       }
 
-      tft.fillRect(SECONDARY_MENU_X + 80, MENUS_Y + 1, 200, CHAR_HEIGHT,
-                   RA8875_MAGENTA);
+      tft.fillRect(SECONDARY_MENU_X + 80, MENUS_Y + 1, 200, CHAR_HEIGHT, RA8875_MAGENTA);
       tft.setCursor(SECONDARY_MENU_X + 79, MENUS_Y + 1);
       tft.print(lastDelay);
       filterEncoderMove = 0;
@@ -547,23 +535,12 @@ uint32_t SetTransmitDelay() {
   return ConfigData.cwTransmitDelay;
 }
 
-#ifdef FAST_TUNE
-/*****
-  Purpose: Fine frequency tune control with variable speed by Harry Brash
-GM3RVL.  October 30, 2024
-
-  Parameter list:
-    void
-
-  Return value;
-    void
-*****/
-void EncoderFineTune() {
+void EncoderFineTuneVariableSpeed() {
   char result;
   unsigned long MS_temp;  // HMB
   unsigned long FT_delay; // HMB
 
-  result = fineTuneEncoder.process(); // Read the encoder
+  result = fineTuneEncoder->process(); // Read the encoder
   if (result == 0) {                  // Nothing read
     fineTuneEncoderMove = 0L;
     return;
@@ -589,41 +566,32 @@ void EncoderFineTune() {
     }
     if (FT_step_counter >= FT_trig) {
       last_FT_step_size = ConfigData.fineTuneStep;
-      ConfigData.fineTuneStep = FT_step; // Set in SDT.h
+      ConfigData.fineTuneStep = FT_step;
       FT_step_counter = 0;
       FT_ON = true;
     }
   }
 
-  NCOFreq = NCOFreq +
-            ConfigData.fineTuneStep *
-                fineTuneEncoderMove; // Increment NCOFreq per encoder movement.
-  centerTuneFlag = 1; // This is used in Process.cpp.  Greg KF5N May 16, 2024
-  // ============  AFP 10-28-22
-  if (ConfigData.activeVFO == VFO_A) {
+  NCOFreq = NCOFreq + ConfigData.fineTuneStep * fineTuneEncoderMove; // Increment NCOFreq per encoder movement.
+  centerTuneFlag = 1;                                                // This is used in Process.cpp.  Greg KF5N May 16, 2024
+  if (ConfigData.activeVFO == VfoState::VFO_A) {
     ConfigData.currentFreqA = ConfigData.centerFreq + NCOFreq; // AFP 10-05-22
-    ConfigData.lastFrequencies[ConfigData.currentBand][0] =
-        ConfigData.currentFreqA;
+    ConfigData.lastFrequencies[ConfigData.currentBand][0] = ConfigData.currentFreqA;
   } else {
     ConfigData.currentFreqB = ConfigData.centerFreq + NCOFreq; // AFP 10-05-22
-    ConfigData.lastFrequencies[ConfigData.currentBand][1] =
-        ConfigData.currentFreqB;
+    ConfigData.lastFrequencies[ConfigData.currentBand][1] = ConfigData.currentFreqB;
   }
   // ===============  Recentering at band edges ==========
-  if (ConfigData.spectrum_zoom != 0) {
-    if (NCOFreq >=
-            static_cast<int32_t>((95000 / (1 << ConfigData.spectrum_zoom))) ||
-        NCOFreq <
-            static_cast<int32_t>(
-                (-93000 /
-                 (1 << ConfigData.spectrum_zoom)))) { // 47500 with 2x zoom.
+  if (ConfigData.spectrum_zoom != SpectrumZoomState::SPECTRUM_ZOOM_1) {
+    if (NCOFreq >= static_cast<int32_t>((95000 / (1 << static_cast<int>(ConfigData.spectrum_zoom)))) ||
+        NCOFreq < static_cast<int32_t>((-93000 / (1 << static_cast<int>(ConfigData.spectrum_zoom))))) {
+      // 47500 with 2x zoom.
       centerTuneFlag = 0;
       resetTuningFlag = 1;
       return;
     }
   } else {
-    if (NCOFreq > 142000 ||
-        NCOFreq < -43000) { // Offset tuning window in zoom 1x
+    if (NCOFreq > 142000 || NCOFreq < -43000) { // Offset tuning window in zoom 1x
       centerTuneFlag = 0;
       resetTuningFlag = 1;
       return;
@@ -632,20 +600,11 @@ void EncoderFineTune() {
   fineTuneEncoderMove = 0L;
   TxRxFreq = ConfigData.centerFreq + NCOFreq; // KF5N
 }
-#else
-/*****
-  Purpose: Fine frequency tune control.
 
-  Parameter list:
-    void
-
-  Return value;
-    void
-*****/
-void EncoderFineTune() {
+void EncoderFineTuneFixedSpeed() {
   char result;
 
-  result = fineTuneEncoder.process(); // Read the encoder
+  result = fineTuneEncoder->process(); // Read the encoder
   if (result == 0) {                  // Nothing read
     fineTuneEncoderMove = 0L;
     return;
@@ -656,35 +615,27 @@ void EncoderFineTune() {
       fineTuneEncoderMove = -1L;
     }
   }
-  NCOFreq = NCOFreq +
-            ConfigData.fineTuneStep *
-                fineTuneEncoderMove; // Increment NCOFreq per encoder movement.
-  centerTuneFlag = 1; // This is used in Process.cpp.  Greg KF5N May 16, 2024
-  // ============  AFP 10-28-22
-  if (ConfigData.activeVFO == VFO_A) {
-    ConfigData.currentFreqA = ConfigData.centerFreq + NCOFreq; // AFP 10-05-22
-    ConfigData.lastFrequencies[ConfigData.currentBand][0] =
-        ConfigData.currentFreqA;
+  NCOFreq = NCOFreq + ConfigData.fineTuneStep * fineTuneEncoderMove; // Increment NCOFreq per encoder movement.
+  centerTuneFlag = 1;                                                // This is used in Process.cpp.  Greg KF5N May 16, 2024
+  if (ConfigData.activeVFO == VfoState::VFO_A) {
+    ConfigData.currentFreqA = ConfigData.centerFreq + NCOFreq;
+    ConfigData.lastFrequencies[ConfigData.currentBand][0] = ConfigData.currentFreqA;
   } else {
-    ConfigData.currentFreqB = ConfigData.centerFreq + NCOFreq; // AFP 10-05-22
-    ConfigData.lastFrequencies[ConfigData.currentBand][1] =
-        ConfigData.currentFreqB;
+    ConfigData.currentFreqB = ConfigData.centerFreq + NCOFreq;
+    ConfigData.lastFrequencies[ConfigData.currentBand][1] = ConfigData.currentFreqB;
   }
   // ===============  Recentering at band edges ==========
-  if (ConfigData.spectrum_zoom != 0) {
-    if (NCOFreq >=
-            static_cast<int32_t>((95000 / (1 << ConfigData.spectrum_zoom))) ||
-        NCOFreq <
-            static_cast<int32_t>(
-                (-93000 /
-                 (1 << ConfigData.spectrum_zoom)))) { // 47500 with 2x zoom.
+  if (ConfigData.spectrum_zoom != SpectrumZoomState::SPECTRUM_ZOOM_1) {
+    if (NCOFreq >= static_cast<int32_t>((95000 / (1 << static_cast<int>(ConfigData.spectrum_zoom)))) ||
+        NCOFreq < static_cast<int32_t>((-93000 / (1 << static_cast<int>(ConfigData.spectrum_zoom))))) {
+      // 47500 with 2x zoom.
       centerTuneFlag = 0;
       resetTuningFlag = 1;
       return;
     }
   } else {
-    if (NCOFreq > 142000 ||
-        NCOFreq < -43000) { // Offset tuning window in zoom 1x
+    if (NCOFreq > 142000 || NCOFreq < -43000) {
+      // Offset tuning window in zoom 1x
       centerTuneFlag = 0;
       resetTuningFlag = 1;
       return;
@@ -693,15 +644,31 @@ void EncoderFineTune() {
   fineTuneEncoderMove = 0L;
   TxRxFreq = ConfigData.centerFreq + NCOFreq; // KF5N
 }
-#endif
+
+/*****
+  Purpose: Fine frequency tune control with variable speed by Harry Brash GM3RVL.  October 30, 2024
+
+Parameter list:
+ void
+
+Return value;
+ void
+*****/
+void EncoderFineTune() {
+  if (VARIABLE_SPEED_FAST_TUNE) {
+    EncoderFineTuneVariableSpeed();
+  } else {
+    EncoderFineTuneFixedSpeed();
+  }
+}
 
 // This function is attached to interrupts (in the .ino file).
 void EncoderFilter() {
   char result;
-  result = filterEncoder.process(); // Read the encoder
+  result = filterEncoder->process(); // Read the encoder
 
   if (result == 0) {
-    //    filterEncoderMove = 0;// Nothing read
+    // filterEncoderMove = 0;// Nothing read
     return;
   }
 
@@ -716,13 +683,10 @@ void EncoderFilter() {
     // filter_pos = last_filter_pos - 5 * filterEncoderMove;   // AFP 10-22-22
     break;
   }
-  if (calibrateFlag == false and
-      morseDecodeAdjustFlag ==
-          false) { // This is done so that filter adjustment is not affected
-                   // during these operations.
-    filter_pos = last_filter_pos -
-                 5 * filterEncoderMove; // AFP 10-22-22.  Hmmm.  Why multiply by
-                                        // 5???  Greg KF5N April 21, 2024
-  } // AFP 10-22-22   filter_pos is allowed to go negative.  This may be a
-    // problem.
+  if (calibrateFlag == false and morseDecodeAdjustFlag == false) {
+    // This is done so that filter adjustment is not affected during these operations.
+    filter_pos = last_filter_pos - 5 * filterEncoderMove;
+    // AFP 10-22-22.  Hmmm.  Why multiply by 5???  Greg KF5N April 21, 2024
+  }
+  // AFP 10-22-22   filter_pos is allowed to go negative.  This may be a problem.
 }

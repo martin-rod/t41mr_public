@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 17.0.0, 2025-08-01T20:55:56. -->
+<!-- Written by QtCreator 17.0.0, 2025-09-05T22:52:47. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -83,10 +83,15 @@
     <value type="QString" key="ClangTools.DiagnosticConfig">Builtin.DefaultTidyAndClazy</value>
     <value type="int" key="ClangTools.ParallelJobs">2</value>
     <value type="bool" key="ClangTools.PreferConfigFile">true</value>
-    <valuelist type="QVariantList" key="ClangTools.SelectedDirs"/>
+    <valuelist type="QVariantList" key="ClangTools.SelectedDirs">
+     <value type="QString">/home/rod/wrk_ham/t41/t41mr/CMakeLists.txt</value>
+    </valuelist>
     <valuelist type="QVariantList" key="ClangTools.SelectedFiles"/>
     <valuelist type="QVariantList" key="ClangTools.SuppressedDiagnostics"/>
     <value type="bool" key="ClangTools.UseGlobalSettings">true</value>
+   </valuemap>
+   <valuemap type="QVariantMap" key="CppcheckManual">
+    <value type="QString" key="binary">/usr/bin/cppcheck</value>
    </valuemap>
   </valuemap>
  </data>
@@ -108,13 +113,13 @@
     <valuelist type="QVariantList" key="CMake.Configure.UserEnvironmentChanges">
      <value type="QString">PRJ_DIR=/home/rod/wrk_ham/t41/t41mr</value>
     </valuelist>
-    <value type="QString" key="CMake.Initial.Parameters">-DCMAKE_PROJECT_INCLUDE_BEFORE:FILEPATH=%{BuildConfig:BuildDirectory:NativeFilePath}/.qtc/package-manager/auto-setup.cmake
--DCMAKE_COLOR_DIAGNOSTICS:BOOL=ON
--DCMAKE_GENERATOR:STRING=Unix Makefiles
--DT41_SRC_TYPE:UNINITIALIZED=EEE
--DCMAKE_TOOLCHAIN_FILE:UNINITIALIZED=./cmake/arm13.toolchain.cmake
+    <value type="QString" key="CMake.Initial.Parameters">-DT41_SRC_TYPE:UNINITIALIZED=EEE
 -DCMSIS_TYPE:UNINITIALIZED=SRC_V6
 -DCMAKE_BUILD_TYPE:STRING=Debug
+-DCMAKE_GENERATOR:STRING=Unix Makefiles
+-DCMAKE_PROJECT_INCLUDE_BEFORE:FILEPATH=%{BuildConfig:BuildDirectory:NativeFilePath}/.qtc/package-manager/auto-setup.cmake
+-DCMAKE_TOOLCHAIN_FILE:UNINITIALIZED=./cmake/arm13.toolchain.cmake
+-DCMAKE_COLOR_DIAGNOSTICS:BOOL=ON
 
 </value>
     <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory">/home/rod/wrk_ham/t41/t41mr/build/teensy-Debug</value>

@@ -275,6 +275,13 @@ This shortcut can be changed or disabled using the ibus-setup utility:
     In the dialog, click “Delete”, then “OK”.
     Close the IBus Preferences window.
 
+### Vim
+
+Move trailing comments to the line above:
+```
+%s:^\(.*\)\s\+\(//.*\):\2\r\1:
+```
+
 ### Notes
 
 `/home/rod/wrk_ham/t41/t41mr/teensy/tools/teensy-compile/11.3.1/arm/bin/arm-none-eabi-objdump -x libSPI.a | c++filt -n | less -RN`
