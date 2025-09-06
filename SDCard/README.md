@@ -7,7 +7,7 @@
 
 ## How to use maps
 
-1. Prepare image snip tool
+1. Prepare image with with snip tool
 2. Convert image to suitable format and size - size 480x480 or 800x480, BMP format, 24 bit per pixel, without alpha, `gimp` or script `convert.sh`
 3. prepare file `my_map.txt` (see example)
 
