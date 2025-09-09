@@ -276,7 +276,7 @@ frequency
   CAUTION: SI5351_FREQ_MULT is set in the si5253.h header file and is 100UL
 *****/
 int DoSplitVFO() {
-  char freqBuffer[15];
+  char freqBuffer[15] = {0};
   //  int val;
   MenuSelect menu;
   long chunk = SPLIT_INCREMENT;
@@ -319,7 +319,7 @@ int DoSplitVFO() {
   }
   ConfigData.currentFreqB = ConfigData.currentFreqA + splitOffset;
   // Show VFO_B
-  FormatFrequency(ConfigData.currentFreqB, freqBuffer);
+  FormatFrequency(ConfigData.currentFreqB, freqBuffer, sizeof(freqBuffer));
   tft.fillRect(FREQUENCY_X_SPLIT, FREQUENCY_Y - 12, VFOB_PIXEL_LENGTH, FREQUENCY_PIXEL_HI, RA8875_BLACK);
   tft.setCursor(FREQUENCY_X_SPLIT, FREQUENCY_Y);
   tft.setFont(&FreeMonoBold24pt7b);
@@ -328,7 +328,7 @@ int DoSplitVFO() {
 
   // Show VFO_A
   tft.setFont(&FreeMonoBold18pt7b);
-  FormatFrequency(ConfigData.currentFreqA, freqBuffer);
+  FormatFrequency(ConfigData.currentFreqA, freqBuffer, sizeof(freqBuffer));
   tft.setTextColor(RA8875_LIGHT_GREY);
   tft.setCursor(FREQUENCY_X, FREQUENCY_Y + 6);
   tft.print(freqBuffer);

@@ -919,22 +919,21 @@ void ShowCurrentPowerSetting() {
   tft.setTextColor(RA8875_WHITE);
 }
 
-/*****
-  Purpose: Format frequency for printing
-  Parameter list:
-    void
-  Return value;
-    void
-    // show frequency
-*****/
-void FormatFrequency(uint32_t freq, char *freqBuffer) {
+void FormatFrequency(uint32_t freq, char *freqBuffer, size_t freqBufferSize) {
   TRACE_LEVEL(TR_L_TRACE);
   TRACE_T41(TR_L_TRACE, "freq:%lu", freq);
 
   char outBuffer[15] = {0};
+
+  if (freqBufferSize < sizeof(outBuffer)) {
+    TRACE_T41(TR_L_ERROR, "freqBufferSize:%u", freqBufferSize);
+    memset(freqBuffer, 0, freqBufferSize);
+    return;
+  }
+
   ultoa(freq, outBuffer, 10);
 
-  size_t len = strlen(outBuffer);
+  size_t len = strnlen(outBuffer, sizeof(outBuffer));
   size_t i;
   switch (len) {
   case 6: // below 530.999 KHz
@@ -976,7 +975,8 @@ void FormatFrequency(uint32_t freq, char *freqBuffer) {
     freqBuffer[i] = '\0'; // Make it a string
     break;
   default:
-    TRACE_T41(TR_L_ERROR, "len:%u", len);
+    TRACE_T41(TR_L_WARN, "freq:%lu len:%u", freq, len);
+    memset(freqBuffer, 0, freqBufferSize);
     break;
   }
 }
@@ -993,7 +993,7 @@ currentFreqB.
     // show frequency
 *****/
 void ShowFrequency() {
-  char freqBuffer[15] = "              ";
+  char freqBuffer[15] = {0};
   switch (ConfigData.activeVFO) {
   case VfoState::VFO_A:
     ConfigData.currentBand = ConfigData.currentBandA;
@@ -1008,7 +1008,7 @@ void ShowFrequency() {
 
   switch (ConfigData.activeVFO) {
   case VfoState::VFO_A:
-    FormatFrequency(TxRxFreq, freqBuffer);
+    FormatFrequency(TxRxFreq, freqBuffer, sizeof(freqBuffer));
     tft.setFontScale(3, 2);
     if (TxRxFreq < bands.bands[ConfigData.currentBandA].fBandLow or TxRxFreq > bands.bands[ConfigData.currentBandA].fBandHigh) {
       tft.setTextColor(RA8875_RED); // Out of band
@@ -1021,11 +1021,11 @@ void ShowFrequency() {
     tft.setFontScale(1, 2);                                                      // JJP 7/15/23
     tft.setTextColor(RA8875_LIGHT_GREY);
     tft.setCursor(FREQUENCY_X_SPLIT + 60, FREQUENCY_Y - 15);
-    FormatFrequency(ConfigData.currentFreqB, freqBuffer);
+    FormatFrequency(ConfigData.currentFreqB, freqBuffer, sizeof(freqBuffer));
     tft.print(freqBuffer);
     break;
   case VfoState::VFO_B: // Show VFO_B
-    FormatFrequency(TxRxFreq, freqBuffer);
+    FormatFrequency(TxRxFreq, freqBuffer, sizeof(freqBuffer));
     tft.setFontScale(3, 2); // JJP 7/15/23
                             //  tft.fillRect(FREQUENCY_X_SPLIT - 60, FREQUENCY_Y
                             //  - 12, VFOB_PIXEL_LENGTH, FREQUENCY_PIXEL_HI,
@@ -1040,16 +1040,16 @@ void ShowFrequency() {
     }
     tft.print(freqBuffer);  // Show VFO_A
     tft.setFontScale(1, 2); // JJP 7/15/23
-    FormatFrequency(TxRxFreq, freqBuffer);
+    FormatFrequency(TxRxFreq, freqBuffer, sizeof(freqBuffer));
     tft.fillRect(0, FREQUENCY_Y - 14, tft.getFontWidth() * 10, tft.getFontHeight(), RA8875_BLACK); // JJP 7/15/23
     tft.setTextColor(RA8875_LIGHT_GREY);
     tft.setCursor(20, FREQUENCY_Y - 17);
-    FormatFrequency(ConfigData.currentFreqA, freqBuffer);
+    FormatFrequency(ConfigData.currentFreqA, freqBuffer, sizeof(freqBuffer));
     tft.print(freqBuffer); // Show VFO_A
     break;
   case VfoState::VFO_SPLIT:
     // copy of VFO_A
-    FormatFrequency(TxRxFreq, freqBuffer);
+    FormatFrequency(TxRxFreq, freqBuffer, sizeof(freqBuffer));
     tft.setFontScale(3, 2);
     if (TxRxFreq < bands.bands[ConfigData.currentBandA].fBandLow or TxRxFreq > bands.bands[ConfigData.currentBandA].fBandHigh) {
       tft.setTextColor(RA8875_RED); // Out of band
@@ -1062,7 +1062,7 @@ void ShowFrequency() {
     tft.setFontScale(1, 2);                                                      // JJP 7/15/23
     tft.setTextColor(RA8875_LIGHT_GREY);
     tft.setCursor(FREQUENCY_X_SPLIT + 60, FREQUENCY_Y - 15);
-    FormatFrequency(ConfigData.currentFreqB, freqBuffer);
+    FormatFrequency(ConfigData.currentFreqB, freqBuffer, sizeof(freqBuffer));
     tft.print(freqBuffer);
     break;
   }

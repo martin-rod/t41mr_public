@@ -197,7 +197,7 @@ void ShowCurrentPowerSetting();
     void
     // show frequency
 *****/
-void FormatFrequency(uint32_t freq, char *freqBuffer);
+void FormatFrequency(uint32_t freq, char *freqBuffer, size_t freqBufferSize);
 
 /*****
   Purpose: Show Main frequency display at top.  This shows currentFreqA and
