@@ -567,8 +567,11 @@ FLASHMEM void setup() {
   TRACE_LEVEL(TR_L_INFO);
 
   powerUp = true;
-  // Use this serial for Teensy programming.
   Serial.begin(115200);
+  if ( CrashReport ) {
+    Serial.println("\n" __FILE__ " " __DATE__ " " __TIME__);
+    Serial.println ( CrashReport );
+  }
 
   Serial.printf("T41 %s %s\n", GIT_TAG_VERSION, GIT_DATE);
   Serial.printf("branch:%s sha:%s\n", GIT_BRANCH, GIT_SHA);
