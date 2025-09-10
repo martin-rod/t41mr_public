@@ -1,7 +1,7 @@
+#include "SDT.h"
+
 #ifndef T41_TRACE_H
 #define T41_TRACE_H
-
-#include <cstdint>
 
 #define TR_L_NO 0
 #define TR_L_FATAL 1

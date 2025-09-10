@@ -2,8 +2,6 @@
 
 #include "SDT.h"
 
-#include <cstdint>
-
 struct band {
   uint32_t freq;      // Current frequency in Hz * 100
   uint32_t fBandLow;  // Lower band edge

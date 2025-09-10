@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Arduino.h"
+
 // Library include files
 #include <Adafruit_GFX.h> // Install the Adafruit GFX library via the IDE Library Manager.
 #include <ArduinoJson.h>  // Install the ArduinoJson library via the IDE Library Manager.
