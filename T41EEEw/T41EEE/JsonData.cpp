@@ -5,7 +5,7 @@
 
 #include "trace.h"
 
-void jsonLoadIfExist(JsonDocument &j, const char *name, char *dst, size_t length) {
+FLASHMEM void jsonLoadIfExist(JsonDocument &j, const char *name, char *dst, size_t length) {
   TRACE_LEVEL(TR_L_TRACE);
   if (j[name].is<const char *>()) {
     strlcpy(dst, j[name], length);
@@ -14,7 +14,7 @@ void jsonLoadIfExist(JsonDocument &j, const char *name, char *dst, size_t length
   }
 }
 
-void jsonLoadIfExist(JsonDocument &j, const char *name, bool &dst) {
+FLASHMEM void jsonLoadIfExist(JsonDocument &j, const char *name, bool &dst) {
   TRACE_LEVEL(TR_L_TRACE);
   if (j[name].is<bool>()) {
     dst = j[name];
@@ -23,7 +23,7 @@ void jsonLoadIfExist(JsonDocument &j, const char *name, bool &dst) {
   }
 }
 
-void jsonLoadIfExist(JsonDocument &j, const char *name, int &dst) {
+FLASHMEM void jsonLoadIfExist(JsonDocument &j, const char *name, int &dst) {
   TRACE_LEVEL(TR_L_TRACE);
   if (j[name].is<int>()) {
     dst = j[name];
@@ -32,7 +32,7 @@ void jsonLoadIfExist(JsonDocument &j, const char *name, int &dst) {
   }
 }
 
-void jsonLoadIfExist(JsonDocument &j, const char *name, float32_t &dst) {
+FLASHMEM void jsonLoadIfExist(JsonDocument &j, const char *name, float32_t &dst) {
   TRACE_LEVEL(TR_L_TRACE);
   if (j[name].is<float32_t>()) {
     dst = j[name];
@@ -41,7 +41,7 @@ void jsonLoadIfExist(JsonDocument &j, const char *name, float32_t &dst) {
   }
 }
 
-void jsonLoadIfExist(JsonDocument &j, const char *name, unsigned int &dst) {
+FLASHMEM void jsonLoadIfExist(JsonDocument &j, const char *name, unsigned int &dst) {
   TRACE_LEVEL(TR_L_TRACE);
   if (j[name].is<uint32_t>()) {
     dst = j[name];
@@ -50,7 +50,7 @@ void jsonLoadIfExist(JsonDocument &j, const char *name, unsigned int &dst) {
   }
 }
 
-void jsonLoadIfExistLoop(JsonDocument &j, const char *name, float dst[], size_t length) {
+FLASHMEM void jsonLoadIfExistLoop(JsonDocument &j, const char *name, float dst[], size_t length) {
   TRACE_LEVEL(TR_L_TRACE);
   for (size_t i = 0; i < length; i++) {
     if (j[name][i].is<float>()) {
@@ -61,7 +61,7 @@ void jsonLoadIfExistLoop(JsonDocument &j, const char *name, float dst[], size_t 
   }
 }
 
-void jsonLoadIfExistLoop(JsonDocument &j, const char *name, int dst[], size_t length) {
+FLASHMEM void jsonLoadIfExistLoop(JsonDocument &j, const char *name, int dst[], size_t length) {
   TRACE_LEVEL(TR_L_TRACE);
   for (size_t i = 0; i < length; i++) {
     if (j[name][i].is<int>()) {
@@ -72,7 +72,7 @@ void jsonLoadIfExistLoop(JsonDocument &j, const char *name, int dst[], size_t le
   }
 }
 
-void jsonLoadIfExistLoop(JsonDocument &j, const char *name, unsigned int dst[], size_t length) {
+FLASHMEM void jsonLoadIfExistLoop(JsonDocument &j, const char *name, unsigned int dst[], size_t length) {
   TRACE_LEVEL(TR_L_TRACE);
   for (size_t i = 0; i < length; i++) {
     if (j[name][i].is<unsigned int>()) {
@@ -84,112 +84,112 @@ void jsonLoadIfExistLoop(JsonDocument &j, const char *name, unsigned int dst[], 
 }
 
 // Custom converter - RadioMode
-bool convertToJson(const RadioMode &src, JsonVariant dst) {
+FLASHMEM bool convertToJson(const RadioMode &src, JsonVariant dst) {
   int state;
   state = static_cast<int>(src);
   return dst.set(state);
 }
 
 // Custom converter - RadioMode
-RadioMode convertFromJson(JsonVariantConst src, RadioMode &dst) {
+FLASHMEM RadioMode convertFromJson(JsonVariantConst src, RadioMode &dst) {
   int state;
   state = src.as<int>();
   return dst = static_cast<RadioMode>(state);
 }
 
 // Custom converter - AudioState
-bool convertToJson(const AudioState &src, JsonVariant dst) {
+FLASHMEM bool convertToJson(const AudioState &src, JsonVariant dst) {
   int state;
   state = static_cast<int>(src);
   return dst.set(state);
 }
 
 // Custom converter - AudioState
-AudioState convertFromJson(JsonVariantConst src, AudioState &dst) {
+FLASHMEM AudioState convertFromJson(JsonVariantConst src, AudioState &dst) {
   int state;
   state = src.as<int>();
   return dst = static_cast<AudioState>(state);
 }
 
 // Custom converter - Sideband
-bool convertToJson(const Sideband &src, JsonVariant dst) {
+FLASHMEM bool convertToJson(const Sideband &src, JsonVariant dst) {
   int state;
   state = static_cast<int>(src);
   return dst.set(state);
 }
 
 // Custom converter - Sideband
-Sideband convertFromJson(JsonVariantConst src, Sideband &dst) {
+FLASHMEM Sideband convertFromJson(JsonVariantConst src, Sideband &dst) {
   int state;
   state = src.as<int>();
   return dst = static_cast<Sideband>(state);
 }
 
 // Custom converter - VfoState
-bool convertToJson(const VfoState &src, JsonVariant dst) {
+FLASHMEM bool convertToJson(const VfoState &src, JsonVariant dst) {
   int state;
   state = static_cast<int>(src);
   return dst.set(state);
 }
 
 // Custom converter - VfoState
-VfoState convertFromJson(JsonVariantConst src, VfoState &dst) {
+FLASHMEM VfoState convertFromJson(JsonVariantConst src, VfoState &dst) {
   int state;
   state = src.as<int>();
   return dst = static_cast<VfoState>(state);
 }
 
 // Custom converter - SpectrumZoomState
-bool convertToJson(const SpectrumZoomState &src, JsonVariant dst) {
+FLASHMEM bool convertToJson(const SpectrumZoomState &src, JsonVariant dst) {
   int32_t state;
   state = static_cast<int32_t>(src);
   return dst.set(state);
 }
 
 // Custom converter - SpectrumZoomState
-SpectrumZoomState convertFromJson(JsonVariantConst src, SpectrumZoomState &dst) {
+FLASHMEM SpectrumZoomState convertFromJson(JsonVariantConst src, SpectrumZoomState &dst) {
   int32_t state;
   state = src.as<int32_t>();
   return dst = static_cast<SpectrumZoomState>(state);
 }
 
 // Custom converter - KeyTypeEnum
-bool convertToJson(const KeyTypeEnum &src, JsonVariant dst) {
+FLASHMEM bool convertToJson(const KeyTypeEnum &src, JsonVariant dst) {
   int32_t state;
   state = static_cast<int32_t>(src);
   return dst.set(state);
 }
 
 // Custom converter - KeyTypeEnum
-KeyTypeEnum convertFromJson(JsonVariantConst src, KeyTypeEnum &dst) {
+FLASHMEM KeyTypeEnum convertFromJson(JsonVariantConst src, KeyTypeEnum &dst) {
   int32_t state;
   state = src.as<int32_t>();
   return dst = static_cast<KeyTypeEnum>(state);
 }
 
 // Custom converter - PaddleFlipEnum
-bool convertToJson(const PaddleFlipEnum &src, JsonVariant dst) {
+FLASHMEM bool convertToJson(const PaddleFlipEnum &src, JsonVariant dst) {
   int32_t state;
   state = static_cast<int32_t>(src);
   return dst.set(state);
 }
 
 // Custom converter - PaddleFlipEnum
-PaddleFlipEnum convertFromJson(JsonVariantConst src, PaddleFlipEnum &dst) {
+FLASHMEM PaddleFlipEnum convertFromJson(JsonVariantConst src, PaddleFlipEnum &dst) {
   int32_t state;
   state = src.as<int32_t>();
   return dst = static_cast<PaddleFlipEnum>(state);
 }
 
 // Custom converter - HwVersion
-bool convertToJson(const HwVersion &src, JsonVariant dst) {
+FLASHMEM bool convertToJson(const HwVersion &src, JsonVariant dst) {
   int32_t state;
   state = static_cast<int32_t>(src);
   return dst.set(state);
 }
 
 // Custom converter - HwVersion
-HwVersion convertFromJson(JsonVariantConst src, HwVersion &dst) {
+FLASHMEM HwVersion convertFromJson(JsonVariantConst src, HwVersion &dst) {
   int32_t state;
   state = src.as<int32_t>();
   return dst = static_cast<HwVersion>(state);
