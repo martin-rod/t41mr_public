@@ -31,7 +31,7 @@ Eeprom eeprom;
   Return value;
     void
 *****/
-void Eeprom::ConfigDataWrite() {
+FLASHMEM void Eeprom::ConfigDataWrite() {
   EEPROM.put(EEPROM_BASE_ADDRESS + 4, ConfigData);
   //  Serial.printf("config write!\n");
 }
@@ -46,7 +46,7 @@ void Eeprom::ConfigDataWrite() {
   Return value;
     void
 *****/
-void Eeprom::ConfigDataRead() {
+FLASHMEM void Eeprom::ConfigDataRead() {
   EEPROM.get(EEPROM_BASE_ADDRESS + 4, ConfigData); // Read as one large chunk
 }
 
@@ -59,7 +59,7 @@ void Eeprom::ConfigDataRead() {
   Return value;
     void
 *****/
-void Eeprom::ConfigDataWriteSize(int structSize) {
+FLASHMEM void Eeprom::ConfigDataWriteSize(int structSize) {
   EEPROM.put(EEPROM_BASE_ADDRESS, structSize); // Read as one large chunk
 }
 
@@ -73,7 +73,7 @@ void Eeprom::ConfigDataWriteSize(int structSize) {
   Return value;
     void
 *****/
-void Eeprom::CalDataWrite() {
+FLASHMEM void Eeprom::CalDataWrite() {
   EEPROM.put(CAL_BASE_ADDRESS + 4, CalData);
   //    Serial.printf("cal write!\n");
 }
@@ -88,7 +88,7 @@ void Eeprom::CalDataWrite() {
   Return value;
     void
 *****/
-void Eeprom::CalDataRead() {
+FLASHMEM void Eeprom::CalDataRead() {
   EEPROM.get(CAL_BASE_ADDRESS + 4, CalData); // Read as one large chunk
 }
 
@@ -101,7 +101,7 @@ void Eeprom::CalDataRead() {
   Return value;
     void
 *****/
-void Eeprom::CalDataWriteSize(int structSize) {
+FLASHMEM void Eeprom::CalDataWriteSize(int structSize) {
   EEPROM.put(CAL_BASE_ADDRESS, structSize); // Read as one large chunk
 }
 
@@ -115,10 +115,7 @@ void Eeprom::CalDataWriteSize(int structSize) {
   Return value;
     void
 *****/
-void Eeprom::BandsWrite() {
-  EEPROM.put(BANDS_BASE_ADDRESS + 4, bands);
-  //  Serial.printf("bands write!\n");
-}
+FLASHMEM void Eeprom::BandsWrite() { EEPROM.put(BANDS_BASE_ADDRESS + 4, bands); }
 
 /*****
   Purpose: This is nothing more than an alias for EEPROM.get(BANDS_BASE_ADDRESS
@@ -130,7 +127,7 @@ void Eeprom::BandsWrite() {
   Return value;
     void
 *****/
-void Eeprom::BandsRead() {
+FLASHMEM void Eeprom::BandsRead() {
   EEPROM.get(BANDS_BASE_ADDRESS + 4, bands); // Read as one large chunk
 }
 
@@ -143,7 +140,7 @@ void Eeprom::BandsRead() {
   Return value;
     void
 *****/
-void Eeprom::BandsWriteSize(int structSize) {
+FLASHMEM void Eeprom::BandsWriteSize(int structSize) {
   EEPROM.put(BANDS_BASE_ADDRESS, structSize); // Read as one large chunk
 }
 
@@ -156,7 +153,7 @@ void Eeprom::BandsWriteSize(int structSize) {
   Return value;
     void
 *****/
-int Eeprom::EEPROMReadSize(uint32_t address) {
+FLASHMEM int Eeprom::EEPROMReadSize(uint32_t address) {
   int structSize;
   EEPROM.get(address, structSize); // Read as one large chunk
   return structSize;
@@ -171,7 +168,7 @@ int Eeprom::EEPROMReadSize(uint32_t address) {
   Return value;
     void
 *****/
-void Eeprom::EEPROMStuffFavorites(unsigned long current[]) {
+FLASHMEM void Eeprom::EEPROMStuffFavorites(unsigned long current[]) {
   int i;
   for (i = 0; i < MAX_FAVORITES; i++) {
     current[i] = ConfigData.favoriteFreqs[i];
@@ -192,7 +189,7 @@ through the current list of stored frequencies. Stop on the one that you wish to
            replace and press Select to save in EEPROM. The currently active VFO
 frequency is then stored to EEPROM.
 *****/
-void Eeprom::SetFavoriteFrequency() {
+FLASHMEM void Eeprom::SetFavoriteFrequency() {
   int index;
   MenuSelect menu = MenuSelect::DEFAULT;
   tft.setFontScale((enum RA8875tsize)1);
@@ -367,7 +364,7 @@ FLASHMEM void Eeprom::GetFavoriteFrequency() {
     void
 *****/
 
-void Eeprom::ConfigDataDefaults() {
+FLASHMEM void Eeprom::ConfigDataDefaults() {
   struct config_t *defaultConfig = new config_t; // Create a copy of the default configuration.
   ConfigData = *defaultConfig;                   // Copy the defaults to ConfigData struct.
   // Initialize the frequency setting based on the last used frequency stored to EEPROM.
@@ -385,7 +382,7 @@ void Eeprom::ConfigDataDefaults() {
     void
 *****/
 
-void Eeprom::CalDataDefaults() {
+FLASHMEM void Eeprom::CalDataDefaults() {
   // Create a copy of the default configuration.
   struct calibration_t *defaultCal = new calibration_t;
   // Copy the defaults to ConfigData struct.
@@ -404,7 +401,7 @@ void Eeprom::CalDataDefaults() {
   Return value;
     void
 *****/
-bool Eeprom::EEPROMStartup() {
+FLASHMEM bool Eeprom::EEPROMStartup() {
   TRACE_LEVEL(TR_L_TRACE);
 
   int ConfigDataEEPROMSize;
