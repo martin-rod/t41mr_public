@@ -8,7 +8,7 @@
 #include "trace.h"
 
 // load one time configuration data  from json file
-void loadMyConfigutation(const char *filename, config_t &data) {
+FLASHMEM void loadMyConfigutation(const char *filename, config_t &data) {
   TRACE_LEVEL(TR_L_TRACE);
 
   File file = SD.open(filename, FILE_READ);
@@ -47,7 +47,7 @@ void loadMyConfigutation(const char *filename, config_t &data) {
 }
 
 // load one time calibration data  from json file
-void loadMyCalibration(const char *filename, calibration_t &data) {
+FLASHMEM void loadMyCalibration(const char *filename, calibration_t &data) {
   TRACE_LEVEL(TR_L_TRACE);
 
   File file = SD.open(filename, FILE_READ);
@@ -72,7 +72,7 @@ void loadMyCalibration(const char *filename, calibration_t &data) {
   jsonLoadIfExist(doc, "freqCorrectionFactor", data.freqCorrectionFactor);
 }
 
-void copyMyConfigutation(config_t &data) {
+FLASHMEM void copyMyConfigutation(config_t &data) {
   constexpr const char MY_MAP_FILE_NAME[] = "Cestice.bmp";
   constexpr float MY_QTH_LAT = 49.167821;
   constexpr float MY_QTH_LON = 13.803697;
@@ -111,7 +111,7 @@ void copyMyConfigutation(config_t &data) {
   data.hwVersion = MY_HW_VERSION;
 }
 
-void copyMyCalibration(calibration_t &data) {
+FLASHMEM void copyMyCalibration(calibration_t &data) {
   // The nominal frequency calibration. This can be set here permanently after determining the unique value for your radio.
   constexpr int MY_FREQUENCYCAL = -3200;
 
