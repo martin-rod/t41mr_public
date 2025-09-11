@@ -11,7 +11,7 @@
 
 extern "C" uint8_t external_psram_size;
 
-void memInfo() {
+FLASHMEM void memInfo() {
   auto sp = (char *)__builtin_frame_address(0);
 
   constexpr auto RAM_BASE = 0x2020'0000;
@@ -55,9 +55,9 @@ void memInfo() {
   Serial.printf("_extram_start %08x\n", _extram_start);
   Serial.printf("_extram_end   %08x +%d B\n", _extram_end, _extram_end - _extram_start);
 
-  Serial.printf("<ITCM>  %08x .. %08x\n", _stext, _stext + ((unsigned long int)_itcm_block_count << 15) - 1);
-  Serial.printf("<DTCM>  %08x .. %08x (stack - from top)\n", _sdata, ((unsigned long int)_estack) - 1);
-  Serial.printf("<RAM>   %08x .. %08x (heap - from bottom)\n", RAM_BASE, RAM_BASE + RAM_SIZE - 1);
+  Serial.printf("<ITCM>  %08x .. %08x (RAM1 FASTRUN, unused)\n", _stext, _stext + ((unsigned long int)_itcm_block_count << 15) - 1);
+  Serial.printf("<DTCM>  %08x .. %08x (RAM1 init. vars, zeroed vars, stack - from top)\n", _sdata, ((unsigned long int)_estack) - 1);
+  Serial.printf("<RAM>   %08x .. %08x (RAM2 DMAMEM, heap - from bottom)\n", RAM_BASE, RAM_BASE + RAM_SIZE - 1);
   Serial.printf("<FLASH> %08x .. %08x\n", FLASH_BASE, FLASH_BASE + FLASH_SIZE - 1);
 
   if (external_psram_size > 0) {
