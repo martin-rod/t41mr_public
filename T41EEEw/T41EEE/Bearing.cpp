@@ -1750,7 +1750,7 @@ FLASHMEM int CheckMapList(maps_t mapFiles[], size_t mapCount) {
   return foundCnt;
 }
 
-int WhichOneToUse(maps_t mapFiles[], size_t count) {
+FLASHMEM int WhichOneToUse(maps_t mapFiles[], size_t count) {
   TRACE_LEVEL(TR_L_TRACE);
 
   if (count == 0) {
@@ -1920,7 +1920,7 @@ restoreScreen:
   return;
 }
 
-void DrawBearingMap(void) {
+FLASHMEM void DrawBearingMap(void) {
   TRACE_LEVEL(TR_L_TRACE);
 
   tft.clearMemory(); // Need to clear overlay too

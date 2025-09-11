@@ -250,7 +250,7 @@ copies that frequency to the currently active VFO
   Return value;
     void
 *****/
-void Eeprom::GetFavoriteFrequency() {
+FLASHMEM void Eeprom::GetFavoriteFrequency() {
   int index = 0;
   //  int val;
   MenuSelect menu = MenuSelect::DEFAULT;

@@ -169,8 +169,7 @@ float32_t equalizeCoeffs[249];
 
 // End dataflow code
 
-// Configure basic compressor macro.  This is used in the audio path as a form
-// of AGC.
+// Configure basic compressor macro.  This is used in the audio path as a form of AGC.
 void initializeAudioPaths() {
   // pc1 is global pointer to compressor2_1 object for receiver AGC
   int16_t delaySize = 256; // Any power of 2, i.e., 256, 128, 64, etc.
