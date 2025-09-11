@@ -4,6 +4,10 @@
 #include "SSB_Exciter.h"
 #include "T41EEE.h"
 
+#ifdef T41_USB_AUDIO
+#include "usb_audio.h"
+#endif
+
 // Common to Transmitter and Receiver.
 const float sample_rate_Hz = 48000.0f;
 const int audio_block_samples = 128; // Always 128
@@ -168,6 +172,20 @@ float32_t dbBand1[] = {-100.0, -100.0, -100.0, -100.0, -100.0, -100.0, 0.0,    0
 float32_t equalizeCoeffs[249];
 
 // End dataflow code
+
+#ifdef T41_USB_AUDIO
+
+AudioOutputUSB usbOut;
+// Terrance Robertson, KN6ZDE https://github.com/tmr4/T41_Vxx.git
+// WSJT-X needs some amplification to detect signal *** TODO: this needs refined with PC input volume adjustment ***
+AudioAmplifier amp1;
+AudioConnection pc_amp1(Q_out_L, amp1);
+AudioConnection pc_usb1(amp1, 0, usbOut, 0);
+
+AudioInputUSB usbIn;
+AudioConnection pc_usb2(usbIn, Q_in_L_Ex);
+
+#endif
 
 // Configure basic compressor macro.  This is used in the audio path as a form of AGC.
 void initializeAudioPaths() {

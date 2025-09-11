@@ -22,6 +22,8 @@
 #include <string.h>
 #include <utility/imxrt_hw.h> // for setting I2S freq, Thanks, FrankB!
 
+#define T41_USB_AUDIO
+
 #define USE_LOG10FAST
 
 // Uncomment this line for QSE2

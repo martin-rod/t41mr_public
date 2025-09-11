@@ -597,10 +597,10 @@ FLASHMEM void setup() {
 
   // Use this serial for FT8 keying.
   SerialUSB1.begin(115200);
-  SerialUSB1.printf("T41 USB1\n");
+  // SerialUSB1.printf("T41 USB1\n");
 
-  SerialUSB2.begin(115200);
-  SerialUSB2.printf("T41 USB2\n");
+  // SerialUSB2.begin(115200);
+  // SerialUSB2.printf("T41 USB2\n");
 
   // get TIME from real time clock with 3V backup battery
   setSyncProvider(getTeensy3Time);
