@@ -13,13 +13,13 @@
 #include "FFT.h"
 #include "FIR.h"
 #include "Filter.h"
+#include "MemoryInfo.h"
 #include "Noise.h"
 #include "Process.h"
 #include "SSBCalibrate.h"
 #include "SSB_Exciter.h"
 #include "Tune.h"
 #include "Utility.h"
-#include "MemoryInfo.h"
 
 #define TRACE_MODULE_LEVEL TR_L_ALL
 #define TRACE_MODULE_NAME T41EEE
@@ -570,15 +570,15 @@ FLASHMEM void setup() {
   powerUp = true;
   Serial.begin(115200);
 
-  if ( CrashReport ) {
+  if (CrashReport) {
     Serial.println("\n" __FILE__ " " __DATE__ " " __TIME__);
-    Serial.println ( CrashReport );
+    Serial.println(CrashReport);
   }
 
   memInfo();
 
-  TRACE_T41(TR_L_INFO, "stack available:%d",getStackAvailable());
-  TRACE_T41(TR_L_INFO, "heap available:%d",getHeapAvailable());
+  TRACE_T41(TR_L_INFO, "stack available:%d", getStackAvailable());
+  TRACE_T41(TR_L_INFO, "heap available:%d", getHeapAvailable());
 
   Serial.printf("T41 %s %s\n", GIT_TAG_VERSION, GIT_DATE);
   Serial.printf("branch:%s sha:%s\n", GIT_BRANCH, GIT_SHA);
@@ -597,9 +597,12 @@ FLASHMEM void setup() {
 
   // Use this serial for FT8 keying.
   SerialUSB1.begin(115200);
+  SerialUSB1.printf("T41 USB1\n");
+
+  SerialUSB2.begin(115200);
+  SerialUSB2.printf("T41 USB2\n");
 
   // get TIME from real time clock with 3V backup battery
-
   setSyncProvider(getTeensy3Time);
   setTime(now());
   // set the RTC
