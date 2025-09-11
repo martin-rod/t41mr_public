@@ -116,7 +116,7 @@ Bands bands = {
     },
 };
 
-const band band80mItuRegion1 = {
+PROGMEM const band band80mItuRegion1 = {
     .freq = 3700000UL,
     .fBandLow = 3500000,
     .fBandHigh = 3800000,
@@ -131,7 +131,7 @@ const band band80mItuRegion1 = {
     .gainCorrection = 1.0,
     .AGC_thresh = 20,
 };
-const band band40mItuRegion1 = {
+PROGMEM const band band40mItuRegion1 = {
     .freq = 7150000,
     .fBandLow = 7000000,
     .fBandHigh = 7200000,
@@ -146,8 +146,7 @@ const band band40mItuRegion1 = {
     .gainCorrection = 1.0,
     .AGC_thresh = 20,
 };
-
-const band band80mItuRegion2 = {
+PROGMEM const band band80mItuRegion2 = {
     .freq = 3700000UL,
     .fBandLow = 3500000,
     .fBandHigh = 4000000,
@@ -162,7 +161,7 @@ const band band80mItuRegion2 = {
     .gainCorrection = 1.0,
     .AGC_thresh = 20,
 };
-const band band40mItuRegion2 = {
+PROGMEM const band band40mItuRegion2 = {
     .freq = 7150000,
     .fBandLow = 7000000,
     .fBandHigh = 7300000,
@@ -177,8 +176,7 @@ const band band40mItuRegion2 = {
     .gainCorrection = 1.0,
     .AGC_thresh = 20,
 };
-
-const band band80mItuRegion3 = {
+PROGMEM const band band80mItuRegion3 = {
     .freq = 3700000UL,
     .fBandLow = 3500000,
     .fBandHigh = 3900000,
@@ -193,7 +191,7 @@ const band band80mItuRegion3 = {
     .gainCorrection = 1.0,
     .AGC_thresh = 20,
 };
-const band band40mItuRegion3 = {
+PROGMEM const band band40mItuRegion3 = {
     .freq = 7150000,
     .fBandLow = 7000000,
     .fBandHigh = 7200000,
@@ -209,7 +207,7 @@ const band band40mItuRegion3 = {
     .AGC_thresh = 20,
 };
 
-void BandsAccordingToItuRegion(void) {
+FLASHMEM void BandsAccordingToItuRegion(void) {
   switch (ConfigData.ituRegion) {
   case ItuRegionEnum::ITU_REGION_1:
     bands.bands[BandEnum::BAND_80M] = band80mItuRegion1;

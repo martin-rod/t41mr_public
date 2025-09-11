@@ -580,7 +580,7 @@ card file. BMP data is stored little-endian, Arduino is little-endian too.
   CAUTION: Other systems may not be little-endian so you may have to reverse
 subscripting
 *****/
-uint16_t read16(File &f) {
+FLASHMEM uint16_t read16(File &f) {
   uint16_t result;
   ((uint8_t *)&result)[0] = f.read(); // LSB
   ((uint8_t *)&result)[1] = f.read(); // MSB
@@ -600,7 +600,7 @@ uint16_t read16(File &f) {
   CAUTION: Other systems may not be little-endian so you may have to reverse
 subscripting
 *****/
-uint32_t read32(File &f) {
+FLASHMEM uint32_t read32(File &f) {
   uint32_t result;
   ((uint8_t *)&result)[0] = f.read(); // LSB
   ((uint8_t *)&result)[1] = f.read();
