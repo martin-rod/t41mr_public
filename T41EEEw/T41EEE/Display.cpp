@@ -1198,7 +1198,7 @@ void ShowTempAndLoad() {
 
   tft.setFontScale((enum RA8875tsize)0);
 
-  CPU_temperature = TGetTemp();
+  CPU_temperature = tempmonGetTemp();
 
   tft.fillRect(TEMP_X_OFFSET, TEMP_Y_OFFSET, XPIXELS - TEMP_X_OFFSET, tft.getFontHeight(), RA8875_BLACK); // Erase current data
   tft.setCursor(TEMP_X_OFFSET, TEMP_Y_OFFSET);

@@ -83,11 +83,6 @@ constexpr int INT2_STATE_SIZE = 8 + BUFFER_SIZE * N_B / (uint32_t)DF1 - 1;
 extern uint32_t currentFreq;
 extern uint32_t TxRxFreq; // = centerFreq+NCOFreq  NCOFreq from FreqShift2()
 
-extern uint32_t s_hotTemp;    /*!< The value of TEMPMON_TEMPSENSE0[TEMP_VALUE] at room temperature .*/
-extern uint32_t s_hotCount;   /*!< The value of TEMPMON_TEMPSENSE0[TEMP_VALUE] the hot temperature.*/
-extern uint32_t s_roomC_hotC; /*!< The value of s_roomCount minus s_hotCount.*/
-extern float s_hotT_ROOM;     /*!< The value of s_hotTemp minus room temperature(25C).*/
-
 extern float32_t float_buffer_L[];
 extern float32_t float_buffer_R[];
 extern float32_t iFFT_buffer[];

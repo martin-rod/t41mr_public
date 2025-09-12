@@ -35,9 +35,6 @@
 // Uncommented for debugging, comment out for normal use
 // #define DEBUG
 
-// Uncomment to see temperature and load information
-// #define DEBUG1
-
 // Uncomment to run switch cal by pushing and holding a button at power-up
 // Debug switch cal must be disabled for normal radio operation!
 // #define DEBUG_SWITCH_CAL

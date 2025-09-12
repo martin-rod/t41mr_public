@@ -207,15 +207,6 @@ uint32_t currentFreq;
 // = ConfigData.centerFreq + NCOFreq  NCOFreq from FreqShift2()
 uint32_t TxRxFreq;
 
-/*!< The value of s_roomCount minus s_hotCount.*/
-uint32_t s_roomC_hotC;
-/*!< The value of TEMPMON_TEMPSENSE0[TEMP_VALUE] at room temperature .*/
-uint32_t s_hotTemp;
-/*!< The value of TEMPMON_TEMPSENSE0[TEMP_VALUE] at the hot temperature.*/
-uint32_t s_hotCount;
-/*!< The value of s_hotTemp minus room temperature(25C).*/
-float s_hotT_ROOM;
-
 float32_t coefficient_set[5] = {0, 0, 0, 0, 0};
 
 float32_t dbm = -145.0;
@@ -298,59 +289,6 @@ void FLASHMEM T4_rtc_set(unsigned long t) {
 }
 
 /*****
-  Purpose: void initTempMon
-
-  Parameter list:
-    void
-  Return value;
-    void
-*****/
-void FLASHMEM initTempMon(uint16_t freq, uint32_t lowAlarmTemp, uint32_t highAlarmTemp, uint32_t panicAlarmTemp) {
-
-#define TMS0_POWER_DOWN_MASK (0x1U)
-#define TMS1_MEASURE_FREQ(x) (((uint32_t)(((uint32_t)(x)) << 0U)) & 0xFFFFU)
-
-  uint32_t calibrationData;
-  uint32_t roomCount;
-  constexpr int TEMPMON_ROOMTEMP = 25;
-
-  // first power on the temperature sensor - no register change
-  TEMPMON_TEMPSENSE0 &= ~TMS0_POWER_DOWN_MASK;
-  TEMPMON_TEMPSENSE1 = TMS1_MEASURE_FREQ(freq);
-
-  calibrationData = HW_OCOTP_ANA1;
-  s_hotTemp = (uint32_t)(calibrationData & 0xFFU) >> 0x00U;
-  s_hotCount = (uint32_t)(calibrationData & 0xFFF00U) >> 0X08U;
-  roomCount = (uint32_t)(calibrationData & 0xFFF00000U) >> 0x14U;
-  s_hotT_ROOM = s_hotTemp - TEMPMON_ROOMTEMP;
-  s_roomC_hotC = roomCount - s_hotCount;
-}
-
-/*****
-  Purpose: Read the Teensy's temperature. Get worried over 50C
-
-  Parameter list:
-    void
-
-  Return value:
-    float           temperature Centigrade
-*****/
-float TGetTemp() {
-  uint32_t nmeas;
-  float tmeas;
-
-  while (!(TEMPMON_TEMPSENSE0 & 0x4U)) {
-    ;
-  }
-  // ready to read temperature code value
-
-  nmeas = (TEMPMON_TEMPSENSE0 & 0xFFF00U) >> 8U;
-  // Calculate temperature
-  tmeas = s_hotTemp - (float)((nmeas - s_hotCount) * s_hotT_ROOM / s_roomC_hotC);
-  return tmeas;
-}
-
-/*****
   Purpose: To set the I2S frequency
 
   Parameter list:
@@ -395,19 +333,6 @@ int SetI2SFreq(int freq) {
   CCM_CS2CDR = (CCM_CS2CDR & ~(CCM_CS2CDR_SAI2_CLK_PRED_MASK | CCM_CS2CDR_SAI2_CLK_PODF_MASK)) | CCM_CS2CDR_SAI2_CLK_PRED(n1 - 1) |
                CCM_CS2CDR_SAI2_CLK_PODF(n2 - 1);
   return freq;
-}
-
-void InitializeTemperatureVars() {
-  // updates the temp value at a RTC/3 clock rate 0xFFFF determines a 2 second sample rate period
-  uint16_t temp_check_frequency = 0x03U;
-  // 42 degrees C
-  uint32_t highAlarmTemp = 85U;
-  uint32_t lowAlarmTemp = 25U;
-  uint32_t panicAlarmTemp = 90U;
-
-  // this starts the measurements
-  initTempMon(temp_check_frequency, lowAlarmTemp, highAlarmTemp, panicAlarmTemp);
-  TEMPMON_TEMPSENSE0 |= 0x2U;
 }
 
 /*****
@@ -833,7 +758,9 @@ FLASHMEM void setup() {
   si5351.drive_strength(SI5351_CLK2, SI5351_DRIVE_8MA);
 
   InitializeDataArrays();
-  InitializeTemperatureVars();
+
+  tempmon_init();
+  // InitializeTemperatureVars();
 
   // Initialize user defined stuff
   initUserDefinedStuff();
