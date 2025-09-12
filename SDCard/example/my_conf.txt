@@ -4,6 +4,7 @@
   "myLat": 49.16781998,
   "myCallsign": "OK4MR",
   "myTimeZone": "UTC: ",
+  "ituRegion": 1,
   "keyType": 0,
   "paddleFlip": 0,
   "speakerScale": 1.0,

@@ -38,3 +38,6 @@ PaddleFlipEnum convertFromJson(JsonVariantConst src, PaddleFlipEnum &dst);
 
 bool convertToJson(const HwVersion &src, JsonVariant dst);
 HwVersion convertFromJson(JsonVariantConst src, HwVersion &dst);
+
+bool convertToJson(const ItuRegionEnum &src, JsonVariant dst);
+ItuRegionEnum convertFromJson(JsonVariantConst src, ItuRegionEnum &dst);

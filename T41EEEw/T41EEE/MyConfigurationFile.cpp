@@ -34,6 +34,8 @@ FLASHMEM void loadMyConfigutation(const char *filename, config_t &data) {
   jsonLoadIfExist(doc, "myLong", data.myLong);
   jsonLoadIfExist(doc, "myLat", data.myLat);
 
+  jsonLoadIfExist(doc, "ituRegion", reinterpret_cast<int &>(data.ituRegion));
+
   jsonLoadIfExist(doc, "myCallsign", data.myCallsign, sizeof(data.myCallsign));
   jsonLoadIfExist(doc, "myTimeZone", data.myTimeZone, sizeof(data.myTimeZone));
 

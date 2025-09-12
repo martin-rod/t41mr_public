@@ -438,6 +438,8 @@ FLASHMEM bool Eeprom::EEPROMStartup() {
   // settings. If all else fails, then the user should execute a FLASH erase.
   // The configuration and calibration can then be read from the SD card.
 
+  TRACE_T41(TR_L_INFO, "ConfigData.ituRegion:%d", ConfigData.ituRegion);
+
   // The case where struct sizes are the same, indicating no changes to the struct.  Nothing more to do, return.
   if (ConfigDataEEPROMSize == ConfigDataStackSize and CalDataEEPROMSize == CalDataStackSize and BandsEEPROMSize == BandsStackSize) {
     TRACE_T41(TR_L_TRACE, "ConfigDataRead() begin");
@@ -459,10 +461,9 @@ FLASHMEM bool Eeprom::EEPROMStartup() {
 #if 0
   copyMyConfigutation(ConfigData);
   copyMyCalibration(CalData);
-// or
+#endif
   loadMyConfigutation(myConfigFilename,ConfigData);
   loadMyCalibration(myCalFilename,CalData);
-#endif
 
   // If the flow proceeds here, it is time to initialize some things. The rest of the code will require a switch matrix
   // calibration, and wil write the ConfigData struct to EEPROM.

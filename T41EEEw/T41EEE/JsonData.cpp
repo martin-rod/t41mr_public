@@ -194,3 +194,17 @@ FLASHMEM HwVersion convertFromJson(JsonVariantConst src, HwVersion &dst) {
   state = src.as<int32_t>();
   return dst = static_cast<HwVersion>(state);
 }
+
+// Custom converter - ItuRegionEnum
+FLASHMEM bool convertToJson(const ItuRegionEnum &src, JsonVariant dst) {
+  int32_t state;
+  state = static_cast<int32_t>(src);
+  return dst.set(state);
+}
+
+// Custom converter - ItuRegionEnum
+FLASHMEM ItuRegionEnum convertFromJson(JsonVariantConst src, ItuRegionEnum &dst) {
+  int32_t state;
+  state = src.as<int32_t>();
+  return dst = static_cast<ItuRegionEnum>(state);
+}
