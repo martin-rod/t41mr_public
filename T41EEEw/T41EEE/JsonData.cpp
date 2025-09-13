@@ -208,3 +208,17 @@ FLASHMEM ItuRegionEnum convertFromJson(JsonVariantConst src, ItuRegionEnum &dst)
   state = src.as<int32_t>();
   return dst = static_cast<ItuRegionEnum>(state);
 }
+
+// Custom converter - TimeFormatEnum
+FLASHMEM bool convertToJson(const TimeFormatEnum &src, JsonVariant dst) {
+  int32_t state;
+  state = static_cast<int32_t>(src);
+  return dst.set(state);
+}
+
+// Custom converter - TimeFormatEnum
+FLASHMEM TimeFormatEnum convertFromJson(JsonVariantConst src, TimeFormatEnum &dst) {
+  int32_t state;
+  state = src.as<int32_t>();
+  return dst = static_cast<TimeFormatEnum>(state);
+}

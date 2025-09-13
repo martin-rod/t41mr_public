@@ -27,6 +27,8 @@
 #include "git_version.h"
 #include "trace.h"
 
+int sdCardPresent = 0;
+
 // Receiver process object.
 Process process;
 // Instantiate the calibration objects.
@@ -657,7 +659,7 @@ FLASHMEM void setup() {
   tft.clearMemory();
   tft.writeTo(L1);
 
-  ConfigData.sdCardPresent = sdCardFlag;
+  sdCardPresent = sdCardFlag;
   if (sdCardFlag == 0) {
     tft.setFontScale((enum RA8875tsize)1);
     tft.setTextColor(RA8875_RED, RA8875_BLACK);

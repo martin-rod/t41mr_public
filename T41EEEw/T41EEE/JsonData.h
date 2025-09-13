@@ -41,3 +41,6 @@ HwVersion convertFromJson(JsonVariantConst src, HwVersion &dst);
 
 bool convertToJson(const ItuRegionEnum &src, JsonVariant dst);
 ItuRegionEnum convertFromJson(JsonVariantConst src, ItuRegionEnum &dst);
+
+bool convertToJson(const TimeFormatEnum &src, JsonVariant dst);
+TimeFormatEnum convertFromJson(JsonVariantConst src, TimeFormatEnum &dst);

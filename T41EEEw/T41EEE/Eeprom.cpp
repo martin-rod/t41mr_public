@@ -18,141 +18,29 @@
 
 #include "trace.h"
 
-// Eeprom object.
 Eeprom eeprom;
 
 /*****
-  Purpose: To save the configuration data (working variables) to EEPROM.
-           Skip 4 bytes to allow for the struct size variable.
-
-  Parameter list:
-    none
-
-  Return value;
-    void
+To save the configuration data (working variables) to EEPROM. Skip 4 bytes to allow for the struct size variable.
 *****/
-FLASHMEM void Eeprom::ConfigDataWrite() {
-  EEPROM.put(EEPROM_BASE_ADDRESS + 4, ConfigData);
-  //  Serial.printf("config write!\n");
-}
+FLASHMEM void Eeprom::ConfigDataWrite() { EEPROM.put(EEPROM_BASE_ADDRESS + 4, ConfigData); }
 
-/*****
-  Purpose: This is nothing more than an alias for EEPROM.get(EEPROM_BASE_ADDRESS
-+ 4, ConfigData).
+FLASHMEM void Eeprom::ConfigDataRead() { EEPROM.get(EEPROM_BASE_ADDRESS + 4, ConfigData); }
 
-  Parameter list:
-  None
+FLASHMEM void Eeprom::ConfigDataWriteSize(int structSize) { EEPROM.put(EEPROM_BASE_ADDRESS, structSize); }
 
-  Return value;
-    void
-*****/
-FLASHMEM void Eeprom::ConfigDataRead() {
-  EEPROM.get(EEPROM_BASE_ADDRESS + 4, ConfigData); // Read as one large chunk
-}
+FLASHMEM void Eeprom::CalDataWrite() { EEPROM.put(CAL_BASE_ADDRESS + 4, CalData); }
 
-/*****
-  Purpose: Write the struct size stored to the EEPROM.
+FLASHMEM void Eeprom::CalDataRead() { EEPROM.get(CAL_BASE_ADDRESS + 4, CalData); }
 
-  Parameter list:
-  None
+FLASHMEM void Eeprom::CalDataWriteSize(int structSize) { EEPROM.put(CAL_BASE_ADDRESS, structSize); }
 
-  Return value;
-    void
-*****/
-FLASHMEM void Eeprom::ConfigDataWriteSize(int structSize) {
-  EEPROM.put(EEPROM_BASE_ADDRESS, structSize); // Read as one large chunk
-}
-
-/*****
-  Purpose: To save the configuration data (working variables) to EEPROM.
-           Skip 4 bytes to allow for the struct size variable.
-
-  Parameter list:
-   none
-
-  Return value;
-    void
-*****/
-FLASHMEM void Eeprom::CalDataWrite() {
-  EEPROM.put(CAL_BASE_ADDRESS + 4, CalData);
-  //    Serial.printf("cal write!\n");
-}
-
-/*****
-  Purpose: This is nothing more than an alias for EEPROM.get(CAL_BASE_ADDRESS +
-4, ConfigData).
-
-  Parameter list:
-  None
-
-  Return value;
-    void
-*****/
-FLASHMEM void Eeprom::CalDataRead() {
-  EEPROM.get(CAL_BASE_ADDRESS + 4, CalData); // Read as one large chunk
-}
-
-/*****
-  Purpose: Write the struct size stored to the EEPROM.
-
-  Parameter list:
-  None
-
-  Return value;
-    void
-*****/
-FLASHMEM void Eeprom::CalDataWriteSize(int structSize) {
-  EEPROM.put(CAL_BASE_ADDRESS, structSize); // Read as one large chunk
-}
-
-/*****
-  Purpose: To save the bands array to EEPROM.
-           Skip 4 bytes to allow for the struct size variable.
-
-  Parameter list:
-    none
-
-  Return value;
-    void
-*****/
 FLASHMEM void Eeprom::BandsWrite() { EEPROM.put(BANDS_BASE_ADDRESS + 4, bands); }
 
-/*****
-  Purpose: This is nothing more than an alias for EEPROM.get(BANDS_BASE_ADDRESS
-+ 4, bands.bands[NUMBER_OF_BANDS]).
+FLASHMEM void Eeprom::BandsRead() { EEPROM.get(BANDS_BASE_ADDRESS + 4, bands); }
 
-  Parameter list:
-  None
+FLASHMEM void Eeprom::BandsWriteSize(int structSize) { EEPROM.put(BANDS_BASE_ADDRESS, structSize); }
 
-  Return value;
-    void
-*****/
-FLASHMEM void Eeprom::BandsRead() {
-  EEPROM.get(BANDS_BASE_ADDRESS + 4, bands); // Read as one large chunk
-}
-
-/*****
-  Purpose: Write the struct size stored to the EEPROM.
-
-  Parameter list:
-  None
-
-  Return value;
-    void
-*****/
-FLASHMEM void Eeprom::BandsWriteSize(int structSize) {
-  EEPROM.put(BANDS_BASE_ADDRESS, structSize); // Read as one large chunk
-}
-
-/*****
-  Purpose: Read the struct size stored in the EEPROM at the specified address.
-           The ConfigData structure size is stored at 0.
-  Parameter list:
-  uint32_t address
-
-  Return value;
-    void
-*****/
 FLASHMEM int Eeprom::EEPROMReadSize(uint32_t address) {
   int structSize;
   EEPROM.get(address, structSize); // Read as one large chunk
@@ -365,11 +253,12 @@ FLASHMEM void Eeprom::GetFavoriteFrequency() {
 *****/
 
 FLASHMEM void Eeprom::ConfigDataDefaults() {
-  struct config_t *defaultConfig = new config_t; // Create a copy of the default configuration.
-  ConfigData = *defaultConfig;                   // Copy the defaults to ConfigData struct.
+  // Create a copy of the default configuration
+  struct config_t *defaultConfig = new config_t;
+  // Copy the defaults to ConfigData struct
+  ConfigData = *defaultConfig;
   // Initialize the frequency setting based on the last used frequency stored to EEPROM.
   TxRxFreq = ConfigData.centerFreq = ConfigData.lastFrequencies[ConfigData.currentBand][static_cast<size_t>(ConfigData.activeVFO)];
-  ////  RedrawDisplayScreen();  //  Need to refresh display here.
 }
 
 /*****
@@ -387,9 +276,6 @@ FLASHMEM void Eeprom::CalDataDefaults() {
   struct calibration_t *defaultCal = new calibration_t;
   // Copy the defaults to ConfigData struct.
   CalData = *defaultCal;
-  // Initialize the frequency setting based on the last used frequency stored to EEPROM.
-  TxRxFreq = ConfigData.centerFreq = ConfigData.lastFrequencies[ConfigData.currentBand][static_cast<size_t>(ConfigData.activeVFO)];
-  ////  RedrawDisplayScreen();  //  Need to refresh display here.
 }
 
 /*****
@@ -438,13 +324,14 @@ FLASHMEM bool Eeprom::EEPROMStartup() {
   // settings. If all else fails, then the user should execute a FLASH erase.
   // The configuration and calibration can then be read from the SD card.
 
-  TRACE_T41(TR_L_INFO, "ConfigData.ituRegion:%d", ConfigData.ituRegion);
+  TRACE_T41(TR_L_INFO, "before config read ConfigData.ituRegion:%d", ConfigData.ituRegion);
 
   // The case where struct sizes are the same, indicating no changes to the struct.  Nothing more to do, return.
   if (ConfigDataEEPROMSize == ConfigDataStackSize and CalDataEEPROMSize == CalDataStackSize and BandsEEPROMSize == BandsStackSize) {
     TRACE_T41(TR_L_TRACE, "ConfigDataRead() begin");
     ConfigDataRead();
     TRACE_T41(TR_L_TRACE, "ConfigDataRead() end");
+    TRACE_T41(TR_L_INFO, "after config read ConfigData.ituRegion:%d", ConfigData.ituRegion);
 
     TRACE_T41(TR_L_TRACE, "CalDataRead() begin");
     CalDataRead();
@@ -462,8 +349,10 @@ FLASHMEM bool Eeprom::EEPROMStartup() {
   copyMyConfigutation(ConfigData);
   copyMyCalibration(CalData);
 #endif
-  loadMyConfigutation(myConfigFilename,ConfigData);
-  loadMyCalibration(myCalFilename,CalData);
+  loadMyConfigutation(myConfigFilename, ConfigData);
+  loadMyCalibration(myCalFilename, CalData);
+
+  TRACE_T41(TR_L_INFO, "after loadMyConfigutation ConfigData.ituRegion:%d", ConfigData.ituRegion);
 
   // If the flow proceeds here, it is time to initialize some things. The rest of the code will require a switch matrix
   // calibration, and wil write the ConfigData struct to EEPROM.

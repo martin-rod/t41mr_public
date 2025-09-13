@@ -1091,7 +1091,7 @@ FLASHMEM bool DrawBmpCenter(const char *filename, std::string &errorMsg) {
   int bmpWidth = 0;
   int bmpHeight = 0;
 
-  if (ConfigData.sdCardPresent != 1) {
+  if (sdCardPresent != 1) {
     errorMsg = "SD card cannot be initialized";
     goto Error;
   }
@@ -1274,7 +1274,7 @@ FLASHMEM bool DrawBmp(const char *filename, int x, int y, int &bmpWidth, int &bm
     goto Error;
   }
 
-  if (ConfigData.sdCardPresent != 1) {
+  if (sdCardPresent != 1) {
     errorMsg = "SD card cannot be initialized";
     goto Error;
   }
@@ -1856,7 +1856,7 @@ FLASHMEM void CheckMapList() {
 FLASHMEM void SelectBearingMap() {
   TRACE_LEVEL(TR_L_TRACE);
 
-  if (ConfigData.sdCardPresent == 0) {
+  if (sdCardPresent == 0) {
     TRACE_T41(TR_L_ERROR, "No SD card");
     tft.setCursor(200, 300);
     tft.setTextColor(RA8875_RED, RA8875_BLACK);

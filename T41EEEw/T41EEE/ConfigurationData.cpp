@@ -115,14 +115,15 @@ FLASHMEM void ConfigurationData::loadConfiguration(const char *filename, config_
   file.close();
 }
 
-// Saves the configuration ConfigData to a file or writes to serial.  toFile == true for file, false for serial.
-FLASHMEM void ConfigurationData::saveConfiguration(const char *filename, const config_t &ConfigData, bool toFile) {
+// Saves the configuration ConfigData to a file
+FLASHMEM void ConfigurationData::saveConfiguration(const char *filename, const config_t &ConfigData) {
   TRACE_LEVEL(TR_L_TRACE);
 
   JsonDocument doc;
 
   doc["versionSettings"] = ConfigData.versionSettings;
   doc["AGCMode"] = ConfigData.AGCMode;
+  doc["AGCThreshold"] = ConfigData.AGCThreshold;
   doc["audioVolume"] = ConfigData.audioVolume;
   doc["rfGainCurrent"] = ConfigData.rfGainCurrent;
   doc["autoGain"] = ConfigData.autoGain;
@@ -213,29 +214,121 @@ FLASHMEM void ConfigurationData::saveConfiguration(const char *filename, const c
   doc["rfgainScale"] = ConfigData.rfgainScale;
   doc["hwVersion"] = ConfigData.hwVersion;
 
-  if (toFile) {
-    File file = SD.open(filename, FILE_WRITE_BEGIN);
-    if (!file) {
-      TRACE_T41(TR_L_ERROR, "Failed to create file filename:%s", filename);
-      return;
-    }
-
-    size_t written = serializeJsonPretty(doc, file);
-    if (written == 0) {
-      TRACE_T41(TR_L_ERROR, "Failed to serilaze filename:%s", filename);
-      file.close();
-      return;
-    }
-
-    TRACE_T41(TR_L_INFO, "write filename:%s bytes:%u", filename, written);
-
-    file.close();
-  } else {
-    TRACE_T41(TR_L_INFO, "--- print json begin  filename:%s", filename);
-    size_t written = serializeJsonPretty(doc, Serial);
-    Serial.println();
-    TRACE_T41(TR_L_INFO, "--- print json end  filename:%s bytes:%u", filename, written);
+  File file = SD.open(filename, FILE_WRITE_BEGIN);
+  if (!file) {
+    TRACE_T41(TR_L_ERROR, "Failed to create file filename:%s", filename);
+    return;
   }
+
+  size_t written = serializeJsonPretty(doc, file);
+  if (written == 0) {
+    TRACE_T41(TR_L_ERROR, "Failed to serilaze filename:%s", filename);
+    file.close();
+    return;
+  }
+
+  TRACE_T41(TR_L_INFO, "write filename:%s bytes:%u", filename, written);
+
+  file.close();
+}
+
+FLASHMEM void ConfigurationData::printConfiguration(const config_t &ConfigData) {
+  TRACE_LEVEL(TR_L_TRACE);
+
+  JsonDocument doc;
+
+  doc["versionSettings"] = ConfigData.versionSettings;
+  doc["AGCMode"] = ConfigData.AGCMode;
+  doc["AGCThreshold"] = ConfigData.AGCThreshold;
+  doc["audioVolume"] = ConfigData.audioVolume;
+  doc["rfGainCurrent"] = ConfigData.rfGainCurrent;
+  for (size_t i = 0; i < BandEnum::NUMBER_OF_BANDS; i++) {
+    doc["rfGain"][i] = ConfigData.rfGain[i];
+  }
+  doc["autoGain"] = ConfigData.autoGain;
+  doc["autoSpectrum"] = ConfigData.autoSpectrum;
+  doc["centerTuneStep"] = ConfigData.centerTuneStep;
+  doc["fineTuneStep"] = ConfigData.fineTuneStep;
+  doc["transmitPowerLevel"] = ConfigData.transmitPowerLevel;
+  doc["audioOut"] = ConfigData.audioOut;
+  doc["nrOptionSelect"] = ConfigData.nrOptionSelect;
+  doc["currentScale"] = ConfigData.currentScale;
+  doc["spectrum_zoom"] = ConfigData.spectrum_zoom;
+  doc["CWFilterIndex"] = ConfigData.CWFilterIndex;
+  doc["paddleDit"] = ConfigData.paddleDit;
+  doc["paddleDah"] = ConfigData.paddleDah;
+  doc["decoderFlag"] = ConfigData.decoderFlag;
+  doc["morseDecodeSensitivity"] = ConfigData.morseDecodeSensitivity;
+  doc["keyType"] = ConfigData.keyType;
+  doc["currentWPM"] = ConfigData.currentWPM;
+  doc["CWOffset"] = ConfigData.CWOffset;
+  doc["sidetoneSpeaker"] = ConfigData.sidetoneSpeaker;
+  doc["sidetoneHeadphone"] = ConfigData.sidetoneHeadphone;
+  doc["cwTransmitDelay"] = ConfigData.cwTransmitDelay;
+  doc["activeVFO"] = ConfigData.activeVFO;
+  doc["currentBand"] = ConfigData.currentBand;
+  doc["currentBandA"] = ConfigData.currentBandA;
+  doc["currentBandB"] = ConfigData.currentBandB;
+  doc["currentFreqA"] = ConfigData.currentFreqA;
+  doc["currentFreqB"] = ConfigData.currentFreqB;
+  for (int i = 0; i < EQUALIZER_CELL_COUNT; i++) {
+    doc["equalizerRec"][i] = ConfigData.equalizerRec[i];
+  }
+
+  for (int i = 0; i < EQUALIZER_CELL_COUNT; i++) {
+    doc["equalizerXmt"][i] = ConfigData.equalizerXmt[i];
+  }
+  doc["micThreshold"] = ConfigData.micThreshold;
+  doc["micCompRatio"] = ConfigData.micCompRatio;
+  doc["micGain"] = ConfigData.micGain;
+  doc["LPFcoeff"] = ConfigData.LPFcoeff;
+  doc["NR_PSI"] = ConfigData.NR_PSI;
+  doc["NR_alpha"] = ConfigData.NR_alpha;
+  doc["NR_beta"] = ConfigData.NR_beta;
+  doc["omegaN"] = ConfigData.omegaN;
+  doc["pll_fmax"] = ConfigData.pll_fmax;
+  for (size_t i = 0; i < BandEnum::NUMBER_OF_BANDS; i++) {
+    doc["powerOutCW"][i] = ConfigData.powerOutCW[i];
+  }
+
+  for (size_t i = 0; i < BandEnum::NUMBER_OF_BANDS; i++) {
+    doc["powerOutSSB"][i] = ConfigData.powerOutSSB[i];
+  }
+  for (size_t i = 0; i < ConfigDataFavoriteFreqsSize; i++) {
+    doc["favoriteFreqs"][i] = ConfigData.favoriteFreqs[i];
+  }
+  for (size_t i = 0; i < BandEnum::NUMBER_OF_BANDS; i++) {
+    for (int j = 0; j < 2; j++) {
+      doc["lastFrequencies"][i][j] = ConfigData.lastFrequencies[i][j];
+    }
+  }
+  for (size_t i = 0; i < BandEnum::NUMBER_OF_BANDS; i++) {
+    doc["lastSideband"][i] = ConfigData.lastSideband[i];
+  }
+  doc["centerFreq"] = ConfigData.centerFreq;
+  doc["mapFileName"] = ConfigData.mapFileName;
+  doc["myTimeZone"] = ConfigData.myTimeZone;
+  doc["separationCharacter"] = ConfigData.separationCharacter;
+  doc["paddleFlip"] = ConfigData.paddleFlip;
+  doc["myLong"] = ConfigData.myLong;
+  doc["myLat"] = ConfigData.myLat;
+  doc["compressorFlag"] = ConfigData.compressorFlag;
+  doc["xmitEQFlag"] = ConfigData.xmitEQFlag;
+  doc["receiveEQFlag"] = ConfigData.receiveEQFlag;
+  doc["cessb"] = ConfigData.cessb;
+  doc["autoGain"] = ConfigData.autoGain;
+  doc["myCallsign"] = ConfigData.myCallsign;
+  doc["timeFormat"] = ConfigData.timeFormat;
+  doc["ituRegion"] = ConfigData.ituRegion;
+  doc["speakerScale"] = ConfigData.speakerScale;
+  doc["headphoneScale"] = ConfigData.headphoneScale;
+  doc["rfgainScale"] = ConfigData.rfgainScale;
+  doc["hwVersion"] = ConfigData.hwVersion;
+
+  TRACE_T41(TR_L_INFO, "--- print json begin");
+  size_t written = serializeJsonPretty(doc, Serial);
+  Serial.println();
+  TRACE_T41(TR_L_INFO, "--- print json end bytes:%u", written);
 }
 
 void ConfigurationAccordingToItuRegion(void) {

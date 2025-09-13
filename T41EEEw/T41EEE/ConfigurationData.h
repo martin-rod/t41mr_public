@@ -110,7 +110,6 @@ struct config_t {
   char myTimeZone[10] = {0};
   int separationCharacter = (int)DEFAULT_FREQ_SEP_CHARACTER;
   PaddleFlipEnum paddleFlip = DEFAULT_PADDLE_FLIP;
-  int sdCardPresent = 0;
   float myLong = DEFAULT_QTH_LON;
   float myLat = DEFAULT_QTH_LAT;
   bool compressorFlag = false;
@@ -140,7 +139,8 @@ constexpr size_t ConfigDataCallsignSize = sizeof(ConfigData.myCallsign);
 class ConfigurationData {
 public:
   void loadConfiguration(const char *filename, config_t &ConfigData);
-  void saveConfiguration(const char *filename, const config_t &ConfigData, bool toFile);
+  void saveConfiguration(const char *filename, const config_t &ConfigData);
+  void printConfiguration(const config_t &ConfigData);
 };
 
 extern ConfigurationData configurationData;

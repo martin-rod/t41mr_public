@@ -1182,7 +1182,7 @@ void ConfigDataOptions() {
     {
       config_t tempConfig;
       EEPROM.get(EEPROM_BASE_ADDRESS + 4, tempConfig);
-      configurationData.saveConfiguration(configFilename, tempConfig, true);
+      configurationData.saveConfiguration(configFilename, tempConfig);
     }
     break;
   case 5:
@@ -1203,7 +1203,7 @@ void ConfigDataOptions() {
       config_t ConfigData_temp;
       EEPROM.get(EEPROM_BASE_ADDRESS + 4, ConfigData_temp);
       // Write the temporary struct to the serial monitor.
-      configurationData.saveConfiguration(configFilename, ConfigData_temp, false);
+      configurationData.printConfiguration(ConfigData_temp);
       Serial.println(F("End EEPROM->Serial"));
     }
     break;
@@ -1213,7 +1213,7 @@ void ConfigDataOptions() {
       Serial.println(F("Begin Defaults->Serial"));
       config_t defaultConfig;
       // Write default ConfigData struct to the Serial monitor.
-      configurationData.saveConfiguration(configFilename, defaultConfig, false);
+      configurationData.printConfiguration(defaultConfig);
       Serial.println(F("End Defaults->Serial"));
     }
     break;
@@ -1221,7 +1221,7 @@ void ConfigDataOptions() {
   case 8:
     // RAM->Serial
     Serial.println(F("Begin RAM->Serial"));
-    configurationData.saveConfiguration(configFilename, ConfigData, false);
+    configurationData.printConfiguration(ConfigData);
     Serial.println(F("End RAM->Serial"));
     break;
   case 9:

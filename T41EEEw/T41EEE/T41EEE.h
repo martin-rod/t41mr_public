@@ -6,6 +6,8 @@
 #include "Process.h"
 #include "SSBCalibrate.h"
 
+extern int sdCardPresent;
+
 extern Process process;            // Receiver DSP object.
 extern CWCalibrate cwcalibrater;   // CW mode calibration object.
 extern SSBCalibrate ssbcalibrater; // SSB mode calibration object.
