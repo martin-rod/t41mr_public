@@ -224,6 +224,7 @@ int Button::ReadSelectedPushButton() {
   } else {
     while (abs(minPinRead - buttonReadOld) > 3) { // do averaging to smooth out the button response
       minPinRead = analogRead(BUSY_ANALOG_PIN);
+      delay(50L);
 
       buttonRead = .1 * minPinRead + (1 - .1) * buttonReadOld; // See expected values in next function.
       buttonReadOld = buttonRead;
