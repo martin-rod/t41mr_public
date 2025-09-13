@@ -15,8 +15,6 @@
 
 #include "trace.h"
 
-#define TIME_X 550 // Upper-left corner for time
-#define TIME_Y (YPIXELS * 0.07)
 #define TABLE_SIZE_64 64
 
 uint8_t display_dbm = DISPLAY_S_METER_DBM;
@@ -509,61 +507,6 @@ void SaveAnalogSwitchValues() {
 
   CalData.buttonRepeatDelay = origRepeatDelay; // Restore original repeat delay
 }
-
-// ================== Clock stuff
-void DisplayClock() {
-  char timeBuffer[15];
-  char temp[5];
-
-  temp[0] = '\0';
-  timeBuffer[0] = '\0';
-  strcpy(timeBuffer, ConfigData.myTimeZone);
-  if (ConfigData.timeFormat == TimeFormatEnum::TIME_24H) {
-    itoa(hour(), temp, DEC);
-  } else if (ConfigData.timeFormat == TimeFormatEnum::TIME_12H) {
-    itoa(hourFormat12(), temp, DEC);
-  }
-  if (strlen(temp) < 2) {
-    strcat(timeBuffer, "0");
-  }
-  strcat(timeBuffer, temp);
-  strcat(timeBuffer, ":");
-
-  itoa(minute(), temp, DEC);
-  if (strlen(temp) < 2) {
-    strcat(timeBuffer, "0");
-  }
-  strcat(timeBuffer, temp);
-  strcat(timeBuffer, ":");
-
-  itoa(second(), temp, DEC);
-  if (strlen(temp) < 2) {
-    strcat(timeBuffer, "0");
-  }
-  strcat(timeBuffer, temp);
-
-  tft.setFontScale((enum RA8875tsize)1);
-
-  tft.fillRect(TIME_X, TIME_Y, XPIXELS - TIME_X - 1, CHAR_HEIGHT, RA8875_BLACK);
-  tft.setCursor(TIME_X, TIME_Y);
-  tft.setTextColor(RA8875_WHITE);
-  tft.print(timeBuffer);
-}
-
-/*****
-  Purpose: set Band
-  Parameter list:
-    void
-  Return value;
-    void
-*****
-void SetBand() {
-  old_demod_mode = -99;  // used in setup_mode and when changing bands, so that
-LoCut and HiCut are not changed!
-////  SetupMode(radioMode, bands[ConfigData.currentBand].sideband);  // Not
-required here? SetFreq(); ShowFrequency(); FilterBandwidth();
-}
-*/
 
 /*****
   Purpose: Initialize power coefficients based on transmit power level and

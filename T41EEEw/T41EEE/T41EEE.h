@@ -97,4 +97,3 @@ extern bool powerUp;
 
 void InitializeDataArrays();
 int SetI2SFreq(int freq);
-float TGetTemp();

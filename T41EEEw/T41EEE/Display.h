@@ -467,3 +467,5 @@ void EraseSecondaryMenu();
     void
 *****/
 void ShowTransmitReceiveStatus();
+
+void DisplayClock();

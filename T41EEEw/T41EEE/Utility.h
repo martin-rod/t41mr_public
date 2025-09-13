@@ -91,16 +91,6 @@ that value in EEPROM. Only called if STORE_SWITCH_VALUES is uncommented.
 *****/
 void SaveAnalogSwitchValues();
 
-// ================== Clock stuff
-/*****
-  Purpose: DisplayClock()
-  Parameter list:
-    void
-  Return value;
-    void
-*****/
-void DisplayClock();
-
 /*****
   Purpose: Tries to open the EEPROM SD file to see if an SD card is present in
 the system

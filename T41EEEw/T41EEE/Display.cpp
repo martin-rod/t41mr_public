@@ -1954,3 +1954,46 @@ void ShowTransmitReceiveStatus() {
     tft.print("REC");
   }
 }
+
+void DisplayClock() {
+  // Upper-left corner for time
+  constexpr int TIME_X = 550;
+  constexpr int TIME_Y = YPIXELS * 0.07;
+
+  char timeBuffer[15]={0};
+  char temp[5]={0};
+
+  time_t nowTime = now();
+
+  strcpy(timeBuffer, ConfigData.myTimeZone);
+  if (ConfigData.timeFormat == TimeFormatEnum::TIME_24H) {
+    itoa(hour(nowTime), temp, DEC);
+  } else if (ConfigData.timeFormat == TimeFormatEnum::TIME_12H) {
+    itoa(hourFormat12(nowTime), temp, DEC);
+  }
+  if (strlen(temp) < 2) {
+    strcat(timeBuffer, "0");
+  }
+  strcat(timeBuffer, temp);
+  strcat(timeBuffer, ":");
+
+  itoa(minute(nowTime), temp, DEC);
+  if (strlen(temp) < 2) {
+    strcat(timeBuffer, "0");
+  }
+  strcat(timeBuffer, temp);
+  strcat(timeBuffer, ":");
+
+  itoa(second(nowTime), temp, DEC);
+  if (strlen(temp) < 2) {
+    strcat(timeBuffer, "0");
+  }
+  strcat(timeBuffer, temp);
+
+  tft.setFontScale((enum RA8875tsize)1);
+
+  tft.fillRect(TIME_X, TIME_Y, XPIXELS - TIME_X - 1, CHAR_HEIGHT, RA8875_BLACK);
+  tft.setCursor(TIME_X, TIME_Y);
+  tft.setTextColor(RA8875_WHITE);
+  tft.print(timeBuffer);
+}

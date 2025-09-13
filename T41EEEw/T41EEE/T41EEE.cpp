@@ -236,58 +236,6 @@ uint32_t elapsed_micros_sum;
 
 constexpr uint32_t Si_5351_crystal = 25000000L;
 
-void InitializeTemperatureVars();
-
-/*****
-  Purpose: To read the local time
-
-  Parameter list:
-    void
-
-  Return value:
-    time_t                a time data point
-*****/
-time_t getTeensy3Time() { return Teensy3Clock.get(); }
-
-// is added in Teensyduino 1.52 beta-4, so this can be deleted !?
-/*****
-  Purpose: To set the real time clock
-
-  Parameter list:
-    unsigned long t
-
-  Return value:
-    void
-*****/
-void FLASHMEM T4_rtc_set(unsigned long t) {
-  // #if defined (T4)
-
-#if 0
-// stop the RTC
- 
-  SNVS_HPCR &= ~(SNVS_HPCR_RTC_EN | SNVS_HPCR_HP_TS);
-// wait
-  while (SNVS_HPCR & SNVS_HPCR_RTC_EN);
-// stop the SRTC
- 
-  SNVS_LPCR &= ~SNVS_LPCR_SRTC_ENV;
-// wait
-  while (SNVS_LPCR & SNVS_LPCR_SRTC_ENV);
-// set the SRTC
- 
-  SNVS_LPSRTCLR = t << 15;
-  SNVS_LPSRTCMR = t >> 17;
-// start the SRTC
- 
-  SNVS_LPCR |= SNVS_LPCR_SRTC_ENV;
-// wait
-  while (!(SNVS_LPCR & SNVS_LPCR_SRTC_ENV));
-// start the RTC and sync it to the SRTC
- 
-  SNVS_HPCR |= SNVS_HPCR_RTC_EN | SNVS_HPCR_HP_TS;
-#endif
-}
-
 /*****
   Purpose: To set the I2S frequency
 
@@ -490,7 +438,7 @@ bool powerUp = false;
 uint32_t afterPowerUp = 0;
 
 FLASHMEM void setup() {
-  TRACE_LEVEL(TR_L_INFO);
+  TRACE_LEVEL(TR_L_DEBUG);
 
   powerUp = true;
   Serial.begin(115200);
@@ -527,12 +475,17 @@ FLASHMEM void setup() {
   // SerialUSB2.begin(115200);
   // SerialUSB2.printf("T41 USB2\n");
 
-  // get TIME from real time clock with 3V backup battery
-  setSyncProvider(getTeensy3Time);
+  unsigned long rtcTime = rtc_get();
+  TRACE_T41(TR_L_DEBUG, "rtc_get:%lu", rtcTime);
+  time_t nowTime = now();
+  TRACE_T41(TR_L_DEBUG, "before sync nowTime:%lu", (unsigned long)nowTime);
+
+  setSyncProvider((getExternalTime)rtc_get);
   setTime(now());
-  // set the RTC
-  Teensy3Clock.set(now());
-  T4_rtc_set(Teensy3Clock.get());
+
+  nowTime = now();
+  TRACE_T41(TR_L_DEBUG, "after sync nowTime:%lu", (unsigned long)nowTime);
+  TRACE_T41(TR_L_DEBUG, "after sync %02d:%02d:%02d", hour(nowTime), minute(nowTime), second(nowTime));
 
   // Configure Audio Adapter
   sgtl5000_1.enable();
