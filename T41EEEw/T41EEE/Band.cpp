@@ -207,6 +207,24 @@ PROGMEM const band band40mItuRegion3 = {
     .AGC_thresh = 20,
 };
 
+PROGMEM const int bandswitchPins[BandEnum::NUMBER_OF_BANDS] = {
+    // 80M
+    30,
+    // 40M
+    31,
+    // 20M
+    28,
+    // 17M
+    29,
+    // 15M
+    29,
+    // 12M  Note that 12M and 10M both use the 10M filter, which is always in
+    0,
+    // (no relay).  KF5N September 27, 2023.
+    // 10M
+    0,
+};
+
 FLASHMEM void BandsAccordingToItuRegion(void) {
   switch (ConfigData.ituRegion) {
   case ItuRegionEnum::ITU_REGION_1:
@@ -221,5 +239,46 @@ FLASHMEM void BandsAccordingToItuRegion(void) {
     bands.bands[BandEnum::BAND_80M] = band80mItuRegion3;
     bands.bands[BandEnum::BAND_40M] = band40mItuRegion3;
     break;
+  }
+}
+
+FLASHMEM bool FindBandForFrequency(uint32_t frequency, int &currentBand) {
+  bool found = false;
+  for (int i = 0; i < BandEnum::NUMBER_OF_BANDS; i++) {
+    if ((bands.bands[i].fBandLow) <= frequency && (frequency <= bands.bands[i].fBandHigh)) {
+      currentBand = i;
+      found = true;
+    }
+  }
+  return found;
+}
+
+/*****
+  Purpose: Set the current band relay ON or OFF.  Reduce relay cycling.  Greg
+KF5N March 24, 2025
+
+Parameter list:
+ void
+
+Return value;
+ void
+*****/
+FLASHMEM void SetBandRelay() {
+  // There are 4 physical relays in the case of the V10/V11 LPF board.
+  for (int i = 0; i < BandEnum::NUMBER_OF_BANDS; i++) {
+    if (i == ConfigData.currentBand) {
+      int pin = bandswitchPins[i];
+      if (pin != 0) {
+        digitalWrite(pin, HIGH);
+      }
+    } else {
+      // Skip if the pins are the same
+      if (bandswitchPins[i] != bandswitchPins[ConfigData.currentBand]) {
+        int pin = bandswitchPins[i];
+        if (pin != 0) {
+          digitalWrite(bandswitchPins[i], LOW);
+        }
+      }
+    }
   }
 }

@@ -162,13 +162,12 @@ AudioConnection_F32 patchCord15(headphoneVolume, 0, float2Int4, 0);
 AudioConnection patchCord25(float2Int4, 0, i2s_quadOut, 0); // Headphone
 AudioConnection patchCord26(float2Int4, 0, i2s_quadOut, 1); // Headphone
 
-// Half-octave transmit band equalizer, 16 bands, but only the lower 14 are
-// used.
-float32_t fBand1[] = {50.0,  70.711,   100.0,  141.421,  200.0,  282.843,  400.0,  565.685,
-                      800.0, 1131.371, 1600.0, 2262.742, 3200.0, 4525.483, 6400.0, 24000.0};
-// These are default values useful for SSB voice.  Bypass equalizer during FT8.
-float32_t dbBand1[] = {-100.0, -100.0, -100.0, -100.0, -100.0, -100.0, 0.0,    0.0,
-                       0.0,    0.0,    0.0,    -100.0, -100.0, -100.0, -100.0, -100.0};
+// Half-octave transmit band equalizer, 16 bands, but only the lower 14 are used.
+float32_t fBand1[16] = {50.0,  70.711,   100.0,  141.421,  200.0,  282.843,  400.0,  565.685,
+                        800.0, 1131.371, 1600.0, 2262.742, 3200.0, 4525.483, 6400.0, 24000.0};
+// These are default values useful for SSB voice. Bypass equalizer during FT8.
+float32_t dbBand1[16] = {-100.0, -100.0, -100.0, -100.0, -100.0, -100.0, 0.0,    0.0,
+                         0.0,    0.0,    0.0,    -100.0, -100.0, -100.0, -100.0, -100.0};
 float32_t equalizeCoeffs[249];
 
 // End dataflow code
@@ -472,8 +471,7 @@ void SetAudioOperatingState(RadioState operatingState) {
       mixer2_tx.gain(1, 1.0);
     }
 
-    Q_out_L_Ex.setBehaviour(AudioPlayQueue::ORIGINAL); // Need this as CW will put into wrong mode.
-                                                       // Greg KF5N August 4, 2024.
+    Q_out_L_Ex.setBehaviour(AudioPlayQueue::ORIGINAL); // Need this as CW will put into wrong mode. Greg KF5N August 4, 2024.
     Q_out_R_Ex.setBehaviour(AudioPlayQueue::ORIGINAL);
     Q_in_L_Ex.begin(); // I channel Microphone audio
     Q_in_R_Ex.begin(); // Q channel Microphone audio
@@ -587,8 +585,7 @@ void SetAudioOperatingState(RadioState operatingState) {
     Q_in_R_Ex.end(); // Clear Q channel.
     Q_in_R_Ex.clear();
 
-    patchCord25.disconnect(); // Disconnect receiver headphone path, which is
-                              // shared with I and Q transmit.
+    patchCord25.disconnect(); // Disconnect receiver headphone path, which is shared with I and Q transmit.
     patchCord26.disconnect();
 
     //  Disconnect

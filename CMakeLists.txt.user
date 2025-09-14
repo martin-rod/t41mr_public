@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 17.0.0, 2025-09-06T11:57:29. -->
+<!-- Written by QtCreator 17.0.0, 2025-09-16T05:29:51. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -113,13 +113,13 @@
     <valuelist type="QVariantList" key="CMake.Configure.UserEnvironmentChanges">
      <value type="QString">PRJ_DIR=/home/rod/wrk_ham/t41/t41mr</value>
     </valuelist>
-    <value type="QString" key="CMake.Initial.Parameters">-DCMAKE_PROJECT_INCLUDE_BEFORE:FILEPATH=%{BuildConfig:BuildDirectory:NativeFilePath}/.qtc/package-manager/auto-setup.cmake
--DCMAKE_TOOLCHAIN_FILE:UNINITIALIZED=./cmake/arm13.toolchain.cmake
--DCMSIS_TYPE:UNINITIALIZED=SRC_V6
--DCMAKE_GENERATOR:STRING=Unix Makefiles
--DCMAKE_COLOR_DIAGNOSTICS:BOOL=ON
+    <value type="QString" key="CMake.Initial.Parameters">-DCMAKE_GENERATOR:STRING=Unix Makefiles
 -DT41_SRC_TYPE:UNINITIALIZED=EEE
+-DCMAKE_PROJECT_INCLUDE_BEFORE:FILEPATH=%{BuildConfig:BuildDirectory:NativeFilePath}/.qtc/package-manager/auto-setup.cmake
+-DCMAKE_TOOLCHAIN_FILE:UNINITIALIZED=./cmake/arm13.toolchain.cmake
 -DCMAKE_BUILD_TYPE:STRING=Debug
+-DCMAKE_COLOR_DIAGNOSTICS:BOOL=ON
+-DCMSIS_TYPE:UNINITIALIZED=SRC_V6
 
 </value>
     <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory">/home/rod/wrk_ham/t41/t41mr/build/teensy-Debug</value>
@@ -136,7 +136,13 @@
       <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">Build</value>
       <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">CMakeProjectManager.MakeStep</value>
      </valuemap>
-     <value type="qlonglong" key="ProjectExplorer.BuildStepList.StepsCount">1</value>
+     <valuemap type="QVariantMap" key="ProjectExplorer.BuildStepList.Step.1">
+      <value type="bool" key="ProjectExplorer.BuildStep.Enabled">true</value>
+      <value type="QString" key="ProjectExplorer.ProcessStep.Command">/home/rod/wrk_ham/t41/t41mr/build/teensy-Debug/load_to_teensy.sh</value>
+      <value type="QString" key="ProjectExplorer.ProcessStep.WorkingDirectory">/home/rod/wrk_ham/t41/t41mr/build/teensy-Debug</value>
+      <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">ProjectExplorer.ProcessStep</value>
+     </valuemap>
+     <value type="qlonglong" key="ProjectExplorer.BuildStepList.StepsCount">2</value>
      <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">Build</value>
      <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">Build</value>
      <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">ProjectExplorer.BuildSteps.Build</value>
@@ -162,7 +168,9 @@
     <value type="bool" key="ProjectExplorer.BuildConfiguration.ClearSystemEnvironment">false</value>
     <valuelist type="QVariantList" key="ProjectExplorer.BuildConfiguration.CustomParsers"/>
     <value type="bool" key="ProjectExplorer.BuildConfiguration.ParseStandardOutput">false</value>
-    <valuelist type="QVariantList" key="ProjectExplorer.BuildConfiguration.UserEnvironmentChanges"/>
+    <valuelist type="QVariantList" key="ProjectExplorer.BuildConfiguration.UserEnvironmentChanges">
+     <value type="QString">PRJ_DIR=/home/rod/wrk_ham/t41/t41mr</value>
+    </valuelist>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">Debug</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">CMakeProjectManager.CMakeBuildConfiguration</value>
     <value type="qlonglong" key="ProjectExplorer.Target.ActiveDeployConfiguration">0</value>

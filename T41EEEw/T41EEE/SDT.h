@@ -204,7 +204,6 @@ enum class RadioState {
 
 enum class RadioMode : int { CW_MODE, SSB_MODE, FT8_MODE, AM_MODE, SAM_MODE };
 
-// Plain enum, because it needs to be iterated in mode change function.
 enum class Sideband : int { LOWER, UPPER, BOTH_AM, BOTH_SAM };
 
 // Global CW Filter declarations

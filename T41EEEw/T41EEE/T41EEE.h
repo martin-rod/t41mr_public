@@ -82,7 +82,6 @@ constexpr int DEC2STATESIZE = n_dec2_taps + (BUFFER_SIZE * N_B / (uint32_t)DF1) 
 constexpr int INT1_STATE_SIZE = 24 + BUFFER_SIZE * N_B / (uint32_t)DF - 1;
 constexpr int INT2_STATE_SIZE = 8 + BUFFER_SIZE * N_B / (uint32_t)DF1 - 1;
 
-extern uint32_t currentFreq;
 extern uint32_t TxRxFreq; // = centerFreq+NCOFreq  NCOFreq from FreqShift2()
 
 extern float32_t float_buffer_L[];

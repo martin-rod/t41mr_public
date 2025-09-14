@@ -15,6 +15,11 @@
 #include "Tune.h"
 #include "Utility.h"
 
+#define TRACE_MODULE_LEVEL TR_L_ALL
+#define TRACE_MODULE_NAME MennProc
+
+#include "trace.h"
+
 constexpr int PIXELS_PER_EQUALIZER_DELTA = 10; // Number of pixels per detent of encoder for equalizer changes
 
 constexpr int DEFAULT_EQUALIZER_BAR = 100; // Default equalizer bar height
@@ -1067,32 +1072,30 @@ void DoPaddleFlip() {
   eeprom.ConfigDataWrite();
 }
 
-/*****
-  Purpose: Used to change the currently active VFO
+FLASHMEM void VFOSelect() {
+  TRACE_LEVEL(TR_L_TRACE);
+  TRACE_T41(TR_L_TRACE, "ConfigData.activeVFO:%d", ConfigData.activeVFO);
+  constexpr size_t VFOOptionsSize = 4;
+  const std::string VFOOptions[VFOOptionsSize] = {"VFO A", "VFO B", "VFO Split", "Cancel"};
 
-  Parameter list:
-    void
+  int selectedItem = SubmenuSelect(VFOOptions, 4, 0);
 
-  Return value
-    int             // the currently active VFO, A = 1, B = 0
-*****/
-void VFOSelect() {
-  const std::string VFOOptions[] = {"VFO A", "VFO B", "VFO Split", "Cancel"};
-  VfoState toggle;
+  if (selectedItem < 0 or selectedItem >= VFOOptionsSize) {
+    TRACE_T41(TR_L_TRACE, "unsupported selectedItem:%d", selectedItem);
+    return;
+  }
+
   VfoState choice;
-  VfoState lastChoice;
-
-  choice = lastChoice = toggle = ConfigData.activeVFO;
-  splitOn = 0;
+  choice = static_cast<VfoState>(selectedItem);
 
   tft.setTextColor(RA8875_BLACK);
   tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT, RA8875_GREEN);
   tft.setCursor(SECONDARY_MENU_X + 7, MENUS_Y + 1);
   tft.print(VFOOptions[static_cast<size_t>(choice)].c_str());
 
-  choice = static_cast<VfoState>(SubmenuSelect(VFOOptions, 4, 0));
   delay(10);
   NCOFreq = 0L;
+  splitOn = 0;
   switch (choice) {
   case VfoState::VFO_A: // VFO A
     ConfigData.centerFreq = TxRxFreq = ConfigData.currentFreqA;

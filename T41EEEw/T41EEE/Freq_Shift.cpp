@@ -104,7 +104,7 @@ void FreqShift2() {
       NCOFreq = 40000L;
     }
     // ConfigData.centerFreq += ConfigData.freqIncrement;
-    currentFreq = ConfigData.centerFreq + NCOFreq;
+    uint32_t currentFreq = ConfigData.centerFreq + NCOFreq;
     // SetFreq(); //AFP 10-04-22
     // ShowFrequency();
   }

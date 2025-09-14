@@ -106,7 +106,7 @@ struct config_t {
   float rfgainScale = DEFAULT_RFGAIN_SCALE;
 
   SerialPort0Mode serialPort0Mode = SerialPort0Mode::TRACE;
-  SerialPort1Mode serialPort1Mode = SerialPort1Mode::FT8_PTT_RTS;
+  SerialPort1Mode serialPort1Mode = SerialPort1Mode::FT8_CAT;
   int separationCharacter = (int)DEFAULT_FREQ_SEP_CHARACTER;
   unsigned int sidetoneHeadphone = 40;
   unsigned int sidetoneSpeaker = 40;

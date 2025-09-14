@@ -43,3 +43,17 @@ struct Bands {
 extern Bands bands;
 
 void BandsAccordingToItuRegion(void);
+
+bool FindBandForFrequency(uint32_t frequency, int &currentBand);
+
+/*****
+  Purpose: Set the current band relay ON or OFF.  Reduce relay cycling.  Greg
+KF5N March 24, 2025
+
+Parameter list:
+ void
+
+Return value;
+ void
+*****/
+void SetBandRelay();

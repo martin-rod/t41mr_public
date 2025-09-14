@@ -20,6 +20,7 @@
 #include "SSB_Exciter.h"
 #include "Tune.h"
 #include "Utility.h"
+#include "WsjtControl.h"
 
 #define TRACE_MODULE_LEVEL TR_L_ALL
 #define TRACE_MODULE_NAME T41EEE
@@ -205,7 +206,6 @@ unsigned long ditTimerOn;
 int attenuator = 0;
 bool calOnFlag = false;
 
-uint32_t currentFreq;
 // = ConfigData.centerFreq + NCOFreq  NCOFreq from FreqShift2()
 uint32_t TxRxFreq;
 
@@ -470,15 +470,20 @@ FLASHMEM void setup() {
   TRACE_T41(TR_L_DEBUG, "Test message TR_L_DEBUG");
   TRACE_T41(TR_L_TRACE, "Test message TR_L_TRACE");
 
+  TRACE_T41(TR_L_TRACE, "ConfigData.serialPort1Mode:%d", ConfigData.serialPort1Mode);
+
   switch (ConfigData.serialPort1Mode) {
   case SerialPort1Mode::FT8_PTT_RTS:
+    TRACE_T41(TR_L_INFO, "SerialPort1Mode::FT8_PTT_RTS");
     SerialUSB1.begin(115200);
-    SerialUSB1.printf("T41 USB1\n");
+    SerialUSB1.printf("T41 USB1 FT8_PTT_RTS\n");
     break;
   case SerialPort1Mode::FT8_CAT:
-    SerialUSB1.begin(115200);
+    TRACE_T41(TR_L_INFO, "SerialPort1Mode::FT8_CAT");
+    WSJTControlSetup();
     break;
   case SerialPort1Mode::OFF:
+    TRACE_T41(TR_L_INFO, "SerialPort1Mode::OFF");
   default:
     break;
   }
@@ -741,25 +746,22 @@ FLASHMEM void setup() {
   lastState = RadioState::NOSTATE;
 
   // Set up the initial state/mode.
-  if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE) {
+  switch (bands.bands[ConfigData.currentBand].mode) {
+  case RadioMode::CW_MODE:
     radioState = RadioState::CW_RECEIVE_STATE;
-    bands.bands[ConfigData.currentBand].mode = RadioMode::CW_MODE;
-  }
-  if (bands.bands[ConfigData.currentBand].mode == RadioMode::SSB_MODE) {
+    break;
+  case RadioMode::SSB_MODE:
     radioState = RadioState::SSB_RECEIVE_STATE;
-    bands.bands[ConfigData.currentBand].mode = RadioMode::SSB_MODE;
-  }
-  if (bands.bands[ConfigData.currentBand].mode == RadioMode::FT8_MODE) {
+    break;
+  case RadioMode::FT8_MODE:
     radioState = RadioState::FT8_RECEIVE_STATE;
-    bands.bands[ConfigData.currentBand].mode = RadioMode::FT8_MODE;
-  }
-  if (bands.bands[ConfigData.currentBand].mode == RadioMode::AM_MODE) {
+    break;
+  case RadioMode::AM_MODE:
     radioState = RadioState::AM_RECEIVE_STATE;
-    bands.bands[ConfigData.currentBand].mode = RadioMode::AM_MODE;
-  }
-  if (bands.bands[ConfigData.currentBand].mode == RadioMode::SAM_MODE) {
+    break;
+  case RadioMode::SAM_MODE:
     radioState = RadioState::SAM_RECEIVE_STATE;
-    bands.bands[ConfigData.currentBand].mode = RadioMode::SAM_MODE;
+    break;
   }
 
   // Changed from middle to first. Do Menu Down to get to
@@ -800,6 +802,10 @@ does a reset, 3) a component fails, or 4) the cows come home.
 float audioBW{0.0};
 uint32_t receiverMute = 10;
 void loop() {
+  TRACE_LEVEL(TR_L_NO);
+
+  TRACE_T41(TR_L_TRACE, "loop");
+
   MenuSelect menu;
   long ditTimerOff;
   long dahTimerOn;
@@ -821,8 +827,10 @@ void loop() {
     radioState = RadioState::SSB_TRANSMIT_STATE;
   }
 
+  TRACE_T41(TR_L_TRACE, "loop switch");
   switch (ConfigData.serialPort1Mode) {
   case SerialPort1Mode::FT8_PTT_RTS:
+    TRACE_T41(TR_L_TRACE, "SerialPort1Mode::FT8_PTT_RTS");
     if (bands.bands[ConfigData.currentBand].mode == RadioMode::FT8_MODE and SerialUSB1.rts() == LOW) {
       radioState = RadioState::FT8_RECEIVE_STATE;
     }
@@ -831,8 +839,11 @@ void loop() {
     }
     break;
   case SerialPort1Mode::FT8_CAT:
+    TRACE_T41(TR_L_TRACE, "SerialPort1Mode::FT8_CAT loop");
+    WSJTLoop();
     break;
   case SerialPort1Mode::OFF:
+    TRACE_T41(TR_L_TRACE, "SerialPort1Mode::FT8_CAT loop");
   default:
     break;
   }
@@ -937,8 +948,8 @@ void loop() {
   case RadioState::FT8_TRANSMIT_STATE:
     // xmit on
     digitalWrite(RXTX, HIGH);
-
     ShowTransmitReceiveStatus();
+
     switch (ConfigData.serialPort1Mode) {
     case SerialPort1Mode::FT8_PTT_RTS:
       while (SerialUSB1.rts() == HIGH) {
@@ -946,6 +957,7 @@ void loop() {
       }
       break;
     case SerialPort1Mode::FT8_CAT:
+      ExciterIQData();
       break;
     case SerialPort1Mode::OFF:
     default:

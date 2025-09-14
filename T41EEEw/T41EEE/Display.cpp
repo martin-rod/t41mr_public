@@ -840,65 +840,60 @@ void BandInformation() // SSB or CW
     tft.print(static_cast<int>(ConfigData.centerFreq));
   }
 
-  // Write the band to the display.
+  // Write current band to the display
   tft.setTextColor(RA8875_LIGHT_ORANGE);
   tft.setCursor(OPERATION_STATS_X + 50, FREQUENCY_Y + 30);
-
-  // Write current band to the display.
-  if (ConfigData.activeVFO == VfoState::VFO_A) {
+  switch (ConfigData.activeVFO) {
+  case VfoState::VFO_A:
     tft.print(bands.bands[ConfigData.currentBandA].name);
-  } else {
+    break;
+  case VfoState::VFO_B:
     tft.print(bands.bands[ConfigData.currentBandB].name);
+    break;
+  case VfoState::VFO_SPLIT:
+    tft.printf("%s/%s", bands.bands[ConfigData.currentBandA].name, bands.bands[ConfigData.currentBandB].name);
+    break;
   }
 
   // Write CW mode and filter bandwidth to display.
   tft.setTextColor(RA8875_GREEN);
   tft.setCursor(OPERATION_STATS_X + 90, FREQUENCY_Y + 30);
-  if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE) {
+  switch (bands.bands[ConfigData.currentBand].mode) {
+  case RadioMode::CW_MODE:
     tft.print("CW ");
     tft.setCursor(OPERATION_STATS_X + 111, FREQUENCY_Y + 30);
     tft.print(CWFilter[ConfigData.CWFilterIndex].c_str());
-  }
-
-  // Write SSB mode to display
-  if (bands.bands[ConfigData.currentBand].mode == RadioMode::SSB_MODE) {
+    break;
+  case RadioMode::SSB_MODE:
     if (ConfigData.cessb) {
       tft.print("CESSB");
     }
     if (not ConfigData.cessb) {
       tft.print("SSB");
     }
-  }
-
-  // Write FT8 mode to display.
-  if (bands.bands[ConfigData.currentBand].mode == RadioMode::FT8_MODE) {
+    break;
+  case RadioMode::FT8_MODE:
     tft.print("FT8");
-  }
-
-  // Write AM mode to display.
-  if (bands.bands[ConfigData.currentBand].mode == RadioMode::AM_MODE) {
+    break;
+  case RadioMode::AM_MODE:
     tft.print("AM");
-  }
-
-  // Write SAM mode to display.
-  if (bands.bands[ConfigData.currentBand].mode == RadioMode::SAM_MODE) {
+    break;
+  case RadioMode::SAM_MODE:
     tft.print("SAM");
+    break;
   }
 
   // Write sideband or AM demodulation type to display.
   tft.setCursor(OPERATION_STATS_X + 165, FREQUENCY_Y + 30);
   tft.setTextColor(RA8875_WHITE);
-
   switch (bands.bands[ConfigData.currentBand].sideband) {
   case Sideband::LOWER:
     tft.print("LSB");
     break;
   case Sideband::UPPER:
-    //      if (ConfigData.activeVFO == VFO_A) {
     tft.print("USB");
     break;
   case Sideband::BOTH_AM:
-    //      tft.setTextColor(RA8875_WHITE);
     tft.print("DSB");
     break;
   case Sideband::BOTH_SAM:
@@ -993,21 +988,13 @@ currentFreqB.
     // show frequency
 *****/
 void ShowFrequency() {
+  TRACE_LEVEL(TR_L_TRACE);
+  TRACE_T41(TR_L_TRACE, "ConfigData.activeVFO:%d", ConfigData.activeVFO);
+
   char freqBuffer[15] = {0};
   switch (ConfigData.activeVFO) {
   case VfoState::VFO_A:
-    ConfigData.currentBand = ConfigData.currentBandA;
-    break;
-  case VfoState::VFO_B:
-    ConfigData.currentBand = ConfigData.currentBandB;
-    break;
-  case VfoState::VFO_SPLIT:
-    ConfigData.currentBand = ConfigData.currentBandA;
-    break;
-  }
-
-  switch (ConfigData.activeVFO) {
-  case VfoState::VFO_A:
+    TRACE_T41(TR_L_TRACE, "TxRxFreq:%lu", TxRxFreq);
     FormatFrequency(TxRxFreq, freqBuffer, sizeof(freqBuffer));
     tft.setFontScale(3, 2);
     if (TxRxFreq < bands.bands[ConfigData.currentBandA].fBandLow or TxRxFreq > bands.bands[ConfigData.currentBandA].fBandHigh) {
@@ -1064,6 +1051,9 @@ void ShowFrequency() {
     tft.setCursor(FREQUENCY_X_SPLIT + 60, FREQUENCY_Y - 15);
     FormatFrequency(ConfigData.currentFreqB, freqBuffer, sizeof(freqBuffer));
     tft.print(freqBuffer);
+    break;
+  default:
+    TRACE_T41(TR_L_ERROR, "ConfigData.activeVFO:%d bad value", ConfigData.activeVFO);
     break;
   }
 
@@ -1613,16 +1603,6 @@ FLASHMEM void UpdateAudioGraphics() {
   tft.writeTo(L1);
 }
 
-/*****
-  Purpose: Updates the Rx and Tx equalizer states
-           shown on the display.
-
-  Parameter list:
-    bool rxEqState, txEqState
-
-  Return value;
-    void
-*****/
 FLASHMEM void UpdateEqualizerField(bool rxEqState, bool txEqState) {
   tft.setFontScale((enum RA8875tsize)0);
   tft.fillRect(FIELD_OFFSET_X, DECODER_Y + 15, tft.getFontWidth() * 15, tft.getFontHeight() + 2, RA8875_BLACK);
@@ -1660,15 +1640,6 @@ FLASHMEM void UpdateEqualizerField(bool rxEqState, bool txEqState) {
   }
 }
 
-/*****
-  Purpose: Updates the Keyer and WPM setting on the display
-
-  Parameter list:
-    void
-
-  Return value;
-    void
-*****/
 void UpdateWPMField() {
   tft.setFontScale((enum RA8875tsize)0);
 
@@ -1692,15 +1663,6 @@ void UpdateWPMField() {
   }
 }
 
-/*****
-  Purpose: Updates the noise field on the display
-
-  Parameter list:
-    void
-
-  Return value;
-    void
-*****/
 void UpdateNoiseField() {
   const char *filter[] = {"Off", "Kim", "Spec", "LMS"}; // AFP 09-19-22
   tft.setFontScale((enum RA8875tsize)0);
@@ -1713,30 +1675,12 @@ void UpdateNoiseField() {
   tft.print(filter[ConfigData.nrOptionSelect]);
 }
 
-/*****
-  Purpose: This function draws the Info Window frame
-
-  Parameter list:
-    void
-
-  Return value;
-    void
-*****/
 void DrawInfoWindowFrame() {
   tft.drawRect(BAND_INDICATOR_X - 10, BAND_INDICATOR_Y - 2, 260, 200, RA8875_LIGHT_GREY);
   tft.fillRect(TEMP_X_OFFSET, TEMP_Y_OFFSET + 80, 80, tft.getFontHeight() + 10,
                RA8875_BLACK); // Clear volume field
 }
 
-/*****
-  Purpose: This function redraws the entire display screen.
-
-  Parameter list:
-    void
-
-  Return value;
-    void
-*****/
 void RedrawDisplayScreen() {
   tft.fillWindow(); // Clear the display.
   DrawAudioSpectContainer();
@@ -1767,17 +1711,9 @@ void RedrawDisplayScreen() {
   lastState = RadioState::NOSTATE; // Force an update.
 }
 
-/*****
-  Purpose: Draw Tuned Bandwidth on Spectrum Plot. // Calculations simplified
-KF5N April 22, 2024
-
-  Parameter list:
-
-  Return value;
-    void
-*****/
-void DrawBandWidthIndicatorBar() // AFP 10-30-22
-{
+// Purpose: Draw Tuned Bandwidth on Spectrum Plot.
+// Calculations simplified KF5N April 22, 2024
+void DrawBandWidthIndicatorBar() {
   int Zoom1Offset = 0.0;
   float hz_per_pixel = 0.0;
 
@@ -1960,8 +1896,8 @@ void DisplayClock() {
   constexpr int TIME_X = 550;
   constexpr int TIME_Y = YPIXELS * 0.07;
 
-  char timeBuffer[15]={0};
-  char temp[5]={0};
+  char timeBuffer[15] = {0};
+  char temp[5] = {0};
 
   time_t nowTime = now();
 

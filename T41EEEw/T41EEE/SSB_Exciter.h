@@ -40,18 +40,6 @@ outputs at 48ksps.
 void ExciterIQData();
 
 /*****
-  Purpose: Set the current band relay ON or OFF.  Reduce relay cycling.  Greg
-KF5N March 24, 2025
-
-  Parameter list:
-    void
-
-  Return value;
-    void
-*****/
-void SetBandRelay();
-
-/*****
   Purpose: Allow user to set the microphone compression level.
            A typical value is -20 dB.
   Parameter list:

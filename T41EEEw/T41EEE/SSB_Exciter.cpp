@@ -14,25 +14,7 @@
 
 // int micGainChoice;
 
-int bandswitchPins[] = {
-    // 80M
-    30,
-    // 40M
-    31,
-    // 20M
-    28,
-    // 17M
-    29,
-    // 15M
-    29,
-    // 12M  Note that 12M and 10M both use the 10M filter, which is always in
-    0,
-    // (no relay).  KF5N September 27, 2023.
-    // 10M
-    0};
-
-// This function sets the microphone gain and compressor parameters.  Greg KF5N
-// March 9, 2025.
+// This function sets the microphone gain and compressor parameters.  Greg KF5N March 9, 2025.
 void updateMic() {
 
   micGain.setGain_dB(ConfigData.micGain); // Set the microphone gain.
@@ -83,10 +65,12 @@ void ExciterIQData() {
      **********************************************************************************/
   // are there at least N_BLOCKS buffers in each channel available ?
   if ((uint32_t)Q_in_L_Ex.available() < 32 or (uint32_t) Q_in_R_Ex.available() < 32) {
-    Serial.printf("Q_in_L_Ex.available() = %d Q_in_R_Ex.available() = %d\n", Q_in_L_Ex.available(), Q_in_R_Ex.available());
+    // Serial.printf("Q_in_L_Ex.available() = %d Q_in_R_Ex.available() = %d\n", Q_in_L_Ex.available(), Q_in_R_Ex.available());
     return;
   }
-  Serial.printf("Norm Op: Q_in_L_Ex.available() = %d Q_in_R_Ex.available() = %d\n", Q_in_L_Ex.available(), Q_in_R_Ex.available());
+  // Serial.printf("Norm Op: Q_in_L_Ex.available() = %d Q_in_R_Ex.available() = %d\n", Q_in_L_Ex.available(),
+  // Q_in_R_Ex.available());
+
   // get audio samples from the audio  buffers and convert them to float
   // read in 32 blocks of 128 samples in I and Q
   for (unsigned i = 0; i < N_BLOCKS_EX; i++) {
@@ -173,30 +157,6 @@ void ExciterIQData() {
                   2048); // play it!  This is the Q channel from the Audio
                          // Adapter line out to QSE Q input.
   ////  }
-}
-
-/*****
-  Purpose: Set the current band relay ON or OFF.  Reduce relay cycling.  Greg
-KF5N March 24, 2025
-
-  Parameter list:
-    void
-
-  Return value;
-    void
-*****/
-void SetBandRelay() {
-  // There are 4 physical relays in the case of the V10/V11 LPF board.
-  for (int i = 0; i < 5; i = i + 1) {
-    if (i == ConfigData.currentBand) {
-      digitalWrite(bandswitchPins[ConfigData.currentBand], HIGH);
-    } else {
-      if (bandswitchPins[i] != bandswitchPins[ConfigData.currentBand]) { // Skip if the pins are the
-                                                                         // same.
-        digitalWrite(bandswitchPins[i], LOW);                            // Set band relay low.
-      }
-    }
-  }
 }
 
 /*****
