@@ -46,6 +46,9 @@ FLASHMEM void loadMyConfigutation(const char *filename, config_t &data) {
   jsonLoadIfExist(doc, "headphoneScale", data.headphoneScale);
   jsonLoadIfExist(doc, "rfgainScale", data.rfgainScale);
   jsonLoadIfExist(doc, "hwVersion", reinterpret_cast<int &>(data.hwVersion));
+
+  jsonLoadIfExist(doc, "serialPort0Mode", reinterpret_cast<int &>(ConfigData.serialPort0Mode));
+  jsonLoadIfExist(doc, "serialPort1Mode", reinterpret_cast<int &>(ConfigData.serialPort1Mode));
 }
 
 // load one time calibration data  from json file

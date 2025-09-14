@@ -105,6 +105,9 @@ FLASHMEM void ConfigurationData::loadConfiguration(const char *filename, config_
 
   jsonLoadIfExistLoop(doc, "favoriteFreqs", ConfigData.favoriteFreqs, ConfigDataFavoriteFreqsSize);
 
+  jsonLoadIfExist(doc, "serialPort0Mode", reinterpret_cast<int &>(ConfigData.serialPort0Mode));
+  jsonLoadIfExist(doc, "serialPort1Mode", reinterpret_cast<int &>(ConfigData.serialPort1Mode));
+
   // MyConfiguration part
   jsonLoadIfExist(doc, "myCallsign", ConfigData.myCallsign, sizeof(ConfigData.myCallsign));
   jsonLoadIfExist(doc, "speakerScale", ConfigData.speakerScale);
@@ -172,6 +175,9 @@ FLASHMEM void ConfigurationData::saveConfiguration(const char *filename, const c
   doc["xmitEQFlag"] = ConfigData.xmitEQFlag;
   doc["receiveEQFlag"] = ConfigData.receiveEQFlag;
   doc["autoGain"] = ConfigData.autoGain;
+
+  doc["serialPort0Mode"] = ConfigData.serialPort0Mode;
+  doc["serialPort1Mode"] = ConfigData.serialPort1Mode;
 
   for (size_t i = 0; i < BandEnum::NUMBER_OF_BANDS; i++) {
     doc["rfGain"][i] = ConfigData.rfGain[i];
@@ -324,6 +330,9 @@ FLASHMEM void ConfigurationData::printConfiguration(const config_t &ConfigData) 
   doc["headphoneScale"] = ConfigData.headphoneScale;
   doc["rfgainScale"] = ConfigData.rfgainScale;
   doc["hwVersion"] = ConfigData.hwVersion;
+
+  doc["serialPort0Mode"] = ConfigData.serialPort0Mode;
+  doc["serialPort1Mode"] = ConfigData.serialPort1Mode;
 
   TRACE_T41(TR_L_INFO, "--- print json begin");
   size_t written = serializeJsonPretty(doc, Serial);

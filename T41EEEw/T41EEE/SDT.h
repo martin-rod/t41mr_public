@@ -45,6 +45,17 @@
 // Uncomment ...
 // #define DEBUG_SMETER
 
+enum class SerialPort0Mode : int {
+  OFF = 0,
+  TRACE = 1,
+};
+
+enum class SerialPort1Mode : int {
+  OFF = 0,
+  FT8_PTT_RTS = 1,
+  FT8_CAT = 2,
+};
+
 enum class HwVersion : int {
   T41_1_AL_JACK = 0,
   T41_1_4SQRP = 1,

@@ -44,3 +44,9 @@ ItuRegionEnum convertFromJson(JsonVariantConst src, ItuRegionEnum &dst);
 
 bool convertToJson(const TimeFormatEnum &src, JsonVariant dst);
 TimeFormatEnum convertFromJson(JsonVariantConst src, TimeFormatEnum &dst);
+
+bool convertToJson(const SerialPort0Mode &src, JsonVariant dst);
+SerialPort0Mode convertFromJson(JsonVariantConst src, SerialPort0Mode &dst);
+
+bool convertToJson(const SerialPort1Mode &src, JsonVariant dst);
+SerialPort1Mode convertFromJson(JsonVariantConst src, SerialPort1Mode &dst);

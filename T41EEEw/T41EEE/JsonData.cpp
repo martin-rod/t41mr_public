@@ -222,3 +222,31 @@ FLASHMEM TimeFormatEnum convertFromJson(JsonVariantConst src, TimeFormatEnum &ds
   state = src.as<int32_t>();
   return dst = static_cast<TimeFormatEnum>(state);
 }
+
+// Custom converter - SerialPort0Mode
+FLASHMEM bool convertToJson(const SerialPort0Mode &src, JsonVariant dst) {
+  int32_t state;
+  state = static_cast<int32_t>(src);
+  return dst.set(state);
+}
+
+// Custom converter - SerialPort0Mode
+FLASHMEM SerialPort0Mode convertFromJson(JsonVariantConst src, SerialPort0Mode &dst) {
+  int32_t state;
+  state = src.as<int32_t>();
+  return dst = static_cast<SerialPort0Mode>(state);
+}
+
+// Custom converter - SerialPort1Mode
+FLASHMEM bool convertToJson(const SerialPort1Mode &src, JsonVariant dst) {
+  int32_t state;
+  state = static_cast<int32_t>(src);
+  return dst.set(state);
+}
+
+// Custom converter - SerialPort1Mode
+FLASHMEM SerialPort1Mode convertFromJson(JsonVariantConst src, SerialPort1Mode &dst) {
+  int32_t state;
+  state = src.as<int32_t>();
+  return dst = static_cast<SerialPort1Mode>(state);
+}

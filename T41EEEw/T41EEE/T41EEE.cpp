@@ -470,9 +470,18 @@ FLASHMEM void setup() {
   TRACE_T41(TR_L_DEBUG, "Test message TR_L_DEBUG");
   TRACE_T41(TR_L_TRACE, "Test message TR_L_TRACE");
 
-  // Use this serial for FT8 keying.
-  SerialUSB1.begin(115200);
-  // SerialUSB1.printf("T41 USB1\n");
+  switch (ConfigData.serialPort1Mode) {
+  case SerialPort1Mode::FT8_PTT_RTS:
+    SerialUSB1.begin(115200);
+    SerialUSB1.printf("T41 USB1\n");
+    break;
+  case SerialPort1Mode::FT8_CAT:
+    SerialUSB1.begin(115200);
+    break;
+  case SerialPort1Mode::OFF:
+  default:
+    break;
+  }
 
   // SerialUSB2.begin(115200);
   // SerialUSB2.printf("T41 USB2\n");
@@ -812,11 +821,20 @@ void loop() {
     radioState = RadioState::SSB_TRANSMIT_STATE;
   }
 
-  if (bands.bands[ConfigData.currentBand].mode == RadioMode::FT8_MODE and SerialUSB1.rts() == LOW) {
-    radioState = RadioState::FT8_RECEIVE_STATE;
-  }
-  if (bands.bands[ConfigData.currentBand].mode == RadioMode::FT8_MODE and SerialUSB1.rts() == HIGH) {
-    radioState = RadioState::FT8_TRANSMIT_STATE;
+  switch (ConfigData.serialPort1Mode) {
+  case SerialPort1Mode::FT8_PTT_RTS:
+    if (bands.bands[ConfigData.currentBand].mode == RadioMode::FT8_MODE and SerialUSB1.rts() == LOW) {
+      radioState = RadioState::FT8_RECEIVE_STATE;
+    }
+    if (bands.bands[ConfigData.currentBand].mode == RadioMode::FT8_MODE and SerialUSB1.rts() == HIGH) {
+      radioState = RadioState::FT8_TRANSMIT_STATE;
+    }
+    break;
+  case SerialPort1Mode::FT8_CAT:
+    break;
+  case SerialPort1Mode::OFF:
+  default:
+    break;
   }
 
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE &&
@@ -921,8 +939,17 @@ void loop() {
     digitalWrite(RXTX, HIGH);
 
     ShowTransmitReceiveStatus();
-    while (SerialUSB1.rts() == HIGH) {
-      ExciterIQData();
+    switch (ConfigData.serialPort1Mode) {
+    case SerialPort1Mode::FT8_PTT_RTS:
+      while (SerialUSB1.rts() == HIGH) {
+        ExciterIQData();
+      }
+      break;
+    case SerialPort1Mode::FT8_CAT:
+      break;
+    case SerialPort1Mode::OFF:
+    default:
+      break;
     }
     break;
 

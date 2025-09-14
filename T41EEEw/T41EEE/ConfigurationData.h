@@ -127,6 +127,8 @@ struct config_t {
   float rfgainScale = DEFAULT_RFGAIN_SCALE;
 
   HwVersion hwVersion = DEFAULT_HW_VERSION;
+  SerialPort0Mode serialPort0Mode = SerialPort0Mode::TRACE;
+  SerialPort1Mode serialPort1Mode = SerialPort1Mode::FT8_PTT_RTS;
 };
 
 extern config_t ConfigData;
