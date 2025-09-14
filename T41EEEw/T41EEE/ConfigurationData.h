@@ -36,41 +36,90 @@ constexpr size_t ConfigDataFavoriteFreqsSize = 13;
 
 // Configuration data structure.
 struct config_t {
-  char versionSettings[10] = "T41EEE.9";
+  // for checking of config_t version too
+  char versionSettings[16] = "T41EEE.9";
+
+  //////
+  // alphabetical order - primitive types
+
   bool AGCMode = true;
   float32_t AGCThreshold = -40.0;
+  VfoState activeVFO = VfoState::VFO_A;
+  AudioState audioOut = AudioState::SPEAKER;
   int audioVolume = 30;
-  int rfGainCurrent = 0;
-  int rfGain[NUMBER_OF_BANDS]{0};
   bool autoGain = true;
   bool autoSpectrum = true;
-  unsigned int centerTuneStep = DEFAULT_CENTER_TUNE;
-  unsigned int fineTuneStep = DEFAULT_FINE_TUNE;
-  float32_t transmitPowerLevel = DEFAULT_POWER_LEVEL;
-  AudioState audioOut = AudioState::SPEAKER; // Default audio output is speaker.
-  int nrOptionSelect = 0;
-  int currentScale = 1;
-  SpectrumZoomState spectrum_zoom = SpectrumZoomState::SPECTRUM_ZOOM_2;
+
   int CWFilterIndex = 5; // Off
-  int paddleDit = KEYER_DIT_INPUT_TIP;
-  int paddleDah = KEYER_DAH_INPUT_RING;
-  int decoderFlag = false;
-  unsigned int morseDecodeSensitivity = 2000; // Greg KF5N February 19, 2025
-  KeyTypeEnum keyType = DEFAULT_KEY_TYPE;
-  int currentWPM = DEFAULT_KEYER_WPM;
-  int CWOffset = 2; // Default is 750 Hz.
-  unsigned int sidetoneSpeaker = 40;
-  unsigned int sidetoneHeadphone = 40;
-  unsigned int cwTransmitDelay = 1000;
-  VfoState activeVFO = VfoState::VFO_A;
+  int CWOffset = 2;      // Default is 750 Hz.
+  unsigned int centerFreq = 7030000;
+  unsigned int centerTuneStep = DEFAULT_CENTER_TUNE;
+  bool cessb = false;
+  int currentScale = 1;
   int currentBand = BandEnum::BAND_40M;
   int currentBandA = BandEnum::BAND_40M;
   int currentBandB = BandEnum::BAND_40M;
-
   // initilaze later according to ITU_REGION
   unsigned int currentFreqA = 7100000;
   unsigned int currentFreqB = 7030000;
+  int currentWPM = DEFAULT_KEYER_WPM;
+  bool compressorFlag = false;
+  unsigned int cwTransmitDelay = 1000;
 
+  int decoderFlag = false;
+
+  unsigned int fineTuneStep = DEFAULT_FINE_TUNE;
+
+  float headphoneScale = DEFAULT_HEADPHONE_SCALE;
+  HwVersion hwVersion = DEFAULT_HW_VERSION;
+
+  ItuRegionEnum ituRegion = DEFAULT_ITU_REGION;
+
+  KeyTypeEnum keyType = DEFAULT_KEY_TYPE;
+
+  float LPFcoeff = 0.0;
+
+  char mapFileName[filenameSize] = {0};
+  float micCompRatio = 5.0;
+  float micGain = 0.0; // Open Audio gain element.  Gain is in dB.
+  float micThreshold = -15.0;
+  unsigned int morseDecodeSensitivity = 2000;
+  char myCallsign[10] = {0};
+  float myLat = DEFAULT_QTH_LAT;
+  float myLong = DEFAULT_QTH_LON;
+  char myTimeZone[10] = {0};
+
+  float NR_alpha = 0.95; // 4 bytes
+  float NR_beta = 0.85;  // 4 bytes
+  float NR_PSI = 0.0;    // 4 bytes
+  int nrOptionSelect = 0;
+
+  float omegaN = 200.0; // 4 bytes
+
+  int paddleDah = KEYER_DAH_INPUT_RING;
+  int paddleDit = KEYER_DIT_INPUT_TIP;
+  PaddleFlipEnum paddleFlip = DEFAULT_PADDLE_FLIP;
+  float pll_fmax = 4000.0; // 4 bytes
+
+  bool receiveEQFlag = false;
+  int rfGainCurrent = 0;
+  float rfgainScale = DEFAULT_RFGAIN_SCALE;
+
+  SerialPort0Mode serialPort0Mode = SerialPort0Mode::TRACE;
+  SerialPort1Mode serialPort1Mode = SerialPort1Mode::FT8_PTT_RTS;
+  int separationCharacter = (int)DEFAULT_FREQ_SEP_CHARACTER;
+  unsigned int sidetoneHeadphone = 40;
+  unsigned int sidetoneSpeaker = 40;
+  float speakerScale = DEFAULT_SPEAKER_SCALE;
+  SpectrumZoomState spectrum_zoom = SpectrumZoomState::SPECTRUM_ZOOM_2;
+
+  TimeFormatEnum timeFormat = DEFAULT_TIME_FORMAT;
+  float32_t transmitPowerLevel = DEFAULT_POWER_LEVEL;
+
+  bool xmitEQFlag = false;
+
+  //////
+  // alphabetical order - arrays
   int equalizerRec[EQUALIZER_CELL_COUNT] = {
       100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100,
   };
@@ -78,57 +127,22 @@ struct config_t {
   int equalizerXmt[EQUALIZER_CELL_COUNT] = {
       -50, -50, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   };
-  float micThreshold = -15.0;
-  float micCompRatio = 5.0;
-  float micGain = 0.0;     // Open Audio gain element.  Gain is in dB.
-  float LPFcoeff = 0.0;    // 4 bytes
-  float NR_PSI = 0.0;      // 4 bytes
-  float NR_alpha = 0.95;   // 4 bytes
-  float NR_beta = 0.85;    // 4 bytes
-  float omegaN = 200.0;    // 4 bytes
-  float pll_fmax = 4000.0; // 4 bytes
+  unsigned int favoriteFreqs[ConfigDataFavoriteFreqsSize] = {
+      3560000, 3690000, 7030000, 7200000, 14060000, 14200000, 21060000, 21285000, 28060000, 28365000, 5000000, 10000000, 15000000,
+  };
+  unsigned int lastFrequencies[NUMBER_OF_BANDS][2] = {
+      {3590000, 3560000},   {7190000, 7030000},   {14285000, 14060000}, {18130000, 18096000},
+      {21400000, 21060000}, {24950000, 24906000}, {28365000, 28060000},
+  };
+  Sideband lastSideband[NUMBER_OF_BANDS] = {
+      Sideband::LOWER, Sideband::LOWER, Sideband::UPPER, Sideband::UPPER, Sideband::UPPER, Sideband::UPPER, Sideband::UPPER,
+  };
   // powerOutCW and powerOutSSB are derived from the TX power setting and calibration factors.
   float powerOutCW[NUMBER_OF_BANDS] = {
       0.035, 0.035, 0.035, 0.035, 0.035, 0.035, 0.035,
   };
   float powerOutSSB[NUMBER_OF_BANDS] = {0.035, 0.035, 0.035, 0.035, 0.035, 0.035, 0.035};
-  unsigned int favoriteFreqs[ConfigDataFavoriteFreqsSize] = {
-      3560000, 3690000, 7030000, 7200000, 14060000, 14200000, 21060000, 21285000, 28060000, 28365000, 5000000, 10000000, 15000000,
-  };
-
-  // initilaze later according to ITU_REGION
-  unsigned int lastFrequencies[NUMBER_OF_BANDS][2] = {
-      {3590000, 3560000},   {7190000, 7030000},   {14285000, 14060000}, {18130000, 18096000},
-      {21400000, 21060000}, {24950000, 24906000}, {28365000, 28060000},
-  };
-
-  Sideband lastSideband[NUMBER_OF_BANDS] = {
-      Sideband::LOWER, Sideband::LOWER, Sideband::UPPER, Sideband::UPPER, Sideband::UPPER, Sideband::UPPER, Sideband::UPPER,
-  };
-  unsigned int centerFreq = 7030000;
-  char mapFileName[filenameSize] = {0};
-  char myTimeZone[10] = {0};
-  int separationCharacter = (int)DEFAULT_FREQ_SEP_CHARACTER;
-  PaddleFlipEnum paddleFlip = DEFAULT_PADDLE_FLIP;
-  float myLong = DEFAULT_QTH_LON;
-  float myLat = DEFAULT_QTH_LAT;
-  bool compressorFlag = false;
-  bool xmitEQFlag = false;
-  bool receiveEQFlag = false;
-  bool cessb = false;
-
-  char myCallsign[10] = {0};
-
-  TimeFormatEnum timeFormat = DEFAULT_TIME_FORMAT;
-  ItuRegionEnum ituRegion = DEFAULT_ITU_REGION;
-
-  float speakerScale = DEFAULT_SPEAKER_SCALE;
-  float headphoneScale = DEFAULT_HEADPHONE_SCALE;
-  float rfgainScale = DEFAULT_RFGAIN_SCALE;
-
-  HwVersion hwVersion = DEFAULT_HW_VERSION;
-  SerialPort0Mode serialPort0Mode = SerialPort0Mode::TRACE;
-  SerialPort1Mode serialPort1Mode = SerialPort1Mode::FT8_PTT_RTS;
+  int rfGain[NUMBER_OF_BANDS]{0};
 };
 
 extern config_t ConfigData;
@@ -143,6 +157,9 @@ public:
   void loadConfiguration(const char *filename, config_t &ConfigData);
   void saveConfiguration(const char *filename, const config_t &ConfigData);
   void printConfiguration(const config_t &ConfigData);
+
+private:
+  bool serializeConfiguration(const config_t &ConfigData, std::string &textData);
 };
 
 extern ConfigurationData configurationData;

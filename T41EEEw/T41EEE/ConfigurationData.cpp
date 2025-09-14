@@ -34,60 +34,90 @@ FLASHMEM void ConfigurationData::loadConfiguration(const char *filename, config_
   TRACE_T41(TR_L_INFO, "read filename:%s", filename);
 
   jsonLoadIfExist(doc, "versionSettings", ConfigData.versionSettings, sizeof(ConfigData.versionSettings));
+
   jsonLoadIfExist(doc, "AGCMode", ConfigData.AGCMode);
+  jsonLoadIfExist(doc, "AGCThreshold", ConfigData.AGCThreshold);
+  jsonLoadIfExist(doc, "activeVFO", reinterpret_cast<int &>(ConfigData.activeVFO));
   jsonLoadIfExist(doc, "audioVolume", ConfigData.audioVolume);
-  jsonLoadIfExist(doc, "rfGainCurrent", ConfigData.rfGainCurrent);
+  jsonLoadIfExist(doc, "audioOut", reinterpret_cast<int &>(ConfigData.audioOut));
   jsonLoadIfExist(doc, "autoGain", ConfigData.autoGain);
   jsonLoadIfExist(doc, "autoSpectrum", ConfigData.autoSpectrum);
-  jsonLoadIfExist(doc, "centerTuneStep", ConfigData.centerTuneStep);
-  jsonLoadIfExist(doc, "fineTuneStep", ConfigData.fineTuneStep);
-  jsonLoadIfExist(doc, "transmitPowerLevel", ConfigData.transmitPowerLevel);
-  jsonLoadIfExist(doc, "audioOut", reinterpret_cast<int &>(ConfigData.audioOut));
-  jsonLoadIfExist(doc, "nrOptionSelect", ConfigData.nrOptionSelect);
-  jsonLoadIfExist(doc, "currentScale", ConfigData.currentScale);
-  jsonLoadIfExist(doc, "spectrum_zoom", reinterpret_cast<int &>(ConfigData.spectrum_zoom));
+
   jsonLoadIfExist(doc, "CWFilterIndex", ConfigData.CWFilterIndex);
-  jsonLoadIfExist(doc, "paddleDit", ConfigData.paddleDit);
-  jsonLoadIfExist(doc, "paddleDah", ConfigData.paddleDah);
-  jsonLoadIfExist(doc, "decoderFlag", ConfigData.decoderFlag);
-  jsonLoadIfExist(doc, "morseDecodeSensitivity", ConfigData.morseDecodeSensitivity);
-  jsonLoadIfExist(doc, "keyType", reinterpret_cast<int &>(ConfigData.keyType));
-  jsonLoadIfExist(doc, "currentWPM", ConfigData.currentWPM);
   jsonLoadIfExist(doc, "CWOffset", ConfigData.CWOffset);
-  jsonLoadIfExist(doc, "sidetoneSpeaker", ConfigData.sidetoneSpeaker);
-  jsonLoadIfExist(doc, "sidetoneHeadphone", ConfigData.sidetoneHeadphone);
-  jsonLoadIfExist(doc, "cwTransmitDelay", ConfigData.cwTransmitDelay);
-  jsonLoadIfExist(doc, "activeVFO", reinterpret_cast<int &>(ConfigData.activeVFO));
+  jsonLoadIfExist(doc, "centerFreq", ConfigData.centerFreq);
+  jsonLoadIfExist(doc, "centerTuneStep", ConfigData.centerTuneStep);
+  jsonLoadIfExist(doc, "cessb", ConfigData.cessb);
+  jsonLoadIfExist(doc, "currentScale", ConfigData.currentScale);
   jsonLoadIfExist(doc, "currentBand", ConfigData.currentBand);
   jsonLoadIfExist(doc, "currentBandA", ConfigData.currentBandA);
   jsonLoadIfExist(doc, "currentBandB", ConfigData.currentBandB);
   jsonLoadIfExist(doc, "currentFreqA", ConfigData.currentFreqA);
   jsonLoadIfExist(doc, "currentFreqB", ConfigData.currentFreqB);
-  jsonLoadIfExist(doc, "micThreshold", ConfigData.micThreshold);
+  jsonLoadIfExist(doc, "currentWPM", ConfigData.currentWPM);
+  jsonLoadIfExist(doc, "compressorFlag", ConfigData.compressorFlag);
+  jsonLoadIfExist(doc, "cwTransmitDelay", ConfigData.cwTransmitDelay);
+
+  jsonLoadIfExist(doc, "decoderFlag", ConfigData.decoderFlag);
+
+  jsonLoadIfExist(doc, "fineTuneStep", ConfigData.fineTuneStep);
+
+  jsonLoadIfExist(doc, "headphoneScale", ConfigData.headphoneScale);
+  jsonLoadIfExist(doc, "hwVersion", reinterpret_cast<int &>(ConfigData.hwVersion));
+
+  jsonLoadIfExist(doc, "ituRegion", reinterpret_cast<int &>(ConfigData.ituRegion));
+
+  jsonLoadIfExist(doc, "keyType", reinterpret_cast<int &>(ConfigData.keyType));
+
+  jsonLoadIfExist(doc, "LPFcoeff", ConfigData.LPFcoeff);
+
+  jsonLoadIfExist(doc, "mapFileName", ConfigData.mapFileName, sizeof(ConfigData.mapFileName));
   jsonLoadIfExist(doc, "micCompRatio", ConfigData.micCompRatio);
   jsonLoadIfExist(doc, "micGain", ConfigData.micGain);
-  jsonLoadIfExist(doc, "LPFcoeff", ConfigData.LPFcoeff);
-  jsonLoadIfExist(doc, "NR_PSI", ConfigData.NR_PSI);
+  jsonLoadIfExist(doc, "micThreshold", ConfigData.micThreshold);
+  jsonLoadIfExist(doc, "morseDecodeSensitivity", ConfigData.morseDecodeSensitivity);
+  jsonLoadIfExist(doc, "myCallsign", ConfigData.myCallsign, sizeof(ConfigData.myCallsign));
+  jsonLoadIfExist(doc, "myLat", ConfigData.myLat);
+  jsonLoadIfExist(doc, "myLong", ConfigData.myLong);
+  jsonLoadIfExist(doc, "myTimeZone", ConfigData.myTimeZone, sizeof(ConfigData.myTimeZone));
+
   jsonLoadIfExist(doc, "NR_alpha", ConfigData.NR_alpha);
   jsonLoadIfExist(doc, "NR_beta", ConfigData.NR_beta);
+  jsonLoadIfExist(doc, "NR_PSI", ConfigData.NR_PSI);
+  jsonLoadIfExist(doc, "nrOptionSelect", ConfigData.nrOptionSelect);
+
   jsonLoadIfExist(doc, "omegaN", ConfigData.omegaN);
-  jsonLoadIfExist(doc, "pll_fmax", ConfigData.pll_fmax);
-  jsonLoadIfExist(doc, "centerFreq", ConfigData.centerFreq);
-  jsonLoadIfExist(doc, "mapFileName", ConfigData.mapFileName, sizeof(ConfigData.mapFileName));
-  jsonLoadIfExist(doc, "myTimeZone", ConfigData.myTimeZone, sizeof(ConfigData.myTimeZone));
-  jsonLoadIfExist(doc, "separationCharacter", ConfigData.separationCharacter);
+
+  jsonLoadIfExist(doc, "paddleDit", ConfigData.paddleDit);
+  jsonLoadIfExist(doc, "paddleDah", ConfigData.paddleDah);
   jsonLoadIfExist(doc, "paddleFlip", reinterpret_cast<int &>(ConfigData.paddleFlip));
-  jsonLoadIfExist(doc, "myLong", ConfigData.myLong);
-  jsonLoadIfExist(doc, "myLat", ConfigData.myLat);
-  jsonLoadIfExist(doc, "compressorFlag", ConfigData.compressorFlag);
-  jsonLoadIfExist(doc, "xmitEQFlag", ConfigData.xmitEQFlag);
+  jsonLoadIfExist(doc, "pll_fmax", ConfigData.pll_fmax);
+
   jsonLoadIfExist(doc, "receiveEQFlag", ConfigData.receiveEQFlag);
-  jsonLoadIfExist(doc, "autoGain", ConfigData.autoGain);
+  jsonLoadIfExist(doc, "rfGainCurrent", ConfigData.rfGainCurrent);
+  jsonLoadIfExist(doc, "rfgainScale", ConfigData.rfgainScale);
 
-  jsonLoadIfExistLoop(doc, "rfGain", ConfigData.rfGain, BandEnum::NUMBER_OF_BANDS);
-  jsonLoadIfExistLoop(doc, "powerOutCW", ConfigData.powerOutCW, BandEnum::NUMBER_OF_BANDS);
-  jsonLoadIfExistLoop(doc, "powerOutSSB", ConfigData.powerOutSSB, BandEnum::NUMBER_OF_BANDS);
+  jsonLoadIfExist(doc, "serialPort0Mode", reinterpret_cast<int &>(ConfigData.serialPort0Mode));
+  jsonLoadIfExist(doc, "serialPort1Mode", reinterpret_cast<int &>(ConfigData.serialPort1Mode));
+  jsonLoadIfExist(doc, "separationCharacter", ConfigData.separationCharacter);
+  jsonLoadIfExist(doc, "sidetoneHeadphone", ConfigData.sidetoneHeadphone);
+  jsonLoadIfExist(doc, "sidetoneSpeaker", ConfigData.sidetoneSpeaker);
+  jsonLoadIfExist(doc, "speakerScale", ConfigData.speakerScale);
+  jsonLoadIfExist(doc, "spectrum_zoom", reinterpret_cast<int &>(ConfigData.spectrum_zoom));
 
+  jsonLoadIfExist(doc, "timeFormat", reinterpret_cast<int &>(ConfigData.timeFormat));
+  jsonLoadIfExist(doc, "transmitPowerLevel", ConfigData.transmitPowerLevel);
+
+  jsonLoadIfExist(doc, "xmitEQFlag", ConfigData.xmitEQFlag);
+
+  //////
+  // alphabetical order - arrays
+  jsonLoadIfExistLoop(doc, "equalizerRec", ConfigData.equalizerRec, EQUALIZER_CELL_COUNT);
+  jsonLoadIfExistLoop(doc, "equalizerXmt", ConfigData.equalizerXmt, EQUALIZER_CELL_COUNT);
+
+  jsonLoadIfExistLoop(doc, "favoriteFreqs", ConfigData.favoriteFreqs, ConfigDataFavoriteFreqsSize);
+
+  jsonLoadIfExistLoop(doc, "lastSideband", reinterpret_cast<int *>(ConfigData.lastSideband), BandEnum::NUMBER_OF_BANDS);
   for (size_t i = 0; i < BandEnum::NUMBER_OF_BANDS; i++) {
     for (size_t j = 0; j < 2; j++) {
       if (doc["lastFrequencies"][i][j].is<unsigned int>()) {
@@ -98,109 +128,101 @@ FLASHMEM void ConfigurationData::loadConfiguration(const char *filename, config_
     }
   }
 
-  jsonLoadIfExistLoop(doc, "lastSideband", reinterpret_cast<int *>(ConfigData.lastSideband), BandEnum::NUMBER_OF_BANDS);
+  jsonLoadIfExistLoop(doc, "powerOutCW", ConfigData.powerOutCW, BandEnum::NUMBER_OF_BANDS);
+  jsonLoadIfExistLoop(doc, "powerOutSSB", ConfigData.powerOutSSB, BandEnum::NUMBER_OF_BANDS);
 
-  jsonLoadIfExistLoop(doc, "equalizerRec", ConfigData.equalizerRec, EQUALIZER_CELL_COUNT);
-  jsonLoadIfExistLoop(doc, "equalizerXmt", ConfigData.equalizerXmt, EQUALIZER_CELL_COUNT);
-
-  jsonLoadIfExistLoop(doc, "favoriteFreqs", ConfigData.favoriteFreqs, ConfigDataFavoriteFreqsSize);
-
-  jsonLoadIfExist(doc, "serialPort0Mode", reinterpret_cast<int &>(ConfigData.serialPort0Mode));
-  jsonLoadIfExist(doc, "serialPort1Mode", reinterpret_cast<int &>(ConfigData.serialPort1Mode));
-
-  // MyConfiguration part
-  jsonLoadIfExist(doc, "myCallsign", ConfigData.myCallsign, sizeof(ConfigData.myCallsign));
-  jsonLoadIfExist(doc, "speakerScale", ConfigData.speakerScale);
-  jsonLoadIfExist(doc, "headphoneScale", ConfigData.headphoneScale);
-  jsonLoadIfExist(doc, "rfgainScale", ConfigData.rfgainScale);
-  jsonLoadIfExist(doc, "hwVersion", reinterpret_cast<int &>(ConfigData.hwVersion));
+  jsonLoadIfExistLoop(doc, "rfGain", ConfigData.rfGain, BandEnum::NUMBER_OF_BANDS);
 
   file.close();
 }
 
-// Saves the configuration ConfigData to a file
-FLASHMEM void ConfigurationData::saveConfiguration(const char *filename, const config_t &ConfigData) {
+FLASHMEM bool ConfigurationData::serializeConfiguration(const config_t &ConfigData, std::string &textData) {
   TRACE_LEVEL(TR_L_TRACE);
 
   JsonDocument doc;
 
   doc["versionSettings"] = ConfigData.versionSettings;
+
+  //////
+  // alphabetical order - primitive types
+
   doc["AGCMode"] = ConfigData.AGCMode;
   doc["AGCThreshold"] = ConfigData.AGCThreshold;
+  doc["activeVFO"] = ConfigData.activeVFO;
+  doc["audioOut"] = ConfigData.audioOut;
   doc["audioVolume"] = ConfigData.audioVolume;
-  doc["rfGainCurrent"] = ConfigData.rfGainCurrent;
   doc["autoGain"] = ConfigData.autoGain;
   doc["autoSpectrum"] = ConfigData.autoSpectrum;
-  doc["centerTuneStep"] = ConfigData.centerTuneStep;
-  doc["fineTuneStep"] = ConfigData.fineTuneStep;
-  doc["transmitPowerLevel"] = ConfigData.transmitPowerLevel;
-  doc["audioOut"] = ConfigData.audioOut;
-  doc["nrOptionSelect"] = ConfigData.nrOptionSelect;
-  doc["currentScale"] = ConfigData.currentScale;
-  doc["spectrum_zoom"] = ConfigData.spectrum_zoom;
+
   doc["CWFilterIndex"] = ConfigData.CWFilterIndex;
-  doc["paddleDit"] = ConfigData.paddleDit;
-  doc["paddleDah"] = ConfigData.paddleDah;
-  doc["decoderFlag"] = ConfigData.decoderFlag;
-  doc["morseDecodeSensitivity"] = ConfigData.morseDecodeSensitivity;
-  doc["keyType"] = ConfigData.keyType;
-  doc["currentWPM"] = ConfigData.currentWPM;
   doc["CWOffset"] = ConfigData.CWOffset;
-  doc["sidetoneSpeaker"] = ConfigData.sidetoneSpeaker;
-  doc["sidetoneHeadphone"] = ConfigData.sidetoneHeadphone;
-  doc["cwTransmitDelay"] = ConfigData.cwTransmitDelay;
-  doc["activeVFO"] = ConfigData.activeVFO;
+  doc["centerFreq"] = ConfigData.centerFreq;
+  doc["centerTuneStep"] = ConfigData.centerTuneStep;
+  doc["cessb"] = ConfigData.cessb;
   doc["currentBand"] = ConfigData.currentBand;
   doc["currentBandA"] = ConfigData.currentBandA;
   doc["currentBandB"] = ConfigData.currentBandB;
   doc["currentFreqA"] = ConfigData.currentFreqA;
   doc["currentFreqB"] = ConfigData.currentFreqB;
-  doc["micThreshold"] = ConfigData.micThreshold;
+  doc["currentScale"] = ConfigData.currentScale;
+  doc["currentWPM"] = ConfigData.currentWPM;
+  doc["compressorFlag"] = ConfigData.compressorFlag;
+  doc["cwTransmitDelay"] = ConfigData.cwTransmitDelay;
+
+  doc["decoderFlag"] = ConfigData.decoderFlag;
+
+  doc["fineTuneStep"] = ConfigData.fineTuneStep;
+
+  doc["headphoneScale"] = ConfigData.headphoneScale;
+  doc["hwVersion"] = ConfigData.hwVersion;
+
+  doc["ituRegion"] = ConfigData.ituRegion;
+
+  doc["keyType"] = ConfigData.keyType;
+
+  doc["LPFcoeff"] = ConfigData.LPFcoeff;
+
+  doc["mapFileName"] = ConfigData.mapFileName;
   doc["micCompRatio"] = ConfigData.micCompRatio;
   doc["micGain"] = ConfigData.micGain;
-  doc["LPFcoeff"] = ConfigData.LPFcoeff;
-  doc["NR_PSI"] = ConfigData.NR_PSI;
+  doc["micThreshold"] = ConfigData.micThreshold;
+  doc["morseDecodeSensitivity"] = ConfigData.morseDecodeSensitivity;
+  doc["myCallsign"] = ConfigData.myCallsign;
+  doc["myLat"] = ConfigData.myLat;
+  doc["myLong"] = ConfigData.myLong;
+  doc["myTimeZone"] = ConfigData.myTimeZone;
+
   doc["NR_alpha"] = ConfigData.NR_alpha;
   doc["NR_beta"] = ConfigData.NR_beta;
+  doc["NR_PSI"] = ConfigData.NR_PSI;
+  doc["nrOptionSelect"] = ConfigData.nrOptionSelect;
+
   doc["omegaN"] = ConfigData.omegaN;
-  doc["pll_fmax"] = ConfigData.pll_fmax;
-  doc["centerFreq"] = ConfigData.centerFreq;
-  doc["mapFileName"] = ConfigData.mapFileName;
-  doc["myTimeZone"] = ConfigData.myTimeZone;
-  doc["separationCharacter"] = ConfigData.separationCharacter;
+
+  doc["paddleDah"] = ConfigData.paddleDah;
+  doc["paddleDit"] = ConfigData.paddleDit;
   doc["paddleFlip"] = ConfigData.paddleFlip;
-  doc["myLong"] = ConfigData.myLong;
-  doc["myLat"] = ConfigData.myLat;
-  doc["compressorFlag"] = ConfigData.compressorFlag;
-  doc["xmitEQFlag"] = ConfigData.xmitEQFlag;
+  doc["pll_fmax"] = ConfigData.pll_fmax;
+
   doc["receiveEQFlag"] = ConfigData.receiveEQFlag;
-  doc["autoGain"] = ConfigData.autoGain;
+  doc["rfGainCurrent"] = ConfigData.rfGainCurrent;
+  doc["rfgainScale"] = ConfigData.rfgainScale;
 
   doc["serialPort0Mode"] = ConfigData.serialPort0Mode;
   doc["serialPort1Mode"] = ConfigData.serialPort1Mode;
+  doc["separationCharacter"] = ConfigData.separationCharacter;
+  doc["sidetoneHeadphone"] = ConfigData.sidetoneHeadphone;
+  doc["sidetoneSpeaker"] = ConfigData.sidetoneSpeaker;
+  doc["speakerScale"] = ConfigData.speakerScale;
+  doc["spectrum_zoom"] = ConfigData.spectrum_zoom;
 
-  for (size_t i = 0; i < BandEnum::NUMBER_OF_BANDS; i++) {
-    doc["rfGain"][i] = ConfigData.rfGain[i];
-  }
+  doc["timeFormat"] = ConfigData.timeFormat;
+  doc["transmitPowerLevel"] = ConfigData.transmitPowerLevel;
 
-  for (size_t i = 0; i < BandEnum::NUMBER_OF_BANDS; i++) {
-    doc["powerOutCW"][i] = ConfigData.powerOutCW[i];
-  }
+  doc["xmitEQFlag"] = ConfigData.xmitEQFlag;
 
-  for (size_t i = 0; i < BandEnum::NUMBER_OF_BANDS; i++) {
-    doc["powerOutSSB"][i] = ConfigData.powerOutSSB[i];
-  }
-
-  for (size_t i = 0; i < BandEnum::NUMBER_OF_BANDS; i++) {
-    for (int j = 0; j < 2; j++) {
-      doc["lastFrequencies"][i][j] = ConfigData.lastFrequencies[i][j];
-    }
-  }
-
-  for (size_t i = 0; i < BandEnum::NUMBER_OF_BANDS; i++) {
-    doc["lastSideband"][i] = ConfigData.lastSideband[i];
-  }
-
+  //////
+  // alphabetical order - arrays
   for (int i = 0; i < EQUALIZER_CELL_COUNT; i++) {
     doc["equalizerRec"][i] = ConfigData.equalizerRec[i];
   }
@@ -213,12 +235,48 @@ FLASHMEM void ConfigurationData::saveConfiguration(const char *filename, const c
     doc["favoriteFreqs"][i] = ConfigData.favoriteFreqs[i];
   }
 
-  // MyConfiguration part
-  doc["myCallsign"] = ConfigData.myCallsign;
-  doc["speakerScale"] = ConfigData.speakerScale;
-  doc["headphoneScale"] = ConfigData.headphoneScale;
-  doc["rfgainScale"] = ConfigData.rfgainScale;
-  doc["hwVersion"] = ConfigData.hwVersion;
+  for (size_t i = 0; i < BandEnum::NUMBER_OF_BANDS; i++) {
+    for (int j = 0; j < 2; j++) {
+      doc["lastFrequencies"][i][j] = ConfigData.lastFrequencies[i][j];
+    }
+  }
+
+  for (size_t i = 0; i < BandEnum::NUMBER_OF_BANDS; i++) {
+    doc["lastSideband"][i] = ConfigData.lastSideband[i];
+  }
+
+  for (size_t i = 0; i < BandEnum::NUMBER_OF_BANDS; i++) {
+    doc["powerOutCW"][i] = ConfigData.powerOutCW[i];
+  }
+
+  for (size_t i = 0; i < BandEnum::NUMBER_OF_BANDS; i++) {
+    doc["powerOutSSB"][i] = ConfigData.powerOutSSB[i];
+  }
+
+  for (size_t i = 0; i < BandEnum::NUMBER_OF_BANDS; i++) {
+    doc["rfGain"][i] = ConfigData.rfGain[i];
+  }
+
+  size_t written = serializeJsonPretty(doc, textData);
+  if (written == 0) {
+    TRACE_T41(TR_L_ERROR, "json failed to serilaze");
+    return false;
+  }
+
+  TRACE_T41(TR_L_INFO, "json serialize bytes:%u", written);
+  return true;
+}
+
+// Saves the configuration ConfigData to a file
+FLASHMEM void ConfigurationData::saveConfiguration(const char *filename, const config_t &ConfigData) {
+  TRACE_LEVEL(TR_L_TRACE);
+
+  std::string textData;
+
+  if (not serializeConfiguration(ConfigData, textData)) {
+    TRACE_T41(TR_L_ERROR, "Failed to serilaze filename:%s", filename);
+    Serial.printf("Failed to serilaze filename:%s", filename);
+  }
 
   File file = SD.open(filename, FILE_WRITE_BEGIN);
   if (!file) {
@@ -226,7 +284,7 @@ FLASHMEM void ConfigurationData::saveConfiguration(const char *filename, const c
     return;
   }
 
-  size_t written = serializeJsonPretty(doc, file);
+  size_t written = file.println(textData.c_str());
   if (written == 0) {
     TRACE_T41(TR_L_ERROR, "Failed to serilaze filename:%s", filename);
     file.close();
@@ -241,102 +299,15 @@ FLASHMEM void ConfigurationData::saveConfiguration(const char *filename, const c
 FLASHMEM void ConfigurationData::printConfiguration(const config_t &ConfigData) {
   TRACE_LEVEL(TR_L_TRACE);
 
-  JsonDocument doc;
-
-  doc["versionSettings"] = ConfigData.versionSettings;
-  doc["AGCMode"] = ConfigData.AGCMode;
-  doc["AGCThreshold"] = ConfigData.AGCThreshold;
-  doc["audioVolume"] = ConfigData.audioVolume;
-  doc["rfGainCurrent"] = ConfigData.rfGainCurrent;
-  for (size_t i = 0; i < BandEnum::NUMBER_OF_BANDS; i++) {
-    doc["rfGain"][i] = ConfigData.rfGain[i];
+  std::string textData;
+  if (not serializeConfiguration(ConfigData, textData)) {
+    TRACE_T41(TR_L_ERROR, "Failed to serilaze");
+    Serial.println("Failed to serilaze");
+    return;
   }
-  doc["autoGain"] = ConfigData.autoGain;
-  doc["autoSpectrum"] = ConfigData.autoSpectrum;
-  doc["centerTuneStep"] = ConfigData.centerTuneStep;
-  doc["fineTuneStep"] = ConfigData.fineTuneStep;
-  doc["transmitPowerLevel"] = ConfigData.transmitPowerLevel;
-  doc["audioOut"] = ConfigData.audioOut;
-  doc["nrOptionSelect"] = ConfigData.nrOptionSelect;
-  doc["currentScale"] = ConfigData.currentScale;
-  doc["spectrum_zoom"] = ConfigData.spectrum_zoom;
-  doc["CWFilterIndex"] = ConfigData.CWFilterIndex;
-  doc["paddleDit"] = ConfigData.paddleDit;
-  doc["paddleDah"] = ConfigData.paddleDah;
-  doc["decoderFlag"] = ConfigData.decoderFlag;
-  doc["morseDecodeSensitivity"] = ConfigData.morseDecodeSensitivity;
-  doc["keyType"] = ConfigData.keyType;
-  doc["currentWPM"] = ConfigData.currentWPM;
-  doc["CWOffset"] = ConfigData.CWOffset;
-  doc["sidetoneSpeaker"] = ConfigData.sidetoneSpeaker;
-  doc["sidetoneHeadphone"] = ConfigData.sidetoneHeadphone;
-  doc["cwTransmitDelay"] = ConfigData.cwTransmitDelay;
-  doc["activeVFO"] = ConfigData.activeVFO;
-  doc["currentBand"] = ConfigData.currentBand;
-  doc["currentBandA"] = ConfigData.currentBandA;
-  doc["currentBandB"] = ConfigData.currentBandB;
-  doc["currentFreqA"] = ConfigData.currentFreqA;
-  doc["currentFreqB"] = ConfigData.currentFreqB;
-  for (int i = 0; i < EQUALIZER_CELL_COUNT; i++) {
-    doc["equalizerRec"][i] = ConfigData.equalizerRec[i];
-  }
-
-  for (int i = 0; i < EQUALIZER_CELL_COUNT; i++) {
-    doc["equalizerXmt"][i] = ConfigData.equalizerXmt[i];
-  }
-  doc["micThreshold"] = ConfigData.micThreshold;
-  doc["micCompRatio"] = ConfigData.micCompRatio;
-  doc["micGain"] = ConfigData.micGain;
-  doc["LPFcoeff"] = ConfigData.LPFcoeff;
-  doc["NR_PSI"] = ConfigData.NR_PSI;
-  doc["NR_alpha"] = ConfigData.NR_alpha;
-  doc["NR_beta"] = ConfigData.NR_beta;
-  doc["omegaN"] = ConfigData.omegaN;
-  doc["pll_fmax"] = ConfigData.pll_fmax;
-  for (size_t i = 0; i < BandEnum::NUMBER_OF_BANDS; i++) {
-    doc["powerOutCW"][i] = ConfigData.powerOutCW[i];
-  }
-
-  for (size_t i = 0; i < BandEnum::NUMBER_OF_BANDS; i++) {
-    doc["powerOutSSB"][i] = ConfigData.powerOutSSB[i];
-  }
-  for (size_t i = 0; i < ConfigDataFavoriteFreqsSize; i++) {
-    doc["favoriteFreqs"][i] = ConfigData.favoriteFreqs[i];
-  }
-  for (size_t i = 0; i < BandEnum::NUMBER_OF_BANDS; i++) {
-    for (int j = 0; j < 2; j++) {
-      doc["lastFrequencies"][i][j] = ConfigData.lastFrequencies[i][j];
-    }
-  }
-  for (size_t i = 0; i < BandEnum::NUMBER_OF_BANDS; i++) {
-    doc["lastSideband"][i] = ConfigData.lastSideband[i];
-  }
-  doc["centerFreq"] = ConfigData.centerFreq;
-  doc["mapFileName"] = ConfigData.mapFileName;
-  doc["myTimeZone"] = ConfigData.myTimeZone;
-  doc["separationCharacter"] = ConfigData.separationCharacter;
-  doc["paddleFlip"] = ConfigData.paddleFlip;
-  doc["myLong"] = ConfigData.myLong;
-  doc["myLat"] = ConfigData.myLat;
-  doc["compressorFlag"] = ConfigData.compressorFlag;
-  doc["xmitEQFlag"] = ConfigData.xmitEQFlag;
-  doc["receiveEQFlag"] = ConfigData.receiveEQFlag;
-  doc["cessb"] = ConfigData.cessb;
-  doc["autoGain"] = ConfigData.autoGain;
-  doc["myCallsign"] = ConfigData.myCallsign;
-  doc["timeFormat"] = ConfigData.timeFormat;
-  doc["ituRegion"] = ConfigData.ituRegion;
-  doc["speakerScale"] = ConfigData.speakerScale;
-  doc["headphoneScale"] = ConfigData.headphoneScale;
-  doc["rfgainScale"] = ConfigData.rfgainScale;
-  doc["hwVersion"] = ConfigData.hwVersion;
-
-  doc["serialPort0Mode"] = ConfigData.serialPort0Mode;
-  doc["serialPort1Mode"] = ConfigData.serialPort1Mode;
 
   TRACE_T41(TR_L_INFO, "--- print json begin");
-  size_t written = serializeJsonPretty(doc, Serial);
-  Serial.println();
+  size_t written = Serial.println(textData.c_str());
   TRACE_T41(TR_L_INFO, "--- print json end bytes:%u", written);
 }
 
