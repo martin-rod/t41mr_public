@@ -321,12 +321,10 @@ void ShowSpectrum() {
     y_old_plot = 247 - y_old;
     y_old2_plot = 247 - y_old2;
 
-    // Collect a histogram of RF spectrum values.  This is used in AutoGain and
-    // AutoSpectrum. 247 is the spectral display bottom.  120 is the spectral
-    // display top.
-    if ((x1 > 51) && (x1 < 461)) //  HB start for auto RFgain collect frequency distribution.
-                                 //  Limited to core of FFT and dividable by 4.
-    {
+    // Collect a histogram of RF spectrum values.  This is used in AutoGain and AutoSpectrum. 247 is the spectral display bottom.
+    // 120 is the spectral display top.
+    if ((x1 > 51) && (x1 < 461)) {
+      //  HB start for auto RFgain collect frequency distribution. Limited to core of FFT and dividable by 4.
       j = 247 - y_new_plot + 40;      // +40 to get 10 bins below zero - want to straddle zero to make
                                       // the entire spectrum viewable.
       k = j >> 2;                     // Divide by 4
@@ -400,8 +398,7 @@ void ShowSpectrum() {
                                      //  pixelold by the FFT function.  KF5N
     audioYPixelcurrent[x1] = audioYPixel[x1];
 
-    // Draw audio spectrum.  The audio spectrum width is smaller than the RF
-    // spectrum width.
+    // Draw audio spectrum.  The audio spectrum width is smaller than the RF spectrum width.
     if (x1 < 253) {            // AFP 09-01-22
       if (keyPressedOn == 1) { // AFP 09-01-22
         return;                // AFP 09-01-22

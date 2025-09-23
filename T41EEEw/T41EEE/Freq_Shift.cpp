@@ -21,19 +21,16 @@ float32_t hh1 = 0.0;
 float32_t hh2 = 0.0;
 
 /*****
-  Purpose: void FreqShift1()
-          AFP 12-31-20
-        Frequency translation by Fs/4 without multiplication from Lyons (2011):
+Purpose: void FreqShift1()
+
+Frequency translation by Fs/4 without multiplication from Lyons (2011):
 chapter 13.1.2 page 646 together with the savings of not having to shift/rotate
 the FFT_buffer, this saves about 1% of processor use
 
-        This is for +Fs/4 [moves receive frequency to the left in the spectrum
+This is for +Fs/4 [moves receive frequency to the left in the spectrum
 display] float_buffer_L contains I = real values float_buffer_R contains Q =
 imaginary values xnew(0) =  xreal(0) + jximag(0) leave first value (DC
 component) as it is! xnew(1) =  - ximag(1) + jxreal(1) Parameter list: void
-
-  Return value:
-    void
 *****/
 void FreqShift1() {
   for (unsigned i = 0; i < BUFFER_SIZE * N_B; i += 4) {
@@ -131,15 +128,14 @@ void FreqShift2() {
     }
   }
 
-  NCO_INC =
-      2.0 * PI * (NCOFreq + sideToneShift) / SR[static_cast<size_t>(SampleRate)].rate; // 192000 SPS is the actual sample rate used in the Receive ADC
+  // 192000 SPS is the actual sample rate used in the Receive ADC
+  NCO_INC = 2.0 * PI * (NCOFreq + sideToneShift) / SR[static_cast<size_t>(SampleRate)].rate;
 
   OSC_COS = cos(NCO_INC);
   OSC_SIN = sin(NCO_INC);
 
   for (i = 0; i < BUFFER_SIZE * N_B; i++) {
-    // generate local oscillator on-the-fly:  This takes a lot of processor
-    // time!
+    // generate local oscillator on-the-fly:  This takes a lot of processor time!
     Osc_Q = (Osc_Vect_Q * OSC_COS) - (Osc_Vect_I * OSC_SIN);                   // Q channel of oscillator
     Osc_I = (Osc_Vect_I * OSC_COS) + (Osc_Vect_Q * OSC_SIN);                   // I channel of oscillator
     Osc_Gain = 1.95 - ((Osc_Vect_Q * Osc_Vect_Q) + (Osc_Vect_I * Osc_Vect_I)); // Amplitude control of oscillator

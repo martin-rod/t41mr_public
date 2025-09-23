@@ -23,7 +23,9 @@ public:
   int8_t first_block = 1;
   uint8_t wait_flag;
   float32_t audiotmp = 0.0f;
-  float32_t audioSpectBuffer[1024]{0}; // This can't be DMAMEM.  It will break the S-Meter.  KF5N October 10, 2023
+  static constexpr size_t audioSpectBufferSize = 1024;
+  // This can't be DMAMEM.  It will break the S-Meter.  KF5N October 10, 2023
+  float32_t audioSpectBuffer[audioSpectBufferSize] = {0};
   float32_t sample_meanL = 0.0;
   float32_t sample_meanR = 0.0;
   float32_t wold = 0.0f;

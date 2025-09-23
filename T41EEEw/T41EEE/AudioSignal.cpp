@@ -4,13 +4,15 @@
 #include "SSB_Exciter.h"
 #include "T41EEE.h"
 
-#ifdef T41_USB_AUDIO
-#include "usb_audio.h"
+#define T41_USB_AUDIO
+
+#if defined(T41_USB_AUDIO)
+#include "USB_Audio_F32.h"
 #endif
 
 // Common to Transmitter and Receiver.
-const float sample_rate_Hz = 48000.0f;
-const int audio_block_samples = 128; // Always 128
+constexpr float sample_rate_Hz = 48000.0f;
+constexpr int audio_block_samples = 128; // Always 128
 
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 AudioInputI2SQuad i2s_quadIn; // 4 inputs/outputs available only in Teensy audio and not Open Audio library.
@@ -97,12 +99,11 @@ AudioConnection connect17(float2Int1_tx, 0, Q_in_L_Ex,
                           0); // Stream I and Q into the sketch.
 AudioConnection connect18(float2Int2_tx, 0, Q_in_R_Ex, 0);
 
-// Transmitter back-end.  This takes streaming data from the sketch and drives
-// it into the I2S.
-AudioConnection connect19(Q_out_L_Ex, 0, i2s_quadOut,
-                          0); // I channel to line out
-AudioConnection connect20(Q_out_R_Ex, 0, i2s_quadOut,
-                          1); // Q channel to line out
+// Transmitter back-end.  This takes streaming data from the sketch and drives it into the I2S.
+// I channel to line out
+AudioConnection connect19(Q_out_L_Ex, 0, i2s_quadOut, 0);
+// Q channel to line out
+AudioConnection connect20(Q_out_R_Ex, 0, i2s_quadOut, 1);
 
 // Receiver data flow
 AudioEffectCompressor2_F32 compressor2_1; // Used for audio AGC.
@@ -117,45 +118,50 @@ AudioEffectGain_F32 compGain;
 AudioAmplifier testGain;
 AudioMixer4_F32 mixer4;
 AudioSwitch4_OA_F32 switch4;
-AudioConvert_F32toI16 float2Int3, float2Int4, float2Int5, float2Int6;
+AudioConvert_F32toI16 float2Int3;
+AudioConvert_F32toI16 float2Int4;
+AudioConvert_F32toI16 float2Int5;
+AudioConvert_F32toI16 float2Int6;
 
-AudioRecordQueue ADC_RX_I; // I channel from ADC PCM1808.
-AudioRecordQueue ADC_RX_Q; // Q channel from ADC PCM1808.
+// I channel from ADC PCM1808.
+AudioRecordQueue ADC_RX_I;
+// Q channel from ADC PCM1808.
+AudioRecordQueue ADC_RX_Q;
 
-AudioPlayQueue Q_out_L; // Receiver audio out and CW sidetone.
+// Receiver audio out and CW sidetone.
+AudioPlayQueue Q_out_L;
 
 AudioConvert_I16toF32 int2Float2;
-AudioConnection patchCord1(i2s_quadIn, 2, ADC_RX_I,
-                           0); // Receiver I and Q channel data stream.
-AudioConnection patchCord2(i2s_quadIn, 3, ADC_RX_Q,
-                           0); // This data stream goes to sketch code for processing.
+// Receiver I and Q channel data stream.
+AudioConnection patchCord1(i2s_quadIn, 2, ADC_RX_I, 0);
+// This data stream goes to sketch code for processing.
+AudioConnection patchCord2(i2s_quadIn, 3, ADC_RX_Q, 0);
 
-AudioConnection patchCord3(Q_out_L, 0, int2Float2,
-                           0); // 192ksps Audio data stream from sketch code.
-                               // Receiver audio or CW sidetone.
+// 192ksps Audio data stream from sketch code. Receiver audio or CW sidetone.
+AudioConnection patchCord3(Q_out_L, 0, int2Float2, 0);
 
-AudioConnection_F32 patchCord4(int2Float2, 0, switch4,
-                               0); // Used to bypass compressor2_1.
+// Used to bypass compressor2_1.
+AudioConnection_F32 patchCord4(int2Float2, 0, switch4, 0);
 
-AudioConnection_F32 patchCord5(switch4, 0, compressor2_1,
-                               0); // Compressor used as audio AGC.
+// Compressor used as audio AGC.
+AudioConnection_F32 patchCord5(switch4, 0, compressor2_1, 0);
 AudioConnection_F32 patchCord6(compressor2_1, 0, mixer4, 0);
 
-AudioConnection_F32 patchCord7(switch4, 1, compGain,
-                               0); // Bypass compressor2_1.  Equalize compressor gain.
+// Bypass compressor2_1.  Equalize compressor gain.
+AudioConnection_F32 patchCord7(switch4, 1, compGain, 0);
 AudioConnection_F32 patchCord8(compGain, 0, mixer4, 1);
 
 // Speaker path
-AudioConnection_F32 patchCord9(mixer4, 0, speakerScale,
-                               0); // speakerScale is used to adjust for different audio amplifier gains.
+// speakerScale is used to adjust for different audio amplifier gains.
+AudioConnection_F32 patchCord9(mixer4, 0, speakerScale, 0);
 AudioConnection_F32 patchCord10(speakerScale, 0, speakerVolume, 0);
 AudioConnection_F32 patchCord11(speakerVolume, 0, float2Int3, 0);
-AudioConnection patchCord12(float2Int3, 0, i2s_quadOut,
-                            2); //  Speaker audio to PCM5102 via Teensy pin 32.
+// Speaker audio to PCM5102 via Teensy pin 32.
+AudioConnection patchCord12(float2Int3, 0, i2s_quadOut, 2);
 
 // Headphone path
-AudioConnection_F32 patchCord13(mixer4, 0, headphoneScale,
-                                0); // headphoneScale is user centering of headphone volume.
+// headphoneScale is user centering of headphone volume
+AudioConnection_F32 patchCord13(mixer4, 0, headphoneScale, 0);
 AudioConnection_F32 patchCord14(headphoneScale, 0, headphoneVolume, 0);
 AudioConnection_F32 patchCord15(headphoneVolume, 0, float2Int4, 0);
 
@@ -172,19 +178,28 @@ float32_t equalizeCoeffs[249];
 
 // End dataflow code
 
-#ifdef T41_USB_AUDIO
+#if defined(T41_USB_AUDIO)
 
+#if 1
 AudioOutputUSB usbOut;
-// Terrance Robertson, KN6ZDE https://github.com/tmr4/T41_Vxx.git
-// WSJT-X needs some amplification to detect signal *** TODO: this needs refined with PC input volume adjustment ***
-AudioAmplifier amp1;
-AudioConnection pc_amp1(Q_out_L, amp1);
-AudioConnection pc_usb1(amp1, 0, usbOut, 0);
+AudioConnection cQOutLToUsbOut(Q_out_L, 0, usbOut, 0);
+AudioInputUSB usbIn;
+AudioConnection cUsbInToQInLEx(usbIn, Q_in_L_Ex);
+#endif
+
+#if 0
+AudioOutputUSB_F32 usbOut;
+
+AudioConvert_I16toF32 int2Float1Out;
+
+AudioConnection cIntToFloat1(Q_out_L,int2Float1Out);
+AudioConnection_F32 cUsbOut1(int2Float1Out,0, usbOut,0);
 
 AudioInputUSB usbIn;
 AudioConnection pc_usb2(usbIn, Q_in_L_Ex);
-
 #endif
+
+#endif // T41_USB_AUDIO
 
 // Configure basic compressor macro.  This is used in the audio path as a form of AGC.
 void initializeAudioPaths() {

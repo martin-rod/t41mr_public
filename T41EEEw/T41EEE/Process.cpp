@@ -18,13 +18,20 @@
 
 #include "Process.h"
 
+#define TRACE_MODULE_LEVEL TR_L_ALL
+#define TRACE_MODULE_NAME PROC
+
+#include "git_version.h"
+#include "trace.h"
+
 // Set up a Metro
 static Metro ms_500 = Metro(500);
 
 // Will int16_t save memory here???  DMAMEM not working here.  Causes audio spectrum glitch.  KF5N February 26, 2024.
-int audioYPixel[256]{0};
-int audioYPixelold[256]{0};
-int audioYPixelcurrent[256]{0};
+constexpr size_t audioYPixelSize = 256;
+int audioYPixel[audioYPixelSize] = {0};
+int audioYPixelold[audioYPixelSize] = {0};
+int audioYPixelcurrent[audioYPixelSize] = {0};
 
 arm_biquad_casd_df1_inst_f32 biquad_lowpass1;
 float32_t biquad_lowpass1_state[N_stages_biquad_lowpass1 * 4];
@@ -41,17 +48,14 @@ float32_t DMAMEM last_sample_buffer_R[BUFFER_SIZE * N_DEC_B];
              Calculate FFT for display
              Process audio into SSB signal
              Output audio to amplifier
-
-   Parameter List:
-      void
-
-   Return value:
-      void
  *****/
 void Process::ProcessIQData() {
-  if (keyPressedOn == 1) { // AFP 09-01-22
+  TRACE_LEVEL(TR_L_DEBUG);
+
+  if (keyPressedOn == 1) {
     return;
   }
+
   /**********************************************************************************
      AFP 12-31-20 Get samples from queue buffers Teensy Audio Library stores ADC
      data in two buffers size=128, Q_in_L and Q_in_R as initiated from the audio
@@ -66,61 +70,54 @@ void Process::ProcessIQData() {
   float rfGainValue;
   int rfGain;
 
-  // Are there at least N_BLOCKS buffers in each channel available ?  N_BLOCKS
-  // should be 16.  Fill float_buffer_L/R[2048].
+  // Are there at least N_BLOCKS buffers in each channel available ?  N_BLOCKS should be 16.  Fill float_buffer_L/R[2048].
   if (static_cast<uint32_t>(ADC_RX_I.available()) > N_B && static_cast<uint32_t>(ADC_RX_Q.available()) > N_B) {
     usec = 0;
     // Get audio samples from the audio  buffers and convert them to float.
-    // Read in 16 blocks and 128 samples in I and Q.  16 * 128 = 2048  (N_BLOCKS
-    // = 16)
+    // Read in 16 blocks and 128 samples in I and Q.  16 * 128 = 2048  (N_BLOCKS = 16)
     for (unsigned i = 0; i < N_B; i++) {
       // Find the maximum value and record.
-      //  void arm_absmax_q15	(	const q15_t * 	pSrc, uint32_t
-      //  blockSize, q15_t * 	pResult, uint32_t * 	pIndex);
+      // void arm_absmax_q15( const q15_t * pSrc, uint32_t blockSize, q15_t * pResult, uint32_t * pIndex);
       /**********************************************************************************
       AFP 12-31-20 Using arm_Math library, convert to float one buffer_size.
           Float_buffer samples are now standardized from > -1.0 to < 1.0
       **********************************************************************************/
-      arm_q15_to_float(ADC_RX_Q.readBuffer(), &float_buffer_L[BUFFER_SIZE * i],
-                       BUFFER_SIZE); // convert int_buffer to float 32bit.
-                                     // BUFFER_SIZE = 128.
-      arm_q15_to_float(ADC_RX_I.readBuffer(), &float_buffer_R[BUFFER_SIZE * i],
-                       BUFFER_SIZE); // convert int_buffer to float 32bit
+      // convert int_buffer to float 32bit. BUFFER_SIZE = 128.
+      arm_q15_to_float(ADC_RX_Q.readBuffer(), &float_buffer_L[BUFFER_SIZE * i], BUFFER_SIZE);
+      // convert int_buffer to float 32bit
+      arm_q15_to_float(ADC_RX_I.readBuffer(), &float_buffer_R[BUFFER_SIZE * i], BUFFER_SIZE);
       ADC_RX_I.freeBuffer();
       ADC_RX_Q.freeBuffer();
-    } // end for loop
+    }
 
-    if (keyPressedOn == 1) { // AFP 09-01-22.  Bail out if transmitting but ignore in AM mode.
+    if (keyPressedOn == 1) {
       return;
     }
+
     // Set frequency here only to minimize interruption to signal stream during
-    // tuning. This code was unnecessary in the revised tuning scheme.  KF5N
-    // July 22, 2023
-    if (centerTuneFlag == 1) { //  This flag is set by EncoderFineTune().
+    // tuning. This code was unnecessary in the revised tuning scheme.  KF5N July 22, 2023
+    //  This flag is set by EncoderFineTune().
+    if (centerTuneFlag == 1) {
       DrawBandWidthIndicatorBar();
       ShowFrequency();
-    } // AFP 10-04-22
-    centerTuneFlag = 0; // AFP 10-04-22
+    }
+    centerTuneFlag = 0;
     if (resetTuningFlag == 1) {
       ResetTuning();
     }
     resetTuningFlag = 0;
 
-    //  Set RFGain for all bands.
+    // Set RFGain for all bands.
     if (ConfigData.autoGain) {
       rfGain = ConfigData.rfGainCurrent; // Auto-gain
     } else {
       rfGain = ConfigData.rfGain[ConfigData.currentBand] - 20; // Manual gain adjust.
     }
-    rfGainValue = pow(10, static_cast<float32_t>(rfGain) / 20.0); // DSPGAINSCALE removed in T41EEE.9.  Greg
-                                                                  // KF5N February 24, 2024
-
+    // DSPGAINSCALE removed in T41EEE.9.  Greg KF5N February 24, 2024
+    rfGainValue = pow(10, static_cast<float32_t>(rfGain) / 20.0);
     rfGainValue = rfGainValue * audioGainCompensate;
-
-    arm_scale_f32(float_buffer_L, rfGainValue, float_buffer_L,
-                  BUFFER_SIZE * N_B); // AFP 09-27-22
-    arm_scale_f32(float_buffer_R, rfGainValue, float_buffer_R,
-                  BUFFER_SIZE * N_B); // AFP 09-27-22
+    arm_scale_f32(float_buffer_L, rfGainValue, float_buffer_L, BUFFER_SIZE * N_B);
+    arm_scale_f32(float_buffer_R, rfGainValue, float_buffer_R, BUFFER_SIZE * N_B);
 
     /**********************************************************************************
     AFP 12-31-20 Remove DC offset to reduce central spike.  First read the Mean
@@ -163,51 +160,64 @@ void Process::ProcessIQData() {
     AFP 12-31-20 IQ amplitude and phase correction.  For this scaled down
     version the I an Q chnnels are equalized and phase corrected manually. This
     is done by applying a correction, which is the difference, to the L channel
-    only.  The phase is corrected in the IQPhaseCorrection() function.
+    only. The phase is corrected in the IQPhaseCorrection() function.
     ***********************************************************************************************/
 
     // Manual IQ amplitude correction
-    if (radioState == RadioState::CW_RECEIVE_STATE or radioState == RadioState::AM_RECEIVE_STATE or
-        radioState == RadioState::SAM_RECEIVE_STATE) {
-      if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER ||
-          bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_AM ||
-          bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_SAM) {
+    switch (radioState) {
+    case RadioState::CW_RECEIVE_STATE:
+    case RadioState::AM_RECEIVE_STATE:
+    case RadioState::SAM_RECEIVE_STATE:
+      switch (bands.bands[ConfigData.currentBand].sideband) {
+      case Sideband::BOTH_AM:
+      case Sideband::BOTH_SAM:
+      case Sideband::LOWER:
         arm_scale_f32(float_buffer_L, -CalData.IQCWRXAmpCorrectionFactorLSB[ConfigData.currentBand], float_buffer_L,
-                      BUFFER_SIZE * N_B); // AFP 04-14-22
+                      BUFFER_SIZE * N_B);
         IQPhaseCorrection(float_buffer_L, float_buffer_R, CalData.IQCWRXPhaseCorrectionFactorLSB[ConfigData.currentBand],
                           BUFFER_SIZE * N_B);
-      } else {
-        if (bands.bands[ConfigData.currentBand].sideband == Sideband::UPPER ||
-            bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_AM ||
-            bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_SAM) {
-          arm_scale_f32(float_buffer_L, -CalData.IQCWRXAmpCorrectionFactorUSB[ConfigData.currentBand], float_buffer_L,
-                        BUFFER_SIZE * N_B); // AFP 04-14-22
-          IQPhaseCorrection(float_buffer_L, float_buffer_R, CalData.IQCWRXPhaseCorrectionFactorUSB[ConfigData.currentBand],
-                            BUFFER_SIZE * N_B);
-        }
+        break;
+      case Sideband::UPPER:
+        arm_scale_f32(float_buffer_L, -CalData.IQCWRXAmpCorrectionFactorUSB[ConfigData.currentBand], float_buffer_L,
+                      BUFFER_SIZE * N_B);
+        IQPhaseCorrection(float_buffer_L, float_buffer_R, CalData.IQCWRXPhaseCorrectionFactorUSB[ConfigData.currentBand],
+                          BUFFER_SIZE * N_B);
+        break;
       }
-    } else if (radioState == RadioState::SSB_RECEIVE_STATE || radioState == RadioState::FT8_RECEIVE_STATE ||
-               radioState == RadioState::AM_RECEIVE_STATE) {
-      if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER ||
-          bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_AM ||
-          bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_SAM) {
+      break;
+    case RadioState::SSB_RECEIVE_STATE:
+    case RadioState::FT8_RECEIVE_STATE:
+      switch (bands.bands[ConfigData.currentBand].sideband) {
+      case Sideband::BOTH_AM:
+      case Sideband::BOTH_SAM:
+      case Sideband::LOWER:
         arm_scale_f32(float_buffer_L, -CalData.IQSSBRXAmpCorrectionFactorLSB[ConfigData.currentBand], float_buffer_L,
-                      BUFFER_SIZE * N_B); // AFP 04-14-22
+                      BUFFER_SIZE * N_B);
         IQPhaseCorrection(float_buffer_L, float_buffer_R, CalData.IQSSBRXPhaseCorrectionFactorLSB[ConfigData.currentBand],
                           BUFFER_SIZE * N_B);
-      } else {
-        if (bands.bands[ConfigData.currentBand].sideband == Sideband::UPPER ||
-            bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_AM ||
-            bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_SAM) {
-          arm_scale_f32(float_buffer_L, -CalData.IQSSBRXAmpCorrectionFactorUSB[ConfigData.currentBand], float_buffer_L,
-                        BUFFER_SIZE * N_B); // AFP 04-14-22
-          IQPhaseCorrection(float_buffer_L, float_buffer_R, CalData.IQSSBRXPhaseCorrectionFactorUSB[ConfigData.currentBand],
-                            BUFFER_SIZE * N_B);
-        }
+        break;
+      case Sideband::UPPER:
+        arm_scale_f32(float_buffer_L, -CalData.IQSSBRXAmpCorrectionFactorUSB[ConfigData.currentBand], float_buffer_L,
+                      BUFFER_SIZE * N_B);
+        IQPhaseCorrection(float_buffer_L, float_buffer_R, CalData.IQSSBRXPhaseCorrectionFactorUSB[ConfigData.currentBand],
+                          BUFFER_SIZE * N_B);
+        break;
       }
+      break;
+    case RadioState::SSB_TRANSMIT_STATE:
+    case RadioState::FT8_TRANSMIT_STATE:
+    case RadioState::CW_TRANSMIT_STRAIGHT_STATE:
+    case RadioState::CW_TRANSMIT_KEYER_STATE:
+    case RadioState::SSB_CALIBRATE_STATE:
+    case RadioState::SSB_IM3TEST_STATE:
+    case RadioState::CW_CALIBRATE_STATE:
+    case RadioState::SET_CW_SIDETONE:
+    case RadioState::NOSTATE:
+      TRACE_T41(TR_L_ERROR, "radioState:%d", radioState);
+      break;
     }
 
-    if (keyPressedOn == 1) { ////AFP 09-01-22.  Is this a duplicate here???
+    if (keyPressedOn == 1) {
       return;
     }
 
@@ -216,7 +226,7 @@ void Process::ProcessIQData() {
     (2011): chapter 13.1.2 page 646 together with the savings of not having to
     shift/rotate the FFT_buffer, this saves about 1% of processor use.
 
-        This is for +Fs/4 [moves receive frequency to the left in the spectrum
+    This is for +Fs/4 [moves receive frequency to the left in the spectrum
     display] float_buffer_L contains I = real values float_buffer_R contains Q =
     imaginary values xnew(0) =  xreal(0) + jximag(0) leave first value (DC
     component) as it is! xnew(1) =  - ximag(1) + jxreal(1)
@@ -236,7 +246,7 @@ void Process::ProcessIQData() {
     ZoomFFTExe(BUFFER_SIZE * N_BLOCKS) function.  For magnifications of 2x to
     16X Larger magnifications are possible.
 
-        Spectrum Zoom uses the shifted spectrum, so the center "hump" around DC
+    Spectrum Zoom uses the shifted spectrum, so the center "hump" around DC
     is shifted by fs/4
     **********************************************************************************/
 
@@ -261,16 +271,16 @@ void Process::ProcessIQData() {
     }
 
     /*************************************************************************************************
-        freq_conv2()
+    freq_conv2()
 
-        FREQUENCY CONVERSION USING A SOFTWARE QUADRATURE OSCILLATOR
+    FREQUENCY CONVERSION USING A SOFTWARE QUADRATURE OSCILLATOR
         Creates a new IF frequency to allow the tuning window to be moved
      anywhere in the current display. THIS VERSION calculates the COS AND SIN
      WAVE on the fly - uses double precision float
 
-        MAJOR ADVANTAGE: frequency conversion can be done for any frequency !
+    MAJOR ADVANTAGE: frequency conversion can be done for any frequency !
 
-        large parts of the code taken from the mcHF code by Clint, KA7OEI, thank
+    large parts of the code taken from the mcHF code by Clint, KA7OEI, thank
      you! see here for more info on quadrature oscillators: Wheatley, M. (2011):
      CuteSDR Technical Manual Ver. 1.01. -
      http://sourceforge.net/projects/cutesdr/ Lyons, R.G. (2011): Understanding
@@ -325,20 +335,20 @@ void Process::ProcessIQData() {
       }
     }
 
-    for (unsigned i = 0; i < BUFFER_SIZE * N_B / (uint32_t)(DF); i++) { // Copy recent samples to last_sample_buffer for next time!
+    // Copy recent samples to last_sample_buffer for next time!
+    for (unsigned i = 0; i < BUFFER_SIZE * N_B / (uint32_t)(DF); i++) {
       last_sample_buffer_L[i] = float_buffer_L[i];
       last_sample_buffer_R[i] = float_buffer_R[i];
     }
 
-    //------------------------------ now fill recent audio samples into
-    // FFT_buffer (left channel: re, right channel: im)
+    // now fill recent audio samples into FFT_buffer (left channel: re, right channel: im)
     for (unsigned i = 0; i < BUFFER_SIZE * N_B / (uint32_t)(DF); i++) {
       FFT_buffer[FFT_length + i * 2] = float_buffer_L[i];     // real
       FFT_buffer[FFT_length + i * 2 + 1] = float_buffer_R[i]; // imaginary
     }
 
     /**********************************************************************************
-     AFP 12-31-20 Perform complex FFT on the audio time signals calculation is
+     Perform complex FFT on the audio time signals calculation is
      performed in-place the FFT_buffer [re, im, re, im, re, im . . .]
      **********************************************************************************/
     arm_cfft_f32(S, FFT_buffer, 0, 1);
@@ -349,41 +359,61 @@ void Process::ProcessIQData() {
      setting. Allows efficient real-time variable LP and HP audio filters,
      without the overhead of time-domain convolution filtering.
 
-          After the Filter mask in the frequency domain is created, complex
+    After the Filter mask in the frequency domain is created, complex
      multiply  filter mask with the frequency domain audio data. Filter mask
      previously calculated in setup Array of filter mask coefficients:
-          FIR_filter_mask[]
+    FIR_filter_mask[]
      **********************************************************************************/
 
     arm_cmplx_mult_cmplx_f32(FFT_buffer, FIR_filter_mask, iFFT_buffer, FFT_length);
 
     // Create audio spectrum.
     if (updateDisplayFlag == true) {
-      for (int k = 0; k < 1024; k++) {
-        audioSpectBuffer[1024 - k] = (iFFT_buffer[k] * iFFT_buffer[k]);
+      constexpr size_t audioSpectBufferIndEnd = audioSpectBufferSize - 1;
+      // 256 x 120
+      constexpr int maxYPixel = 120;
+
+      for (size_t k = 0; k < audioSpectBufferSize; k++) {
+        audioSpectBuffer[audioSpectBufferIndEnd - k] = (iFFT_buffer[k] * iFFT_buffer[k]);
       }
-      for (int k = 3; k < 256; k++) {
-        audioYPixelold[k] = audioYPixelcurrent[k]; // Store the existing audio spectrum so it can be erased.
-        if (bands.bands[ConfigData.currentBand].sideband == Sideband::UPPER ||
-            bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_AM ||
-            bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_SAM) {
-          audioYPixel[k] =
-              65 +
-              map(15 * log10f((audioSpectBuffer[1024 - k] + audioSpectBuffer[1024 - k + 1] + audioSpectBuffer[1024 - k + 2]) / 3),
-                  0, 100, 0, 120) +
-              audioFFToffset;
-        } else if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER) {
-          audioYPixel[k] =
-              65 + map(15 * log10f((audioSpectBuffer[k] + audioSpectBuffer[k + 1] + audioSpectBuffer[k + 2]) / 3), 0, 100, 0, 120) +
-              audioFFToffset;
+
+      static_assert(audioSpectBufferSize == (audioYPixelSize * 4));
+      TRACE_T41(TR_L_TRACE, "SampleRate:%u", SampleRate);
+      for (size_t k = 0; k < audioYPixelSize; k++) {
+        // Store the existing audio spectrum so it can be erased.
+        audioYPixelold[k] = audioYPixelcurrent[k];
+        float avgValue;
+        switch (bands.bands[ConfigData.currentBand].sideband) {
+        case Sideband::UPPER:
+        case Sideband::BOTH_AM:
+        case Sideband::BOTH_SAM:
+          avgValue = (audioSpectBuffer[audioSpectBufferIndEnd - k] + audioSpectBuffer[audioSpectBufferIndEnd - k + 1] +
+                      audioSpectBuffer[audioSpectBufferIndEnd - k + 2]) /
+                     3;
+          break;
+        case Sideband::LOWER:
+          avgValue = (audioSpectBuffer[k] + audioSpectBuffer[k + 1] + audioSpectBuffer[k + 2]) / 3;
+          break;
         }
-        if (audioYPixel[k] < 0) {
+
+        float logValue = 15.0 * log10f(avgValue);
+        int16_t pixelValue = 65 + map(logValue, 0, 100, 0, maxYPixel) + audioFFToffset;
+
+        if (pixelValue < 0) {
           audioYPixel[k] = 0;
+          TRACE_T41(TR_L_TRACE, "pixelValue[%u]:%d audioFFToffset:%d", k, pixelValue, audioFFToffset);
+        } else if (pixelValue >= maxYPixel) {
+          audioYPixel[k] = maxYPixel;
+          TRACE_T41(TR_L_TRACE, "pixelValue[%u]:%d audioFFToffset:%d", k, pixelValue, audioFFToffset);
+        } else {
+          audioYPixel[k] = pixelValue;
         }
       }
-      arm_max_f32(audioSpectBuffer, 1024, &audioMaxSquared,
-                  &AudioMaxIndex);                                         // Max value of squared abin magnitude in audio
-      audioMaxSquaredAve = .5 * audioMaxSquared + .5 * audioMaxSquaredAve; // Running averaged values
+
+      // Max value of squared abin magnitude in audio
+      arm_max_f32(audioSpectBuffer, 1024, &audioMaxSquared, &AudioMaxIndex);
+      // Running averaged values
+      audioMaxSquaredAve = .5 * audioMaxSquared + .5 * audioMaxSquaredAve;
       DisplaydbM();
     }
 
@@ -421,23 +451,19 @@ void Process::ProcessIQData() {
     }
 
     /**********************************************************************************
-          Demodulation
-            our time domain output is a combination of the real part (left
-       channel) AND the imaginary part (right channel) of the second half of the
-       FFT_buffer The demod mode is accomplished by selecting/combining the real
-       and imaginary parts of the output of the IFFT process.
-       **********************************************************************************/
-    //===================== AFP 10-27-22  =========
+      Demodulation
+        our time domain output is a combination of the real part (left
+     channel) AND the imaginary part (right channel) of the second half of the
+     FFT_buffer The demod mode is accomplished by selecting/combining the real
+     and imaginary parts of the output of the IFFT process.
+     **********************************************************************************/
 
     switch (bands.bands[ConfigData.currentBand].sideband) {
     case Sideband::LOWER:
       for (unsigned i = 0; i < FFT_length / 2; i++) {
-        // if (bands.bands[ConfigData.currentBand].mode == DEMOD_USB ||
-        // bands.bands[ConfigData.currentBand].mode == DEMOD_LSB ) {  // for SSB
         // copy real part in both outputs
         float_buffer_L[i] = iFFT_buffer[FFT_length + (i * 2)];
         float_buffer_R[i] = float_buffer_L[i];
-        //}
       }
       break;
     case Sideband::UPPER:
@@ -445,13 +471,13 @@ void Process::ProcessIQData() {
         float_buffer_L[i] = iFFT_buffer[FFT_length + (i * 2)];
         float_buffer_R[i] = float_buffer_L[i];
         audiotmp = AlphaBetaMag(iFFT_buffer[FFT_length + (i * 2)], iFFT_buffer[FFT_length + (i * 2) + 1]);
-        //}
       }
       break;
     case Sideband::BOTH_AM:
-      for (unsigned i = 0; i < FFT_length / 2; i++) { // Magnitude estimation Lyons (2011): page 652 / libcsdr
+      for (unsigned i = 0; i < FFT_length / 2; i++) {
+        // Magnitude estimation Lyons (2011): page 652 / libcsdr
         audiotmp = AlphaBetaMag(iFFT_buffer[FFT_length + (i * 2)], iFFT_buffer[FFT_length + (i * 2) + 1]);
-        // DC removal filter -----------------------
+        // DC removal filter
         float32_t w = audiotmp + wold * 0.99f; // Response to below 200Hz AFP 10-30-22
         float_buffer_L[i] = w - wold;
         wold = w;
@@ -467,7 +493,6 @@ void Process::ProcessIQData() {
     }
 
     //============================  Receive EQ  ========================  AFP
-    // 08-08-22
     if (ConfigData.receiveEQFlag) {
       DoReceiveEQ();
       arm_copy_f32(float_buffer_L, float_buffer_R, FFT_length / 2);
@@ -486,28 +511,24 @@ void Process::ProcessIQData() {
       break;
     case 1: // Kim NR
       Kim1_NR();
-      arm_scale_f32(float_buffer_L, 2.0, float_buffer_L,
-                    FFT_length / 2); // Scaling factor reduced; was blasting
-                                     // speaker.  KF5N February 20, 2024.
+      // Scaling factor reduced; was blasting speaker.  KF5N February 20, 2024.
+      arm_scale_f32(float_buffer_L, 2.0, float_buffer_L, FFT_length / 2);
       arm_scale_f32(float_buffer_R, 2.0, float_buffer_R, FFT_length / 2);
       break;
     case 2: // Spectral NR
       SpectralNoiseReduction();
-      arm_scale_f32(float_buffer_L, 2.0, float_buffer_L,
-                    FFT_length / 2); // Scaling factor reduced; was blasting
-                                     // speaker.  KF5N February 20, 2024.
+      // Scaling factor reduced; was blasting speaker.  KF5N February 20, 2024.
+      arm_scale_f32(float_buffer_L, 2.0, float_buffer_L, FFT_length / 2);
       arm_scale_f32(float_buffer_R, 2.0, float_buffer_R, FFT_length / 2);
       break;
     case 3: // LMS NR.  KF5N March 2, 2024.
       Xanr();
-      //        arm_scale_f32 (float_buffer_L, 1.5, float_buffer_L, FFT_length /
-      //        2);  // Why is scaling different???
-      arm_scale_f32(float_buffer_R, 4.0, float_buffer_R,
-                    FFT_length / 2); // Attempt to equalize gains for all NR
-                                     // algorithms.  Greg KF5N June 24, 2024.
-      arm_copy_f32(float_buffer_R, float_buffer_L,
-                   FFT_length / 2); //  This is apparently required by the algorithm; it
-                                    //  works on right channel only.
+      //        arm_scale_f32 (float_buffer_L, 1.5, float_buffer_L, FFT_length /2);
+      // Why is scaling different???
+      // Attempt to equalize gains for all NR algorithms.  Greg KF5N June 24, 2024.
+      arm_scale_f32(float_buffer_R, 4.0, float_buffer_R, FFT_length / 2);
+      // This is apparently required by the algorithm; it works on right channel only.
+      arm_copy_f32(float_buffer_R, float_buffer_L, FFT_length / 2);
       break;
     }
     //==================  End NR ============================
@@ -591,11 +612,15 @@ void Process::ProcessIQData() {
     //     Q_out_L.setBehaviour(AudioPlayQueue::NON_STALLING);
     //     Q_out_R.setBehaviour(AudioPlayQueue::NON_STALLING);
     arm_float_to_q15(float_buffer_L, q15_buffer_LTemp, 2048);
-    Q_out_L.play(q15_buffer_LTemp, 2048);
+    uint32_t result = Q_out_L.play(q15_buffer_LTemp, 2048);
+    if (result != 0) {
+      TRACE_T41(TR_L_WARN, "result:%u", result);
+    }
 
     elapsed_micros_sum = elapsed_micros_sum + usec;
     elapsed_micros_idx_t++;
   } // end of if(audio blocks available)
+
   if (ms_500.check() == 1) // For clock updates AFP 10-26-22
   {
     // wait_flag = 0;
