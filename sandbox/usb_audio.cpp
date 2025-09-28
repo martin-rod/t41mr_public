@@ -10,6 +10,10 @@
 #include <utility/imxrt_hw.h> // needed for SetI2SFreq()
 #include <usb_audio.h>
 
+constexpr int MUTE = 38; // Mute Audio, HIGH = "On" Audio PA, LOW = Mute Audio PA off.  This may be reversed depending on PA.
+constexpr uint8_t UNMUTEAUDIO = LOW;
+constexpr uint8_t MUTEAUDIO = HIGH;
+
 AudioInputUSB            usbIn;
 AudioOutputUSB           usbOut;
 
@@ -19,6 +23,9 @@ AudioOutputI2SQuad       i2s_quad;
 
 AudioConnection          patchCord1(usbIn, 0, i2s_quad, 0);
 AudioConnection          patchCord2(usbIn, 1, i2s_quad, 1);
+// T41 - speaker audio to PCM5102 via Teensy pin 32
+AudioConnection          patchCord5(usbIn, 1, i2s_quad, 2);
+
 AudioConnection          patchCord3(sine1, 0, usbOut, 0);
 AudioConnection          patchCord4(sine2, 0, usbOut, 1);
 
@@ -96,7 +103,12 @@ void setup() {
   sine2.frequency(1000); //*44100/SAMPLE_RATE
   sine2.amplitude(0.5);
 
-  SetI2SFreq(SAMPLE_RATE); 
+  SetI2SFreq(SAMPLE_RATE);
+
+  pinMode(MUTE, OUTPUT);
+  // carefully -  level can be high
+  // digitalWrite(MUTE, UNMUTEAUDIO); // Unmute speaker audio amplifier
+  digitalWrite(MUTE, MUTEAUDIO); // Mute speaker audio amplifier
 }
 
 void loop() {
