@@ -1,4 +1,4 @@
-### Linux build for T41 Software Defined Transceiver Arduino Sketch
+# Linux build for T41 Software Defined Transceiver Arduino Sketch
 
 ## Features
 
@@ -285,7 +285,57 @@ Move trailing comments to the line above:
 ### Notes
 
 `/home/rod/wrk_ham/t41/t41mr/teensy/tools/teensy-compile/11.3.1/arm/bin/arm-none-eabi-objdump -x libSPI.a | c++filt -n | less -RN`
+
 `git submodule update --init --recursive`
+
+# USB
+
+## CAT
+
+
+
+## USB Audio Patches
+
+<https://github.com/K7MDL2/KEITHSDR/wiki/48KHz-USB-Audio>
+
+<https://github.com/laiudm/laiudm-Teensy4-192k-USB-Audio/tree/main>
+<https://github.com/laiudm/laiudm-Teensy4-192k-USB-Audio/blob/main/DevelopersGuide.md>
+
+## USB Audio linux commands
+
+List devices:
+
+```
+arecord -L
+arecord -l
+aplay -L
+aplay -l
+```
+
+Play audio from T41 to PC sound card:
+```
+arecord -D hw:CARD=Audio2xSerial,DEV=0  -v -f S16_LE -c2 -r192000  - | aplay
+```
+
+Record audio from T41 to WAV file:
+
+```
+arecord -D hw:CARD=Audio2xSerial,DEV=0  -v -f S16_LE -c2 -r192000  -d 10 -t wav 192k_test.wav
+```
+
+Play audio from PC to T41 Teensy Audio Adapter (sgtl5000):
+
+```
+aplay -D hw:CARD=Audio2xSerial,DEV=0 -v -f S16_LE -c2 -r192000 192k_test.wav
+```
+
+Files for test setup:
+
+```
+sandbox/usb_audio.cpp
+sandobx/192k_test.wav
+```
+
 
 *********************************************************************************************
 
