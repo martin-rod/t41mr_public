@@ -248,7 +248,7 @@ include_directories(${T41_INCLUDE})
 
 teensy_add_library(Core "${TDUINO_CORE}")
 
-teensy_add_library(Wire "${TDUINO}/libraries/Wire")
+teensy_add_library(Wire "${TDUINO}/libraries/Wire" utility)
 teensy_add_library(SPI "${TDUINO}/libraries/SPI")
 teensy_add_library(Audio "${TDUINO}/libraries/Audio" utility)
 teensy_add_library(SD "${TDUINO}/libraries/SD/src")
