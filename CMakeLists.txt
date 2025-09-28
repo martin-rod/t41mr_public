@@ -266,14 +266,15 @@ teensy_add_library(OpenAudio_ArduinoLibrary "${PROJECT_SOURCE_DIR}/libraries/Ope
 teensy_add_library(Rotary "${PROJECT_SOURCE_DIR}/libraries/Rotary")
 teensy_add_library(Si5351Arduino "${PROJECT_SOURCE_DIR}/libraries/Si5351Arduino/src")
 
+# Depends on the order, there is duplicity (Wire, ?)
 list(APPEND T41_LIB
   Adafruit_BusIO
   Adafruit-GFX-Library
   OpenAudio_ArduinoLibrary
   Rotary
   Si5351Arduino
-  Wire
   Audio
+  Wire
   SD
   SdFat
   SPI
