@@ -102,3 +102,361 @@ void setup() {
 void loop() {
   printCPUandMemoryUsage(&Serial);
 }
+
+/*
+Play audio from T41 to PC sound card:
+
+arecord -D hw:CARD=Audio2xSerial,DEV=0  -v -f S16_LE -c2 -r192000  - | aplay
+
+Record audio from T41 to WAV file:
+
+arecord -D hw:CARD=Audio2xSerial,DEV=0  -v -f S16_LE -c2 -r192000  -d 10 -t wav 192k_test.wav
+
+Play audio from PC to T41 Teensy Audio Adapter (sgtl5000):
+
+aplay -D hw:CARD=Audio2xSerial,DEV=0 -v -f S16_LE -c2 -r192000 192k_test.wav
+
+
+example:
+
+rod@t440-d12:~/wrk_ham$ arecord -L
+null
+    Discard all samples (playback) or generate zero samples (capture)
+lavrate
+    Rate Converter Plugin Using Libav/FFmpeg Library
+samplerate
+    Rate Converter Plugin Using Samplerate Library
+speexrate
+    Rate Converter Plugin Using Speex Resampler
+jack
+    JACK Audio Connection Kit
+oss
+    Open Sound System
+pipewire
+    PipeWire Sound Server
+pulse
+    PulseAudio Sound Server
+speex
+    Plugin using Speex DSP (resample, agc, denoise, echo, dereverb)
+upmix
+    Plugin for channel upmix (4,6,8)
+vdownmix
+    Plugin for channel downmix (stereo) with a simple spacialization
+default
+    Default ALSA Output (currently PipeWire Media Server)
+usbstream:CARD=HDMI
+    HDA Intel HDMI
+    USB Stream Output
+hw:CARD=PCH,DEV=0
+    HDA Intel PCH, ALC3232 Analog
+    Direct hardware device without any conversions
+plughw:CARD=PCH,DEV=0
+    HDA Intel PCH, ALC3232 Analog
+    Hardware device with all software conversions
+sysdefault:CARD=PCH
+    HDA Intel PCH, ALC3232 Analog
+    Default Audio Device
+front:CARD=PCH,DEV=0
+    HDA Intel PCH, ALC3232 Analog
+    Front output / input
+dsnoop:CARD=PCH,DEV=0
+    HDA Intel PCH, ALC3232 Analog
+    Direct sample snooping device
+usbstream:CARD=PCH
+    HDA Intel PCH
+    USB Stream Output
+hw:CARD=Loopback,DEV=0
+    Loopback, Loopback PCM
+    Direct hardware device without any conversions
+hw:CARD=Loopback,DEV=1
+    Loopback, Loopback PCM
+    Direct hardware device without any conversions
+plughw:CARD=Loopback,DEV=0
+    Loopback, Loopback PCM
+    Hardware device with all software conversions
+plughw:CARD=Loopback,DEV=1
+    Loopback, Loopback PCM
+    Hardware device with all software conversions
+sysdefault:CARD=Loopback
+    Loopback, Loopback PCM
+    Default Audio Device
+front:CARD=Loopback,DEV=0
+    Loopback, Loopback PCM
+    Front output / input
+dsnoop:CARD=Loopback,DEV=0
+    Loopback, Loopback PCM
+    Direct sample snooping device
+dsnoop:CARD=Loopback,DEV=1
+    Loopback, Loopback PCM
+    Direct sample snooping device
+usbstream:CARD=Loopback
+    Loopback
+    USB Stream Output
+hw:CARD=Audio2xSerial,DEV=0
+    192k Audio/2xSerial, USB Audio
+    Direct hardware device without any conversions
+plughw:CARD=Audio2xSerial,DEV=0
+    192k Audio/2xSerial, USB Audio
+    Hardware device with all software conversions
+sysdefault:CARD=Audio2xSerial
+    192k Audio/2xSerial, USB Audio
+    Default Audio Device
+front:CARD=Audio2xSerial,DEV=0
+    192k Audio/2xSerial, USB Audio
+    Front output / input
+dsnoop:CARD=Audio2xSerial,DEV=0
+    192k Audio/2xSerial, USB Audio
+    Direct sample snooping device
+usbstream:CARD=Audio2xSerial
+    192k Audio/2xSerial
+    USB Stream Output
+rod@t440-d12:~/wrk_ham$ arecord -D hw:CARD=Audio2xSerial,DEV=0  -v -f S16_LE -c2 -r192000  - | aplay
+Recording WAVE '-' : Signed 16 bit Little Endian, Rate 44100 Hz, Stereo
+Warning: rate is not accurate (requested = 44100Hz, got = 192000Hz)
+         please, try the plug plugin
+Hardware PCM card 3 '192k Audio/2xSerial' device 0 subdevice 0
+Its setup is:
+  stream       : CAPTURE
+  access       : RW_INTERLEAVED
+  format       : S16_LE
+  subformat    : STD
+  channels     : 2
+  rate         : 192000
+  exact rate   : 192000 (192000/1)
+  msbits       : 16
+  buffer_size  : 96000
+  period_size  : 24000
+  period_time  : 125000
+  tstamp_mode  : NONE
+  tstamp_type  : MONOTONIC
+  period_step  : 1
+  avail_min    : 24000
+  period_event : 0
+  start_threshold  : 1
+  stop_threshold   : 96000
+  silence_threshold: 0
+  silence_size : 0
+  boundary     : 6755399441055744000
+  appl_ptr     : 0
+  hw_ptr       : 0
+Playing WAVE 'stdin' : Signed 16 bit Little Endian, Rate 192000 Hz, Stereo
+^CAborted by signal Interrupt...
+Aborted by signal Interrupt...
+aplay: pcm_write:2127: write error: Interrupted system call
+
+---
+
+rod@t440-d12:~/wrk_ham$ aplay -L
+null
+    Discard all samples (playback) or generate zero samples (capture)
+lavrate
+    Rate Converter Plugin Using Libav/FFmpeg Library
+samplerate
+    Rate Converter Plugin Using Samplerate Library
+speexrate
+    Rate Converter Plugin Using Speex Resampler
+jack
+    JACK Audio Connection Kit
+oss
+    Open Sound System
+pipewire
+    PipeWire Sound Server
+pulse
+    PulseAudio Sound Server
+speex
+    Plugin using Speex DSP (resample, agc, denoise, echo, dereverb)
+upmix
+    Plugin for channel upmix (4,6,8)
+vdownmix
+    Plugin for channel downmix (stereo) with a simple spacialization
+default
+    Default ALSA Output (currently PipeWire Media Server)
+hw:CARD=HDMI,DEV=3
+    HDA Intel HDMI, B24W-6 LED
+    Direct hardware device without any conversions
+hw:CARD=HDMI,DEV=7
+    HDA Intel HDMI, HDMI 1
+    Direct hardware device without any conversions
+hw:CARD=HDMI,DEV=8
+    HDA Intel HDMI, HDMI 2
+    Direct hardware device without any conversions
+plughw:CARD=HDMI,DEV=3
+    HDA Intel HDMI, B24W-6 LED
+    Hardware device with all software conversions
+plughw:CARD=HDMI,DEV=7
+    HDA Intel HDMI, HDMI 1
+    Hardware device with all software conversions
+plughw:CARD=HDMI,DEV=8
+    HDA Intel HDMI, HDMI 2
+    Hardware device with all software conversions
+hdmi:CARD=HDMI,DEV=0
+    HDA Intel HDMI, B24W-6 LED
+    HDMI Audio Output
+hdmi:CARD=HDMI,DEV=1
+    HDA Intel HDMI, HDMI 1
+    HDMI Audio Output
+hdmi:CARD=HDMI,DEV=2
+    HDA Intel HDMI, HDMI 2
+    HDMI Audio Output
+dmix:CARD=HDMI,DEV=3
+    HDA Intel HDMI, B24W-6 LED
+    Direct sample mixing device
+dmix:CARD=HDMI,DEV=7
+    HDA Intel HDMI, HDMI 1
+    Direct sample mixing device
+dmix:CARD=HDMI,DEV=8
+    HDA Intel HDMI, HDMI 2
+    Direct sample mixing device
+usbstream:CARD=HDMI
+    HDA Intel HDMI
+    USB Stream Output
+hw:CARD=PCH,DEV=0
+    HDA Intel PCH, ALC3232 Analog
+    Direct hardware device without any conversions
+plughw:CARD=PCH,DEV=0
+    HDA Intel PCH, ALC3232 Analog
+    Hardware device with all software conversions
+sysdefault:CARD=PCH
+    HDA Intel PCH, ALC3232 Analog
+    Default Audio Device
+front:CARD=PCH,DEV=0
+    HDA Intel PCH, ALC3232 Analog
+    Front output / input
+surround21:CARD=PCH,DEV=0
+    HDA Intel PCH, ALC3232 Analog
+    2.1 Surround output to Front and Subwoofer speakers
+surround40:CARD=PCH,DEV=0
+    HDA Intel PCH, ALC3232 Analog
+    4.0 Surround output to Front and Rear speakers
+surround41:CARD=PCH,DEV=0
+    HDA Intel PCH, ALC3232 Analog
+    4.1 Surround output to Front, Rear and Subwoofer speakers
+surround50:CARD=PCH,DEV=0
+    HDA Intel PCH, ALC3232 Analog
+    5.0 Surround output to Front, Center and Rear speakers
+surround51:CARD=PCH,DEV=0
+    HDA Intel PCH, ALC3232 Analog
+    5.1 Surround output to Front, Center, Rear and Subwoofer speakers
+surround71:CARD=PCH,DEV=0
+    HDA Intel PCH, ALC3232 Analog
+    7.1 Surround output to Front, Center, Side, Rear and Woofer speakers
+dmix:CARD=PCH,DEV=0
+    HDA Intel PCH, ALC3232 Analog
+    Direct sample mixing device
+usbstream:CARD=PCH
+    HDA Intel PCH
+    USB Stream Output
+hw:CARD=Loopback,DEV=0
+    Loopback, Loopback PCM
+    Direct hardware device without any conversions
+hw:CARD=Loopback,DEV=1
+    Loopback, Loopback PCM
+    Direct hardware device without any conversions
+plughw:CARD=Loopback,DEV=0
+    Loopback, Loopback PCM
+    Hardware device with all software conversions
+plughw:CARD=Loopback,DEV=1
+    Loopback, Loopback PCM
+    Hardware device with all software conversions
+sysdefault:CARD=Loopback
+    Loopback, Loopback PCM
+    Default Audio Device
+front:CARD=Loopback,DEV=0
+    Loopback, Loopback PCM
+    Front output / input
+surround21:CARD=Loopback,DEV=0
+    Loopback, Loopback PCM
+    2.1 Surround output to Front and Subwoofer speakers
+surround40:CARD=Loopback,DEV=0
+    Loopback, Loopback PCM
+    4.0 Surround output to Front and Rear speakers
+surround41:CARD=Loopback,DEV=0
+    Loopback, Loopback PCM
+    4.1 Surround output to Front, Rear and Subwoofer speakers
+surround50:CARD=Loopback,DEV=0
+    Loopback, Loopback PCM
+    5.0 Surround output to Front, Center and Rear speakers
+surround51:CARD=Loopback,DEV=0
+    Loopback, Loopback PCM
+    5.1 Surround output to Front, Center, Rear and Subwoofer speakers
+surround71:CARD=Loopback,DEV=0
+    Loopback, Loopback PCM
+    7.1 Surround output to Front, Center, Side, Rear and Woofer speakers
+dmix:CARD=Loopback,DEV=0
+    Loopback, Loopback PCM
+    Direct sample mixing device
+dmix:CARD=Loopback,DEV=1
+    Loopback, Loopback PCM
+    Direct sample mixing device
+usbstream:CARD=Loopback
+    Loopback
+    USB Stream Output
+hw:CARD=Audio2xSerial,DEV=0
+    192k Audio/2xSerial, USB Audio
+    Direct hardware device without any conversions
+plughw:CARD=Audio2xSerial,DEV=0
+    192k Audio/2xSerial, USB Audio
+    Hardware device with all software conversions
+sysdefault:CARD=Audio2xSerial
+    192k Audio/2xSerial, USB Audio
+    Default Audio Device
+front:CARD=Audio2xSerial,DEV=0
+    192k Audio/2xSerial, USB Audio
+    Front output / input
+surround21:CARD=Audio2xSerial,DEV=0
+    192k Audio/2xSerial, USB Audio
+    2.1 Surround output to Front and Subwoofer speakers
+surround40:CARD=Audio2xSerial,DEV=0
+    192k Audio/2xSerial, USB Audio
+    4.0 Surround output to Front and Rear speakers
+surround41:CARD=Audio2xSerial,DEV=0
+    192k Audio/2xSerial, USB Audio
+    4.1 Surround output to Front, Rear and Subwoofer speakers
+surround50:CARD=Audio2xSerial,DEV=0
+    192k Audio/2xSerial, USB Audio
+    5.0 Surround output to Front, Center and Rear speakers
+surround51:CARD=Audio2xSerial,DEV=0
+    192k Audio/2xSerial, USB Audio
+    5.1 Surround output to Front, Center, Rear and Subwoofer speakers
+surround71:CARD=Audio2xSerial,DEV=0
+    192k Audio/2xSerial, USB Audio
+    7.1 Surround output to Front, Center, Side, Rear and Woofer speakers
+iec958:CARD=Audio2xSerial,DEV=0
+    192k Audio/2xSerial, USB Audio
+    IEC958 (S/PDIF) Digital Audio Output
+dmix:CARD=Audio2xSerial,DEV=0
+    192k Audio/2xSerial, USB Audio
+    Direct sample mixing device
+usbstream:CARD=Audio2xSerial
+    192k Audio/2xSerial
+    USB Stream Output
+rod@t440-d12:~/wrk_ham$ $ aplay -D hw:CARD=Audio2xSerial,DEV=0 -v -f S16_LE -c2 -r192000 192k_test.wav
+Playing WAVE '192k_test.wav' : Signed 16 bit Little Endian, Rate 192000 Hz, Stereo
+Hardware PCM card 3 '192k Audio/2xSerial' device 0 subdevice 0
+Its setup is:
+  stream       : PLAYBACK
+  access       : RW_INTERLEAVED
+  format       : S16_LE
+  subformat    : STD
+  channels     : 2
+  rate         : 192000
+  exact rate   : 192000 (192000/1)
+  msbits       : 16
+  buffer_size  : 96000
+  period_size  : 24000
+  period_time  : 125000
+  tstamp_mode  : NONE
+  tstamp_type  : MONOTONIC
+  period_step  : 1
+  avail_min    : 24000
+  period_event : 0
+  start_threshold  : 96000
+  stop_threshold   : 96000
+  silence_threshold: 0
+  silence_size : 0
+  boundary     : 6755399441055744000
+  appl_ptr     : 0
+  hw_ptr       : 0
+
+*/
+
