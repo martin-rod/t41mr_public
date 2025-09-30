@@ -182,6 +182,12 @@ function(teensy_set_dynamic_properties_eee)
         set(S_COMPILE_FLAGS     "${build_flags_optimize} ${build_flags_common} ${build_flags_dep} ${build_flags_S} ${build_flags_cpu} ${build_flags_defs} -DARDUINO=${arduino_ide_version} -DARDUINO_${build_board} -DF_CPU=${build_fcpu} -D${build_usbtype} -DLAYOUT_${build_keylayout}")
         set(LINK_FLAGS          "${build_flags_optimize} ${build_flags_ld} ${build_flags_ldspecs} ${build_flags_cpu} -T${LINKER_FILE} ${build_flags_libs}")
 
+        if(STOP_AFTER_PREPROCESS)
+            message(STATUS "Stop after the preprocessing stage")
+            set(C_COMPILE_FLAGS "-E ${C_COMPILE_FLAGS}")
+            set(CPP_COMPILE_FLAGS "-E ${CPP_COMPILE_FLAGS}")
+        endif()
+
         set(CPP_COMPILE_FLAGS   ${CPP_COMPILE_FLAGS} CACHE INTERNAL "CPP_COMPILE_FLAGS")
         set(C_COMPILE_FLAGS     ${C_COMPILE_FLAGS}   CACHE INTERNAL "C_COMPILE_FLAGS")
         set(S_COMPILE_FLAGS     ${S_COMPILE_FLAGS}   CACHE INTERNAL "S_COMPILE_FLAGS")

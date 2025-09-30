@@ -46,6 +46,11 @@ list(APPEND CODE_QUALITY_FLAGS -Wunused-variable)
 
 #list(APPEND  CODE_QUALITY_FLAGS -Werror)
 
+if(STOP_AFTER_PREPROCESS)
+    message(STATUS "Stop after the preprocessing stage")
+    list(APPEND  CODE_QUALITY_FLAGS -E)
+endif ()
+
 if (CMAKE_BUILD_TYPE MATCHES "Debug")
     message(STATUS "CMAKE_BUILD_TYPE:${CMAKE_BUILD_TYPE}")
     #string(APPEND BUILD_TYPE_FLAGS " " )
@@ -198,7 +203,8 @@ elseif (T41_SRC_TYPE MATCHES "sandbox")
     message(STATUS "SRC T41_SRC_TYPE:${T41_SRC_TYPE}")
 
     set(T41_SRC_DIR "sandbox")
-    list(APPEND T41_SRC "${T41_SRC_DIR}/ram.cpp")
+    # list(APPEND T41_SRC "${T41_SRC_DIR}/ram.cpp")
+    list(APPEND T41_SRC "${T41_SRC_DIR}/usb_audio.cpp")
 else ()
     message(FATAL_ERROR "SRC Invalid T41_SRC_TYPE specified. Options are SDT and EEE.")
 endif ()
