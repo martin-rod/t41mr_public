@@ -586,8 +586,7 @@ void SetAudioOperatingState(RadioState operatingState) {
     SampleRate = SampleRateEnum::SAMPLE_RATE_192K;
     SetI2SFreq(SR[static_cast<size_t>(SampleRate)].rate);
     sgtl5000_1.muteLineout();
-    // Speaker and headphones should be unmuted according to current audio out
-    // state.
+    // Speaker and headphones should be unmuted according to current audio out state.
     controlAudioOut(ConfigData.audioOut, false);
 
     ADC_RX_I.end();
@@ -600,7 +599,8 @@ void SetAudioOperatingState(RadioState operatingState) {
     Q_in_R_Ex.end(); // Clear Q channel.
     Q_in_R_Ex.clear();
 
-    patchCord25.disconnect(); // Disconnect receiver headphone path, which is shared with I and Q transmit.
+    // Disconnect receiver headphone path, which is shared with I and Q transmit.
+    patchCord25.disconnect();
     patchCord26.disconnect();
 
     //  Disconnect
