@@ -10,9 +10,21 @@
 #include "USB_Audio_F32.h"
 #endif
 
+#define TRACE_MODULE_LEVEL TR_L_ALL
+#define TRACE_MODULE_NAME AUDIO
+
+#include "trace.h"
+
 // Common to Transmitter and Receiver.
 constexpr float sample_rate_Hz = 48000.0f;
 constexpr int audio_block_samples = 128; // Always 128
+
+#if defined(T41_USB_AUDIO)
+#if 1
+AudioOutputUSB usbOut;
+AudioInputUSB usbIn;
+#endif
+#endif
 
 AudioSettings_F32 audio_settings(sample_rate_Hz, audio_block_samples);
 AudioInputI2SQuad i2s_quadIn; // 4 inputs/outputs available only in Teensy audio and not Open Audio library.
@@ -33,7 +45,10 @@ radioCESSB_Z_transmit_F32 cessb1;
 AudioConvert_F32toI16 float2Int1_tx;
 AudioConvert_F32toI16 float2Int2_tx;
 
-AudioSwitch4_OA_F32 switch1_tx, switch2_tx, switch3_tx, switch4_tx;
+AudioSwitch4_OA_F32 switch1_tx;
+AudioSwitch4_OA_F32 switch2_tx;
+AudioSwitch4_OA_F32 switch3_tx;
+AudioSwitch4_OA_F32 switch4_tx;
 
 // Used to switch in tone during calibration.
 AudioMixer4_F32 mixer1_tx;
@@ -63,12 +78,13 @@ AudioConnection_F32 connect1(int2Float1_tx, 0, switch1_tx, 0);
 AudioConnection_F32 connect2(toneSSBCal1, 0, switch2_tx, 0);
 
 // Need a mixer to switch in an audio tone during calibration.  Should be a nominal tone amplitude.
-AudioConnection_F32 connect3(switch1_tx, 0, mixer1_tx,
-                             0); // Connect microphone mixer1 output 0 via gain control.
-AudioConnection_F32 connect4(switch2_tx, 0, mixer1_tx,
-                             1); // Connect tone for SSB calibration.
-AudioConnection_F32 connect21(toneSSBCal2, 0, mixer1_tx,
-                              2); // Connect tone for IM3 testing.
+
+// Connect microphone mixer1 output 0 via gain control.
+AudioConnection_F32 connect3(switch1_tx, 0, mixer1_tx, 0);
+// Connect tone for SSB calibration.
+AudioConnection_F32 connect4(switch2_tx, 0, mixer1_tx, 1);
+// Connect tone for IM3 testing.
+AudioConnection_F32 connect21(toneSSBCal2, 0, mixer1_tx, 2);
 
 AudioConnection_F32 connect5(mixer1_tx, 0, micGain, 0);
 
@@ -85,8 +101,8 @@ AudioConnection_F32 connect11(switch4_tx, 0, compressor1, 0);
 AudioConnection_F32 connect12(compressor1, 0, mixer3_tx, 0);
 
 // Compressor bypass path.
-AudioConnection_F32 connect13(switch4_tx, 1, compGainCompensate,
-                              0); // Compressor bypass path.
+AudioConnection_F32 connect13(switch4_tx, 1, compGainCompensate, 0);
+
 AudioConnection_F32 connect23(compGainCompensate, 0, mixer3_tx, 1);
 
 AudioConnection_F32 connect14(mixer3_tx, 0, cessb1, 0);
@@ -95,8 +111,8 @@ AudioConnection_F32 connect14(mixer3_tx, 0, cessb1, 0);
 AudioConnection_F32 connect15(cessb1, 0, float2Int1_tx, 0);
 AudioConnection_F32 connect16(cessb1, 1, float2Int2_tx, 0);
 
-AudioConnection connect17(float2Int1_tx, 0, Q_in_L_Ex,
-                          0); // Stream I and Q into the sketch.
+// Stream I and Q into the sketch.
+AudioConnection connect17(float2Int1_tx, 0, Q_in_L_Ex, 0);
 AudioConnection connect18(float2Int2_tx, 0, Q_in_R_Ex, 0);
 
 // Transmitter back-end.  This takes streaming data from the sketch and drives it into the I2S.
@@ -158,6 +174,7 @@ AudioConnection_F32 patchCord10(speakerScale, 0, speakerVolume, 0);
 AudioConnection_F32 patchCord11(speakerVolume, 0, float2Int3, 0);
 // Speaker audio to PCM5102 via Teensy pin 32.
 AudioConnection patchCord12(float2Int3, 0, i2s_quadOut, 2);
+AudioConnection patchCord12FtTest(usbIn, 0, i2s_quadOut, 2);
 
 // Headphone path
 // headphoneScale is user centering of headphone volume
@@ -181,10 +198,8 @@ float32_t equalizeCoeffs[249];
 #if defined(T41_USB_AUDIO)
 
 #if 1
-AudioOutputUSB usbOut;
 AudioConnection cQOutLToUsbOut(Q_out_L, 0, usbOut, 0);
-AudioInputUSB usbIn;
-AudioConnection cUsbInToQInLEx(usbIn, Q_in_L_Ex);
+AudioConnection cUsbInToMicFtTest(usbIn, 0, int2Float1_tx, 0);
 #endif
 
 #if 0
@@ -215,6 +230,9 @@ void initializeAudioPaths() {
   // limited, with an increase of output level of 1 dB for a 10 dB increase in
   // input level. The output level at full input is 1 dB below full output.
   basicCompressorBegin(pc1, ConfigData.AGCThreshold, 10.0f);
+
+  patchCord12FtTest.disconnect();
+  cUsbInToMicFtTest.disconnect();
 }
 
 /*****
@@ -230,14 +248,19 @@ Return value:
 
  *****/
 void SetAudioOperatingState(RadioState operatingState) {
-#ifdef DEBUG
-  Serial.printf("lastState=%d radioState=%d memory_used=%d memory_used_max=%d "
-                "f32_memory_used=%d f32_memory_used_max=%d\n",
-                lastState, radioState, (int)AudioStream::memory_used, (int)AudioStream::memory_used_max,
-                (int)AudioStream_F32::f32_memory_used, (int)AudioStream_F32::f32_memory_used_max);
+  TRACE_LEVEL(TR_L_TRACE);
+  TRACE_T41(TR_L_TRACE,
+            "lastState=%d radioState=%d "
+            "memory_used=%u memory_used_max=%u "
+            "f32_memory_used=%u f32_memory_used_max=%u",
+            lastState, radioState, AudioStream::memory_used, AudioStream::memory_used_max, (int)AudioStream_F32::f32_memory_used,
+            AudioStream_F32::f32_memory_used_max);
+
+#if 0
   AudioStream::memory_used_max = 0;
   AudioStream_F32::f32_memory_used_max = 0;
 #endif
+
   switch (operatingState) {
   case RadioState::SSB_RECEIVE_STATE:
   case RadioState::FT8_RECEIVE_STATE:
@@ -274,6 +297,15 @@ void SetAudioOperatingState(RadioState operatingState) {
     patchCord25.connect();
     patchCord26.connect();
 
+    // Connect speaker to Q_out_L
+    patchCord12.connect();
+    // Disconnect speaker from usbIn
+    patchCord12FtTest.disconnect();
+
+    // Disconnect qeue from usbIn
+    cUsbInToMicFtTest.disconnect();
+    connect0.connect();
+
     // Configure audio compressor (AGC)
     if (ConfigData.AGCMode == true) { // Activate compressor2_1 path.
       switch4.setChannel(0);
@@ -299,8 +331,6 @@ void SetAudioOperatingState(RadioState operatingState) {
 
     break;
   case RadioState::SSB_TRANSMIT_STATE:
-  case RadioState::FT8_TRANSMIT_STATE:
-
     SampleRate = SampleRateEnum::SAMPLE_RATE_48K;
     InitializeDataArrays(); // I2S sample rate set in this function.
     // QSD disabled and disconnected
@@ -332,18 +362,89 @@ void SetAudioOperatingState(RadioState operatingState) {
       compGainCompensate.setGain_dB(10.0); // Use compressor's below threshold gain.
     }
 
-    if (ConfigData.xmitEQFlag and bands.bands[ConfigData.currentBand].mode == RadioMode::SSB_MODE) {
+    if (ConfigData.xmitEQFlag) {
       switch3_tx.setChannel(0);
       mixer2_tx.gain(0, 1.0);
       mixer2_tx.gain(1, 0.0);
     } else {
-      switch3_tx.setChannel(1); // Bypass equalizer.  Must bypass for FT8.
+      // Bypass equalizer.
+      switch3_tx.setChannel(1);
       mixer2_tx.gain(0, 0.0);
       mixer2_tx.gain(1, 1.0);
     }
 
-    Q_out_L_Ex.setBehaviour(AudioPlayQueue::ORIGINAL); // Need this as CW will put into wrong mode.
-                                                       // Greg KF5N August 4, 2024.
+    Q_out_L_Ex.setBehaviour(AudioPlayQueue::ORIGINAL); // Need this as CW will put into wrong mode. Greg KF5N August 4, 2024.
+    Q_out_R_Ex.setBehaviour(AudioPlayQueue::ORIGINAL);
+    Q_in_L_Ex.begin();        // I channel Microphone audio
+    Q_in_R_Ex.begin();        // Q channel Microphone audio
+    patchCord25.disconnect(); // Disconnect headphone.
+    patchCord26.disconnect();
+
+    // Update equalizer.  Update first 14 only.  Last two are constant.
+    for (int i = 0; i < 14; i = i + 1) {
+      dbBand1[i] = static_cast<float32_t>(ConfigData.equalizerXmt[i]);
+    }
+
+    txEqualizer.equalizerNew(16, &fBand1[0], &dbBand1[0], 249, &equalizeCoeffs[0], 65.0f);
+    updateMic();
+    connect17.connect(); // Transmitter I channel
+    connect18.connect(); // Transmitter Q channel
+    connect19.connect(); // Transmitter I channel
+    connect20.connect(); // Transmitter Q channel
+
+    break;
+
+  case RadioState::FT8_TRANSMIT_STATE:
+
+    // SampleRate = SampleRateEnum::SAMPLE_RATE_48K;
+    SampleRate = SampleRateEnum::SAMPLE_RATE_192K;
+    InitializeDataArrays(); // I2S sample rate set in this function.
+
+    // Mute all receiver audio.
+    // controlAudioOut(ConfigData.audioOut, true);
+
+    // Disconnect speaker from Q_out_L
+    patchCord12.disconnect();
+    // Connect speaker to usbIn
+    patchCord12FtTest.connect();
+
+    // Unmute for FT8 transmit testing
+    controlAudioOut(ConfigData.audioOut, false);
+
+    // Connect qeue to usbIn
+    cUsbInToMicFtTest.connect();
+    connect0.disconnect();
+
+    // QSD disabled and disconnected
+    sgtl5000_1.unmuteLineout();
+    patchCord1.disconnect(); // Receiver I channel
+    patchCord2.disconnect(); // Receiver Q channel
+    patchCord3.disconnect(); // Receiver audio
+
+    ADC_RX_I.end();
+    ADC_RX_I.clear();
+    ADC_RX_Q.end();
+    ADC_RX_Q.clear();
+
+    mixer1_tx.gain(0, 1);     // microphone audio on.
+    mixer1_tx.gain(1, 0);     // Calibration/IMD test tone off.
+    mixer1_tx.gain(2, 0);     // IMD test tone off.
+    switch1_tx.setChannel(0); // Connect microphone path.
+    switch2_tx.setChannel(1); // Disonnect 1 kHz test tone path.
+
+    // Bypass compressor.
+    switch4_tx.setChannel(1);
+    mixer3_tx.gain(0, 0.0);
+    mixer3_tx.gain(1, 1.0);
+    // Use compressor's below threshold gain.
+    compGainCompensate.setGain_dB(10.0);
+
+    // Bypass equalizer.  Must bypass for FT8.
+    switch3_tx.setChannel(1);
+    mixer2_tx.gain(0, 0.0);
+    mixer2_tx.gain(1, 1.0);
+
+    Q_out_L_Ex.setBehaviour(AudioPlayQueue::ORIGINAL); // Need this as CW will put into wrong mode. Greg KF5N August 4, 2024.
     Q_out_R_Ex.setBehaviour(AudioPlayQueue::ORIGINAL);
     Q_in_L_Ex.begin();        // I channel Microphone audio
     Q_in_R_Ex.begin();        // Q channel Microphone audio
