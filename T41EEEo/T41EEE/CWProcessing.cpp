@@ -1,4 +1,4 @@
-// Morse decode and other Morse related utilities.
+// Morse decode (ALPS decoder) and other CW related utilities.
 
 #include "SDT.h"
 
@@ -52,7 +52,6 @@ enum states { state0,
               state6 };
 states decodeStates = state0;
 
-//void DoGapHistogram(uint32_t gapLen);
 
 /*****
   Purpose: This function replaces the arm_max_float32() function that finds the maximum element in an array.
@@ -122,6 +121,7 @@ FLASHMEM void SelectCWFilter() {
 
   if (ConfigData.CWFilterIndex != 5) switchFilterSideband = true;  // Sets current delimiter to FLow.
   display.UpdateAudioGraphics();                                   // This draws decoder delimiters and CW bandwidth box (red);
+  display.BandInformation();
 }
 
 
@@ -325,7 +325,6 @@ FLASHMEM void SetKeyPowerUp() {
   // Keyer paddle.
   if (ConfigData.keyType == 1) {
     pinMode(KEYER_DAH_INPUT_RING, INPUT_PULLUP);  // Activate pullup on dah.
-    Serial.printf("Pullup added to DAH\n");
     attachInterrupt(digitalPinToInterrupt(KEYER_DIT_INPUT_TIP), KeyTipOn, CHANGE);
     attachInterrupt(digitalPinToInterrupt(KEYER_DAH_INPUT_RING), KeyRingOn, CHANGE);
     // Flip dit and dah if so configured.

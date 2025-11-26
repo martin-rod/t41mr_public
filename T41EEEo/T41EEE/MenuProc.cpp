@@ -419,6 +419,7 @@ void CWOptions()  // new option for Sidetone and Delay JJP 9/1/22
     case 3:  // Keyer WPM.
       ConfigData.currentWPM = static_cast<uint32_t>(GetEncoderValueLoopFloat(5, 60, ConfigData.currentWPM, 1, 0, "Keyer WPM: ", true, true));
       SetTransmitDitLength(ConfigData.currentWPM);  //Afp 09-22-22     // JJP 8/19/23
+      display.UpdateKeyType();  // Update display to show revised WPM.
       break;
 
     case 4:  // Sidetone volume for speaker.
@@ -765,7 +766,7 @@ void SSBOptions() {
   float imdAmplitude = 0.0;
   int imdAmplitudedB = 100;
   MenuSelect menu = MenuSelect::BOGUS_PIN_READ;
-  const std::string ssbChoices[] = { "CESSB", "SSB", "Comp On", "Comp Off", "Mic Gain", "Comp Ratio", "Comp Threshold", "IMD Test ", "Cancel" };
+  const std::string ssbChoices[] = { "CESSB", "SSB", "FT8 Active", "Comp On", "Comp Off", "Mic Gain", "Comp Ratio", "Comp Threshold", "IMD Test ", "Cancel" };
 
   ssbChoice = SubmenuSelect(ssbChoices, 9, ssbChoice);
   switch (ssbChoice) {
@@ -776,37 +777,44 @@ void SSBOptions() {
       display.BandInformation();
       break;
 
-    case 1:  // SSB Data on
+    case 1:  // SSB Voice
       ConfigData.cessb = false;
       cessb1.setProcessing(ConfigData.cessb);
       display.BandInformation();
       break;
 
-    case 2:  // Compressor On
+    case 2:  // FT8 enable/disable
+      ConfigData.cessb = false;
+      cessb1.setProcessing(ConfigData.cessb);
+      ft8EnableFlag = not ft8EnableFlag;
+      display.BandInformation();
+      break;
+
+    case 3:  // Compressor On
       ConfigData.compressorFlag = true;
       display.UpdateCompressionField();
       break;
 
-    case 3:  // Compressor Off
+    case 4:  // Compressor Off
       ConfigData.compressorFlag = false;
       display.UpdateCompressionField();
       break;
 
-    case 4:  // Adjust mic gain in dB.  Default 0 db.
+    case 5:  // Adjust mic gain in dB.  Default 0 db.
       ConfigData.micGain = GetEncoderValueLoopFloat(-20, 20, ConfigData.micGain, 1, 1, "Mic Gain dB: ", true, true);
       break;
 
-    case 5:  // Set compression ratio.  Default 5.
+    case 6:  // Set compression ratio.  Default 5.
       ConfigData.micCompRatio = GetEncoderValueLoopFloat(1, 1000, ConfigData.micCompRatio, 1, 1, "Comp Ratio: ", true, true);
       display.UpdateCompressionField();
       break;
 
-    case 6:  // Set compressor threshold.  Default -15.0 dB.
+    case 7:  // Set compressor threshold.  Default -15.0 dB.
       ConfigData.micThreshold = GetEncoderValueLoopFloat(-60, 0, ConfigData.micThreshold, 1, 1, "Comp Thresh dB: ", true, true);
       display.UpdateCompressionField();
       break;
 
-    case 7:  // IMD test.  This is a self-contained loop which uses the SSB exciter.
+    case 8:  // IMD test.  This is a self-contained loop which uses the SSB exciter.
 
       radioState = RadioState::SSB_IM3TEST_STATE;
       bands.bands[ConfigData.currentBand].mode = RadioMode::SSB_MODE;
@@ -837,7 +845,7 @@ void SSBOptions() {
       }
       break;
 
-    case 8:  // Cancel
+    case 9:  // Cancel
       return;
       break;
 

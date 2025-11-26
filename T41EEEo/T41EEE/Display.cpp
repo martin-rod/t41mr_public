@@ -493,10 +493,7 @@ void Display::DrawFrequencyBarValue() {
   float freq_calc;
   float grat;
   // positions for graticules: first for ConfigData.spectrum_zoom < 3, then for ConfigData.spectrum_zoom > 2
-  const static int idx2pos[2][9] = {
-    { -43, 2, 48, 94, 140, 185, 231, 277, 314 },  //AFP 10-30-22
-    { -43, 2, 48, 94, 140, 185, 231, 277, 314 }   //AFP 10-30-22
-  };
+  const static int idx2pos[9] = { -43, 2, 48, 94, 140, 185, 231, 277, 314 };  //AFP 10-30-22
 
   grat = static_cast<float>(SR[SampleRate].rate / 8000.0) / static_cast<float>(1 << ConfigData.spectrum_zoom);  // 1, 2, 4, 8, 16, 32, 64 . . . 4096
 
@@ -531,7 +528,7 @@ void Display::DrawFrequencyBarValue() {
 
   //  ========= AFP 1-21-22 ======
   if (ConfigData.spectrum_zoom == 0) {
-    tft.setCursor(centerLine - 140, WATERFALL_TOP_Y);  //AFP 10-20-22
+    tft.setCursor(centerLine - 148, WATERFALL_TOP_Y);  //AFP 10-20-22
   } else {
     tft.setCursor(centerLine - 20, WATERFALL_TOP_Y);  //AFP 10-20-22
   }
@@ -545,16 +542,12 @@ void Display::DrawFrequencyBarValue() {
    **************************************************************************************************/
   // snprint() extremely memory inefficient. replaced with simple str?? functions JJP
   for (int idx = -4; idx < 5; idx++) {
-    pos_help = idx2pos[ConfigData.spectrum_zoom < 3 ? 0 : 1][idx + 4];
+    pos_help = idx2pos[idx + 4];
     if (idx != centerIdx) {
       ultoa((freq_calc + (idx * grat)), txt, DEC);
       x = WATERFALL_LEFT_X + pos_help * xExpand + 40;
       if (idx == 4) x = x - 4;  // Scoot end frequency a little bit left so it doesn't collide with audio 0k index.
-      if (ConfigData.spectrum_zoom == 0) {
         tft.setCursor(x, WATERFALL_TOP_Y);  // AFP 10-20-22
-      } else {
-        tft.setCursor(x, WATERFALL_TOP_Y);  // AFP 10-20-22
-      }
       // ============  AFP 10-21-22
       tft.print(txt);
       tft.print(" ");
@@ -648,7 +641,12 @@ void Display::BandInformation() {
 
   // Write FT8 mode to display.
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::FT8_MODE) {
-    tft.print("FT8");
+    if(not ft8EnableFlag) tft.print("FT8");
+    if(ft8EnableFlag) {
+      tft.setTextColor(RA8875_RED);
+      tft.print("FT8");  // Indicate that FT8 transmit is enabled.
+      tft.setTextColor(RA8875_GREEN);
+    }
   }
 
   // Write AM mode to display.
@@ -1431,41 +1429,6 @@ void Display::UpdateDecoderStatus() {
 
 
 /*****
-  Purpose: Updates the displayed Keyer and WPM settings.
-
-  Parameter list:
-    void
-
-  Return value;
-    void
-*****/
-void Display::UpdateKeyField() {
-  tft.setFontScale((enum RA8875tsize)0);
-
-  tft.setTextColor(RA8875_WHITE);
-  tft.setCursor(WPM_X + 5, WPM_Y - 5);
-  tft.print("Keyer:");
-  tft.setTextColor(RA8875_GREEN);
-  tft.fillRect(WPM_X + 59, WPM_Y - 4, tft.getFontWidth() * 15, tft.getFontHeight(), RA8875_BLACK);
-  tft.setCursor(FIELD_OFFSET_X, WPM_Y - 5);
-  if (ConfigData.keyType == 1) {  // 1 is keyer.
-    // KD0RC start
-    tft.print("Paddles ");
-    if (ConfigData.paddleFlip == 0) {
-      tft.print("R ");
-    } else {
-      tft.print("L ");
-    }
-    //    tft.print(" ");
-    // KD0RC end
-    tft.print(ConfigData.currentWPM);
-  } else {
-    tft.print("Straight Key");
-  }
-}
-
-
-/*****
   Purpose: Updates the noise field on the display.
 
   Parameter list:
@@ -1513,7 +1476,7 @@ void Display::RedrawAll() {
   UpdateNoiseField();
   UpdateZoomField();
   UpdateCompressionField();
-  UpdateKeyField();
+  UpdateKeyType();
   UpdateDecoderStatus();
   UpdateEqualizerField(ConfigData.receiveEQFlag, ConfigData.xmitEQFlag);
   ShowCurrentPowerSetting();

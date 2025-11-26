@@ -1,5 +1,28 @@
-// T41 Transceiver Arduino Sketch
-// Gregory Raven KF5N November 14 2025
+// T41 Transceiver Arduino Sketch: T41EEE
+// "T41 Extreme Experimenters Edition"
+//
+// Please refer to license file which is included in the repository.
+// Contributors:
+// Albert Peter AC8GY.  Co-creator of the T41 SDT project.
+// Dr. Jack Purdum W8TEE.  Co-creater of the T41 SDT project.
+// TeensyDuino, which is the software foundation of the Teensy Audio Library.
+// The Open Audio Arduino Library.  This version of T41 software leans heavily on this library.
+// The Teensy Convolution SDR project.  Most of the receiver is derived from this project.
+// The ArduinoJSON library.  This library is used for reading and writing to the SD card.
+// The Etherkit Si5351 library.  Important for simplifying a not-so-easy to control device!
+// Brian Low's Rotary encoder library; paramount for the physical user interface of the radio.
+// Contributors to the code specific to T41EEE:
+// Larry Acklin KB3CUF
+// Harry Brash GM3RVL
+// Jonathan Burchmore KN6LFB
+// Len Koppl KD0RC
+// John Melton G0ORX
+// Neville Marr ZL2BNE
+// Martin Rod OK4MR
+// Jeorg Uthoff DB200
+// If I have neglected to mention a contributor, please send me a note!
+// I can be found here: https://groups.io/g/SoftwareControlledHamRadio
+// Gregory Raven KF5N November 20 2025
 
 // setup() and loop() are at the bottom of this file.
 
@@ -10,7 +33,7 @@ const char *calFilename = "/calibration.txt";  // <- SD library uses 8.3 filenam
 
 extern const int32_t SPECTRUM_RES{ 512 };
 
-// Bearing functionality is not implemented in T41EEE.91.
+/* Bearing functionality is not implemented in T41EEE.91 (to return in a future release).
 struct maps myMapFiles[10] = {
   { "Cincinnati.bmp", 39.07466, -84.42677 },  // Map name and coordinates for QTH
   { "Denver.bmp", 39.61331, -105.01664 },
@@ -22,10 +45,11 @@ struct maps myMapFiles[10] = {
   { "", 0.0, 0.0 },
   { "", 0.0, 0.0 }
 };
+*/
 
 uint32_t FFT_length = FFT_LENGTH;
 
-//======================================== Global object definitions ==================================================
+//=========================== Global object definitions ============================
 bool agc_action = false;
 
 // Teensy and OpenAudio dataflow code.
@@ -35,19 +59,19 @@ bool agc_action = false;
 Display display;
 ReceiveDSP process;        // Receiver process object.
 RxCalibrate rxcalibrater;  // Instantiate the calibration objects.
-TxCalibrate txcalibrater;
-CW_Exciter cwexciter;
-JSON json;
-Eeprom eeprom;  // Eeprom object.
+TxCalibrate txcalibrater;  // Transmit calibration object.
+CW_Exciter cwexciter;      // CW exciter object.
+JSON json;                 // JSON object.  Used for reading/writing to SD card.
+Eeprom eeprom;             // Eeprom object.
 std::vector<uint32_t> center_tune_array = CENTER_TUNE_ARRAY;
 std::vector<uint32_t> fine_tune_array = FINE_TUNE_ARRAY;
 Button button(fine_tune_array, center_tune_array);
-ModeControl modecontrol;
+ModeControl modecontrol;  // Mode control struct.  This is a part of the "modal" radio configuration process.
 
 const char *topMenus[] = { "CW Options", "RF Set", "VFO Select",
                            "Config EEPROM", "Cal EEPROM", "AGC",
-                           "SSB Options", "EQ Tx Set",   // Noise floor removed.  Greg KF5N February 14, 2025
-                           "EQ Rec Set", "Calibrate" };  // Bearing temporarily removed.
+                           "SSB/FT8 Options", "EQ Tx Set",  // Noise floor removed.  Greg KF5N February 14, 2025
+                           "EQ Rec Set", "Calibrate" };     // Bearing temporarily removed.
 // Pointers to functions which execute the menu options.  Do these functions used the returned integer???
 void (*functionPtr[])() = { &CWOptions, &RFOptions, &VFOSelect,
                             &ConfigDataOptions, &CalDataOptions, &AGCOptions,
@@ -101,7 +125,6 @@ float32_t DMAMEM float_buffer_RTemp[2048];
 //==================== End Excite Variables================================
 
 //======================================== Global structure declarations ===============================================
-
 config_t ConfigData;
 calibration_t CalData;
 
@@ -172,8 +195,7 @@ dispSc displayScale[] =  // dbText, dBScale, baseOffset
     { "10 dB/", 20.0, 10 }  //  1, 2, and 5 dB options removed.  Greg KF5N July 30, 2024.
   };
 
-//======================================== Global variables declarations for Quad Oscillator 2 ===============================================
-int32_t NCOFreq = 0;
+int32_t NCOFreq = 0;  // Used for fine-tune frequency shift.
 
 //======================================== Global variables declarations ===============================================
 //================== Global CW Correlation and FFT Variables =================
@@ -211,11 +233,10 @@ int32_t fineTuneEncoderMove = 0;
 int selectedMapIndex;
 
 bool centerTuneFlag = false;
-uint32_t cwTimer;
-uint32_t ditTimerOn;
-uint32_t transmitDitLength;  // JJP 8/19/23
-uint32_t transmitDitUnshapedBlocks;
-uint32_t transmitDahUnshapedBlocks;
+uint32_t cwTimer = 0;
+uint32_t transmitDitLength = 0;  // JJP 8/19/23
+uint32_t transmitDitUnshapedBlocks = 0;
+uint32_t transmitDahUnshapedBlocks = 0;
 
 // ============ end new stuff =======
 // Global variables used by audio filter encoder.
@@ -263,6 +284,7 @@ bool calibrateFlag = false;
 bool encoderFilterFlag = false;    // Set by EncoderFilter() isr.
 bool audioCompensateFlag = false;  // Set by FilterSetSSB();
 bool audioGraphicsFlag = false;    // Set by FilterSetSSB();
+bool ft8EnableFlag = false;
 bool startRxFlag = false;
 // Using ARRL table: https://www.arrl.org/frequency-bands.  First frequency is CW, second is SSB.
 #if ITU_REGION == 1
@@ -801,6 +823,7 @@ MenuSelect readButton() {
   Return value: void
 *****/
 void KeyTipOn() {
+  // Make sure this is ignored in other modes!  Probably should detach in non-CW modes.
   if (digitalRead(KEYER_DIT_INPUT_TIP) == LOW and bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE)
     keyPressedOn = 1;
 }
@@ -816,6 +839,7 @@ void KeyTipOn() {
 void KeyRingOn()  //AFP 09-25-22
 {
   if (ConfigData.keyType == 1) {
+    // Make sure this is ignored in other modes!  Probably should detach in non-CW modes.
     if (digitalRead(KEYER_DAH_INPUT_RING) == LOW and bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE)
       keyPressedOn = 1;
   }
@@ -854,9 +878,7 @@ uint32_t afterPowerUp = 0;
 *****/
 FLASHMEM void setup() {
 
-  Serial.begin(115200);  // Use this serial for Teensy programming.
-                         //  SerialUSB1.begin(115200);  // Use this serial for FT8 keying.
-                         /* check for CrashReport stored from previous run */
+  // Check for CrashReport stored from previous run.
   if (CrashReport) {
     /* print info (hope Serial Monitor windows is open) */
     Serial.print(CrashReport);
@@ -873,8 +895,7 @@ FLASHMEM void setup() {
   digitalWrite(MUTE, MUTEAUDIO);  // Keep audio junk out of the speakers/headphones until configuration is complete.
   pinMode(PTT, INPUT_PULLUP);
   pinMode(BUSY_ANALOG_PIN, INPUT);  // Pin 39.  Switch matrix output connects to this pin.
-                                    //  pinMode(KEYER_DIT_INPUT_TIP, INPUT_PULLUP);  // Straight key and keyer paddle.
-                                    //  pinMode(KEYER_DAH_INPUT_RING, INPUT_PULLUP); // The other keyer paddle.
+                                    // Straight key and paddle GPIOs are handled in special set-up function.
 
   // SPI bus to display.
   pinMode(TFT_MOSI, OUTPUT);
@@ -956,12 +977,9 @@ FLASHMEM void setup() {
   Q_out_R_Ex.setMaxBuffers(32);
   Q_out_L.setMaxBuffers(64);  // Receiver audio buffer limit.
 
-  // Configure and check SD card.
-  ConfigData.sdCardPresent = InitializeSDCard();  // Initialize mandatory SD card.
-  ConfigData.sdCardPresent = SDPresentCheck();    // JJP 7/18/23
-
   // Switch matrix debug code.
   // Push and hold a button at power up to activate switch matrix calibration.
+  // Please note that switch matrix calibration is also available in the Calibration menu.
 #ifdef DEBUG_SWITCH_CAL
   eeprom.CalDataRead();  // If this is not done, the calibration data will be overwritten.
   if (analogRead(BUSY_ANALOG_PIN) < NOTHING_TO_SEE_HERE) {
@@ -979,6 +997,10 @@ FLASHMEM void setup() {
   button.EnableButtonInterrupts();
   eeprom.EEPROMStartup();
 #endif
+
+  // Configure and check SD card.
+  ConfigData.sdCardPresent = eeprom.InitializeSDCard();  // Initialize mandatory SD card.
+  ConfigData.sdCardPresent = SDPresentCheck();           // JJP 7/18/23
 
   // GPIOs should be configured at this point.  Make sure transmitter is disabled.
   enableTransmitter(false);
@@ -1009,7 +1031,6 @@ FLASHMEM void setup() {
   headphoneVolume.setGain(0.0);
   volumeChangeFlag = true;  // Adjust volume to saved value.
 
-  //  lastState = RadioState::NOSTATE;  // To make sure the receiver will be configured on the first pass through.  KF5N September 3, 2023
   // Set up the initial state/mode.
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE) {
     radioState = RadioState::CW_RECEIVE_STATE;
@@ -1034,12 +1055,12 @@ FLASHMEM void setup() {
   lastState = RadioState::NOSTATE;  // Forces an update.
   powerUp = true;                   // This delays receiver start-up to allow transients to settle.
 
-  FilterSetSSB();  // This is important!  If this is not run up front various other filters go into never never land.
+  FilterSetSSB();  // This is important!  If this is not run up front various other filters go into never-never land.
 
   //  Draw the entire radio display.
   display.RedrawAll();
 
-  // Don't start up if something is keyed.  Warn the user to resolve and restart.
+  // Don't start up if key/paddle or PTT is closed.  Warn the user to resolve and restart.
   isTransmitterKeyed();
 }
 //============================================================== END setup() =================================================================
@@ -1068,32 +1089,33 @@ bool drawSpectrum = false;
 void loop() {
   MenuSelect menu;
   long ditTimerOff;  //AFP 09-22-22
-  long dahTimerOn;
   bool cwKeyDown;
   unsigned long cwBlockIndex;
 
-  //  State detection before entering the primary radio loop.  AM and SAM don't transmit, so there is not a state transition required.
+  //  Radio state detection before entering the primary radio loop.
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::SSB_MODE and digitalRead(PTT) == HIGH) radioState = RadioState::SSB_RECEIVE_STATE;
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::SSB_MODE and digitalRead(PTT) == LOW) radioState = RadioState::SSB_TRANSMIT_STATE;
 
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::FT8_MODE and SerialUSB1.rts() == LOW) radioState = RadioState::FT8_RECEIVE_STATE;
-  if (bands.bands[ConfigData.currentBand].mode == RadioMode::FT8_MODE and SerialUSB1.rts() == HIGH) radioState = RadioState::FT8_TRANSMIT_STATE;
+  if (bands.bands[ConfigData.currentBand].mode == RadioMode::FT8_MODE and SerialUSB1.rts() == HIGH and ft8EnableFlag) radioState = RadioState::FT8_TRANSMIT_STATE;
 
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE and ConfigData.keyType == 1 and (digitalRead(ConfigData.paddleDit) == HIGH) and (digitalRead(ConfigData.paddleDah) == HIGH)) radioState = RadioState::CW_RECEIVE_STATE;
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE and ConfigData.keyType == 0 and digitalRead(KEYER_DIT_INPUT_TIP) == HIGH) radioState = RadioState::CW_RECEIVE_STATE;
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE and keyPressedOn == true and ConfigData.keyType == 0) radioState = RadioState::CW_TRANSMIT_STRAIGHT_STATE;
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE and keyPressedOn == true and ConfigData.keyType == 1) radioState = RadioState::CW_TRANSMIT_KEYER_STATE;
+  // AM modes.  No transmit.
+  if (bands.bands[ConfigData.currentBand].mode == RadioMode::AM_MODE) radioState = RadioState::AM_RECEIVE_STATE;
+  if (bands.bands[ConfigData.currentBand].mode == RadioMode::SAM_MODE) radioState = RadioState::SAM_RECEIVE_STATE;
 
   // Top menu button read.
   // SSB and FT8 transmit operate via the main loop().  CW modes operate within independent while loops.  Don't stop in SSB and FT8 modes to read the buttons.
-  if ((radioState != RadioState::SSB_TRANSMIT_STATE) and (radioState != RadioState::FT8_TRANSMIT_STATE)) {
+  if ((radioState != RadioState::SSB_TRANSMIT_STATE) and (radioState != RadioState::FT8_TRANSMIT_STATE) and (calibrateFlag == false) and (morseDecodeAdjustFlag == false)) {
     menu = readButton();
     if (menu != MenuSelect::BOGUS_PIN_READ) button.ExecuteButtonPress(menu);
   }
 
   // Transition to new state if required and only if the radio state has changed.
   if (lastState != radioState) {
-
     // Avoid changing the audio system if possible.
     // If moving from one receive state to another, audio system update is not required.  Demodulation selection is done in ReceiverDSP.
     // So updating the audio system is only required when moving from receive to transmit, or vice versa.
@@ -1141,14 +1163,10 @@ void loop() {
       drawSpectrum = true;  // Delay drawing the spectrum until the FFT transients are decreased.
     }
   }
-  if (radioState == RadioState::CW_TRANSMIT_STRAIGHT_STATE or radioState == RadioState::CW_TRANSMIT_KEYER_STATE) {
-    speakerScale.setGain(SPEAKERSCALE);
-    headphoneScale.setGain(HEADPHONESCALE);
-  }
 
-  //  Begin radio state machines
+  //  Begin radio mode handlers.
 
-  //  Begin SSB Mode state machine
+  //  Begin SSB mode handler.
   switch (radioState) {
     case RadioState::AM_RECEIVE_STATE:
     case RadioState::SAM_RECEIVE_STATE:
@@ -1187,7 +1205,7 @@ void loop() {
         }
 #endif
       }
-
+      enableTransmitter(false);
       break;
 
     case RadioState::FT8_TRANSMIT_STATE:
@@ -1195,6 +1213,7 @@ void loop() {
       while (SerialUSB1.rts() == HIGH) {
         SSB_ExciterIQData();
       }
+      enableTransmitter(false);
       break;
 
     default:
@@ -1202,7 +1221,7 @@ void loop() {
   }
   // End SSB Mode
 
-  // Begin CW Mode state machine
+  // Begin CW Mode mode handler.
 
   switch (radioState) {
     case RadioState::CW_RECEIVE_STATE:
@@ -1238,6 +1257,7 @@ void loop() {
           }
         }
       }  // End CW straight key while loop.
+      enableTransmitter(false);
       break;
 
     case RadioState::CW_TRANSMIT_KEYER_STATE:
@@ -1245,53 +1265,39 @@ void loop() {
 
       cwTimer = millis();
       while (millis() - cwTimer <= ConfigData.cwTransmitDelay) {
-
-        if (digitalRead(ConfigData.paddleDit) == LOW) {  // Keyer Dit
-          ditTimerOn = millis();
-          // Queue audio blocks--execution time of this loop will be between 0-20ms shorter
-          // than the desired dit time, due to audio buffering.
+        // Keyer Dit
+        if (digitalRead(ConfigData.paddleDit) == LOW) {
           cwexciter.CW_ExciterIQData(CW_SHAPING_RISE);
           for (cwBlockIndex = 0; cwBlockIndex < transmitDitUnshapedBlocks; cwBlockIndex++) {
             cwexciter.CW_ExciterIQData(CW_SHAPING_NONE);
           }
           cwexciter.CW_ExciterIQData(CW_SHAPING_FALL);
 
-          // Wait for calculated dit time, allowing audio blocks to be played
-          while (millis() - ditTimerOn <= transmitDitLength) {
-            ;
-          }
-
           // Pause for one dit length of silence
           ditTimerOff = millis();
           while (millis() - ditTimerOff <= transmitDitLength) {
             cwexciter.CW_ExciterIQData(CW_SHAPING_ZERO);
           }
-          cwTimer = millis();
-        } else if (digitalRead(ConfigData.paddleDah) == LOW) {  //Keyer DAH
-          dahTimerOn = millis();
-          // Queue audio blocks--execution time of this loop will be between 0-20ms shorter
-          // than the desired dah time, due to audio buffering
+          cwTimer = millis();  //  Reset delay timer only after a dit or dah is transmitted.
+                               //Keyer DAH
+        } else if (digitalRead(ConfigData.paddleDah) == LOW) {
           cwexciter.CW_ExciterIQData(CW_SHAPING_RISE);
           for (cwBlockIndex = 0; cwBlockIndex < transmitDahUnshapedBlocks; cwBlockIndex++) {
             cwexciter.CW_ExciterIQData(CW_SHAPING_NONE);
           }
           cwexciter.CW_ExciterIQData(CW_SHAPING_FALL);
 
-          // Wait for calculated dah time, allowing audio blocks to be played
-          while (millis() - dahTimerOn <= 3UL * transmitDitLength) {
-            ;
-          }
-
           // Pause for one dit length of silence
           ditTimerOff = millis();
           while (millis() - ditTimerOff <= transmitDitLength) {
             cwexciter.CW_ExciterIQData(CW_SHAPING_ZERO);
           }
-          cwTimer = millis();
+          cwTimer = millis();  //  Reset delay timer only after a dit or dah is transmitted.
         } else {
           cwexciter.CW_ExciterIQData(CW_SHAPING_ZERO);
         }
-      }  // End keyer relay timer.
+      }  // End while.  End keyer relay timer.
+      enableTransmitter(false);
 
       break;
 
@@ -1307,8 +1313,7 @@ void loop() {
 
 #ifdef DEBUG1
   if (elapsed_micros_idx_t > (SR[SampleRate].rate / 960)) {
-    ShowTempAndLoad();
-    // Used to monitor CPU temp and load factors
+    display.ShowTempAndLoad();  // Used to monitor CPU temp and load factors
   }
 #endif
 

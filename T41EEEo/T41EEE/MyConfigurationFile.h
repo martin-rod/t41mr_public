@@ -2,8 +2,6 @@
 
 #pragma once
 
-//#include <cstdint>
-
 //====================== User Specific Preferences =============
 const char RIGNAME[] = "T41-EP SDT";
 const int RIGNAME_X_OFFSET = 570;  // Pixel count to rig name field.
@@ -81,8 +79,8 @@ constexpr uint32_t FINE_TUNE_DEFAULT = 50;  // Set to the desired default in the
 //#define MUTEAUDIO LOW
 
 // The audio amplifier gain may need to be adjusted for the best volume range.
-constexpr float32_t SPEAKERSCALE = 1.0;   // Increase or decrease this value depending on your amplifier gain.
-constexpr float32_t HEADPHONESCALE = 4.0;  // Same as for the speaker.  Adjust to your preference for volume range.
+constexpr float32_t SPEAKERSCALE = 2.0;   // Increase or decrease this value depending on your amplifier gain.
+constexpr float32_t HEADPHONESCALE = 8.0;  // Same as for the speaker.  Adjust to your preference for volume range.
 
 constexpr float32_t RFGAINSCALE = 3000.0;  // This adjusts for RF gain differences in the QSD.  QSD should use a value of 3000.  QSD2 should use a value of 1000.0.
 
