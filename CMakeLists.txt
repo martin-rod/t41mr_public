@@ -138,7 +138,6 @@ elseif (T41_SRC_TYPE MATCHES "EEE_O")
 
     set(T41_SRC_DIR "T41EEEo/T41EEE")
     list(APPEND T41_SRC "${T41_SRC_DIR}/AudioSignal.h")
-    list(APPEND T41_SRC "${T41_SRC_DIR}/Bearing.cpp")
     list(APPEND T41_SRC "${T41_SRC_DIR}/Button.h")
     list(APPEND T41_SRC "${T41_SRC_DIR}/Button.cpp")
     list(APPEND T41_SRC "${T41_SRC_DIR}/CW_Exciter.h")
