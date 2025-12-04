@@ -20,7 +20,8 @@ const int FT_step = 500;                 // Hz step in Fast Tune
 
 /*****
   Purpose: Audio filter adjust with encoder.
-           This function runs only if the encoder has been rotated.
+           This function runs if the encoder has been rotated.  It is also called when the filter needs to be re-computed,
+           for example, when the band is changed, and the next band may have different filter parameters.
   Parameter list:
     void
   Return value;
@@ -246,7 +247,7 @@ float GetEncoderValueLoopFloat(float minValue, float maxValue, float startValue,
         currentValue = maxValue;
       if (left) tft.setCursor(0, 1);
       else tft.setCursor(290, 1);         //// 260
-      tft.print("                    ");  // Erase old
+      tft.print("                     ");  // Erase old
       if (left) tft.setCursor(0, 1);
       else tft.setCursor(290, 1);  //// 260
       tft.setTextColor(RA8875_WHITE, RA8875_BLACK);
@@ -259,7 +260,7 @@ float GetEncoderValueLoopFloat(float minValue, float maxValue, float startValue,
     if (menu == MenuSelect::MENU_OPTION_SELECT) {  // Make a choice??
       if (left) tft.setCursor(0, 1);
       else tft.setCursor(290, 1);
-      tft.print("                    ");  // Erase
+      tft.print("                     ");  // Erase
       return currentValue;
     }
   }
@@ -339,6 +340,8 @@ void EncoderFineTune() {
   }
   fineTuneEncoderMove = 0L;
   TxRxFreq = ConfigData.centerFreq + NCOFreq;  // KF5N
+
+  audioGraphicsFlag = true;
 }
 #else
 /*****
@@ -390,6 +393,8 @@ void EncoderFineTune() {
   }
   fineTuneEncoderMove = 0L;
   TxRxFreq = ConfigData.centerFreq + NCOFreq;  // KF5N
+
+  audioGraphicsFlag = true;
 }
 #endif
 

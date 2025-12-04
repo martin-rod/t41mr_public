@@ -1,7 +1,6 @@
 // Display class
 
 #include "SDT.h"
-#include "Display.h"
 
 // DrawAudioSpectContainer()
 // ShowName()
@@ -79,56 +78,74 @@ void Display::ShowName() {
     void
 *****/
 void Display::ShowSpectrum(bool drawSpectrum) {
-  const int LOWERPIXTARGET{ 13 };  //  HB start
-  const int UPPERPIXTARGET{ 15 };
 
   int AudioH_max = 0, AudioH_max_box = 0;  // Used to center audio spectrum.
-  char buff[10];
-  int frequ_hist[32]{ 0 };   // All values are initialized to zero using this syntax.
-  int audio_hist[256]{ 0 };  // All values are initialized to zero using this syntax.
-  int j, k;
-  int FH_max = 0, FH_max_box = 0;    //  HB finish
+  int audio_hist[256]{ 0 };                // All values are initialized to zero using this syntax.
+  int k;
   int middleSlice = centerLine / 2;  // Approximate center element
   int x1 = 0;                        //AFP
                                      //  int h = SPECTRUM_HEIGHT + 7;
   int y1_new{ 0 }, y2_new{ 0 }, y1_old{ 0 }, y2_old{ 0 };
   int test1;
   updateDisplayCounter = 0;
+  updateDisplayFlag = false;
   spectrumErased = false;
+  bool plotInProgress = false;
+  bool blocksAvailable = false;
 
-  for (x1 = 1; x1 < 511; x1++)  // First few bins are junk.  Don't plot them.
-  //Draws the main Spectrum, Waterfall and Audio displays
-  {
-    updateDisplayFlag = false;
+  for (x1 = 1; x1 < 511; x1++) {  // Bins on the ends are junk, don't plot.
 
-    // Is there enough data accumulated to run the FFT (dependent on Zoom)?
-    if ((ConfigData.spectrum_zoom == 0) and static_cast<uint32_t>(ADC_RX_I.available()) > N_BLOCKS and static_cast<uint32_t>(ADC_RX_Q.available()) > N_BLOCKS) {
-      updateDisplayCounter = updateDisplayCounter + 1;
-      if (updateDisplayCounter == 1) updateDisplayFlag = true;
+    // Quit and start transmitter if key is pressed.
+    if (keyPressedOn) {
+      return;
     }
-    if ((ConfigData.spectrum_zoom == 1) and static_cast<uint32_t>(ADC_RX_I.available()) > N_BLOCKS and static_cast<uint32_t>(ADC_RX_Q.available()) > N_BLOCKS) {
-      updateDisplayCounter = updateDisplayCounter + 1;
-      if (updateDisplayCounter == 1) updateDisplayFlag = true;
+    //Draws the main Spectrum, Waterfall and Audio displays
+
+    // Is there enough data to calculate an FFT?
+    blocksAvailable = (static_cast<uint32_t>(ADC_RX_I.available()) > 15) and (static_cast<uint32_t>(ADC_RX_Q.available()) > 15);
+
+    // 1X zoom.
+    if ((ConfigData.spectrum_zoom == 0) and (not plotInProgress) and blocksAvailable) {
+      x1 = 1;  // This forces enough calls of ProcessIQData() to generate enough blocks before x1 > 511.
+      updateDisplayFlag = true;
+      plotInProgress = true;
     }
-    if ((ConfigData.spectrum_zoom == 2) and static_cast<uint32_t>(ADC_RX_I.available()) > N_BLOCKS and static_cast<uint32_t>(ADC_RX_Q.available()) > N_BLOCKS) {
-      updateDisplayCounter = updateDisplayCounter + 1;
-      if (updateDisplayCounter == 1) updateDisplayFlag = true;
+    // 2X zoom.
+    if ((ConfigData.spectrum_zoom == 1) and (not plotInProgress) and blocksAvailable) {
+      x1 = 1;
+      updateDisplayFlag = true;
+      plotInProgress = true;
     }
-    if ((ConfigData.spectrum_zoom == 3) and static_cast<uint32_t>(ADC_RX_I.available()) > N_BLOCKS and static_cast<uint32_t>(ADC_RX_Q.available()) > N_BLOCKS) {
-      updateDisplayCounter = updateDisplayCounter + 1;
-      if (updateDisplayCounter == 3) updateDisplayFlag = true;
+    // 4X zoom.
+    if ((ConfigData.spectrum_zoom == 2) and (not plotInProgress) and blocksAvailable) {
+      x1 = 1;
+      updateDisplayFlag = true;
+      plotInProgress = true;
     }
-    if ((ConfigData.spectrum_zoom == 4) and static_cast<uint32_t>(ADC_RX_I.available()) > N_BLOCKS and static_cast<uint32_t>(ADC_RX_Q.available()) > N_BLOCKS) {
+    // 8X zoom.
+    if ((ConfigData.spectrum_zoom == 3) and (not plotInProgress) and blocksAvailable) {
       updateDisplayCounter = updateDisplayCounter + 1;
-      if (updateDisplayCounter == 7) updateDisplayFlag = true;
+      x1 = 1;  // This forces enough calls of ProcessIQData() to generate enough blocks before x1 > 511.
+      if (updateDisplayCounter == 3) {
+        updateDisplayFlag = true;
+        plotInProgress = true;
+      }
+    }
+    // 16X zoom.
+    if ((ConfigData.spectrum_zoom == 4) and (not plotInProgress) and blocksAvailable) {
+      updateDisplayCounter = updateDisplayCounter + 1;
+      x1 = 1;  // This forces enough calls of ProcessIQData() to generate enough blocks before x1 > 511.
+      if (updateDisplayCounter == 7) {
+        updateDisplayFlag = true;
+        plotInProgress = true;
+      }
     }
 
     if (startRxFlag) updateDisplayFlag = false;  // Don't process data the first time after coming out of transmit mode.
     startRxFlag = false;
 
-    if (updateDisplayFlag == true) x1 = 1;  // This is required for 8X and 16X zooms.
-
-    process.ProcessIQData();  // Call the Audio process from within the display routine to eliminate conflicts with drawing the spectrum and waterfall displays
+    // This has to be repeatedly called for continuous audio.
+    process.ProcessIQData();
 
     // Don't call this function unless the filter bandwidth has been adjusted.
     if (encoderFilterFlag) {
@@ -137,25 +154,15 @@ void Display::ShowSpectrum(bool drawSpectrum) {
 
     EncoderCenterTune();  //Moved the tuning encoder to reduce lag times and interference during tuning.
 
-    y1_new = 247 - pixelnew[x1];
-    y2_new = 247 - pixelnew[x1 + 1];
-    y1_old = 247 - pixelold[x1];  // pixelold spectrum is saved by the FFT function prior to a new FFT which generates the pixelnew spectrum.  KF5N
-    y2_old = 247 - pixelold[x1 + 1];
+    if (not plotInProgress) {
+      delayMicroseconds(100);  // WOW we have to delay to allow the data to catch up!
+      continue;                // We are not plotting, so go to the next iteration.  Skip the following plotting stuff.
+    }
 
-    // Collect a histogram of RF spectrum values.  This is used in AutoGain and AutoSpectrum.
-    // 247 is the spectral display bottom.  120 is the spectral display top.
-    if ((x1 > 51) && (x1 < 461))  //  HB start for auto RFgain collect frequency distribution. Limited to core of FFT and dividable by 4.
-    {
-      j = 247 - y1_new + 40;           // +40 to get 10 bins below zero - want to straddle zero to make the entire spectrum viewable.
-      k = j >> 2;                      // Divide by 4
-      if ((k > -1) && (k < 32)) {      // The index of the bin array.  This indicates a value within the defined spectral box.
-        frequ_hist[k] += 1;            // Add (accumulate) to the bin.
-        if (frequ_hist[k] > FH_max) {  // FH_max starts at 0.
-          FH_max = frequ_hist[k];      // Reset FH_max to the current bin value.
-          FH_max_box = k;              // Index of FH_max.
-        }
-      }
-    }  //  HB finish
+    y1_new = pixelnew[x1];
+    y2_new = pixelnew[x1 + 1];
+    y1_old = pixelold[x1];  // pixelold spectrum is saved by the FFT function prior to a new FFT which generates the pixelnew spectrum.  KF5N
+    y2_old = pixelold[x1 + 1];
 
     // Collect a histogram of audio spectral values.  This is used to keep the audio spectrum in the viewable area.
     // 247??? is the spectral display bottom.  129 is the audio spectrum display top.
@@ -195,56 +202,25 @@ void Display::ShowSpectrum(bool drawSpectrum) {
     // In the case of a CW interrupt, the array pixelnew should be saved as the actual spectrum.
     // This is the actual "old" spectrum!  This is required due to CW interrupts.  pixelCurrent
     // gets copied to pixelold by the FFT function.  Greg KF5N
-    //  pixelCurrent[x1] = pixelnew[x1];
+
     audioYPixelcurrent[x1] = audioYPixel[x1];
-
-    if (keyPressedOn) {
-      //  Quickly erase the spectrum on the display.
-      for (int i = 0; i < 511; i = i + 1) {
-        if (i == (centerLine - 3)) continue;  // Don't erase center line.
-        // Erase old spectrum.
-        if (i > x1) {
-          y1_old = 247 - pixelold[i];
-          y2_old = 247 - pixelold[i + 1];
-          y1_old = (y1_old > 247) ? 247 : y1_old;
-          y2_old = (y2_old > 247) ? 247 : y2_old;
-          y1_old = (y1_old < 120) ? 120 : y1_old;
-          y2_old = (y2_old < 120) ? 120 : y2_old;
-          tft.drawLine(i + 3, y1_old, i + 3, y2_old, RA8875_BLACK);
-        }
-        // Erase the most recently plotted spectrum.
-        if (i <= x1) {
-          y1_old = 247 - pixelnew[i];
-          y2_old = 247 - pixelnew[i + 1];
-        }
-        y1_old = (y1_old > 247) ? 247 : y1_old;
-        y2_old = (y2_old > 247) ? 247 : y2_old;
-        y1_old = (y1_old < 120) ? 120 : y1_old;
-        y2_old = (y2_old < 120) ? 120 : y2_old;
-        tft.drawLine(i + 3, y1_old, i + 3, y2_old, RA8875_BLACK);
-      }
-      spectrumErased = true;
-
-      return;  // Bail out of receive and quickly go to transmit mode.
-    }
 
     // Draw audio spectrum.  The audio spectrum width is smaller than the RF spectrum width.
     // The audio spectrum arrays are generated in ReceiveDSP.cpp by method ProcessIQData().
-    if (x1 < 253) {                                                                      //AFP 09-01-22
-      if (keyPressedOn == true) {                                                        //AFP 09-01-22
-                                                                                         ////        return;                                                                          //AFP 09-01-22
-      } else {                                                                           //AFP 09-01-22
-        if (audioYPixelold[x1] > CLIP_AUDIO_PEAK) audioYPixelold[x1] = CLIP_AUDIO_PEAK;  // audioSpectrumHeight = 118
-        tft.drawFastVLine(532 + x1, 245 - audioYPixelold[x1] - 0, audioYPixelold[x1], RA8875_BLACK);
-        if (audioYPixel[x1] != 0) {
-          if (audioYPixel[x1] > CLIP_AUDIO_PEAK)  // audioSpectrumHeight = 118
-            audioYPixel[x1] = CLIP_AUDIO_PEAK;
-          if (x1 == middleSlice) {
-            smeterLength = y_new;
-          }
-          // Draw a vertical line with the audio spectrum magnitude.  AUDIO_SPECTRUM_BOTTOM = 247
-          tft.drawFastVLine(532 + x1, 245 - audioYPixel[x1] - 0, audioYPixel[x1], RA8875_MAGENTA);
+    if (x1 < 253) {                                                                             //AFP 09-01-22
+                                                                                                //      if (keyPressedOn == true) {                                                                 //AFP 09-01-22
+                                                                                                //                                                                                                  ////        return;
+                                                                                                //      } else {                                                                                    //AFP 09-01-22
+      if (audioYPixelold[x1] > CLIP_AUDIO_PEAK) audioYPixelold[x1] = CLIP_AUDIO_PEAK;           // audioSpectrumHeight = 118
+      tft.drawFastVLine(532 + x1, 245 - audioYPixelold[x1], audioYPixelold[x1], RA8875_BLACK);  // Erase
+      if (audioYPixel[x1] != 0) {
+        if (audioYPixel[x1] > CLIP_AUDIO_PEAK)  // audioSpectrumHeight = 118
+          audioYPixel[x1] = CLIP_AUDIO_PEAK;
+        if (x1 == middleSlice) {
+          smeterLength = y_new;
         }
+        // Draw a vertical line with the audio spectrum magnitude.  AUDIO_SPECTRUM_BOTTOM = 247
+        tft.drawFastVLine(532 + x1, 245 - audioYPixel[x1], audioYPixel[x1], RA8875_MAGENTA);
       }
     }
 
@@ -256,46 +232,19 @@ void Display::ShowSpectrum(bool drawSpectrum) {
   }  // End for(...) Draw MAX_WATERFALL_WIDTH spectral points
 
   // Use the Block Transfer Engine (BTE) to move waterfall down a line
-  if (keyPressedOn == true) {
-    ////    return;
-  } else {
-    tft.BTE_move(WATERFALL_LEFT_X, FIRST_WATERFALL_LINE, MAX_WATERFALL_WIDTH, MAX_WATERFALL_ROWS - 2, WATERFALL_LEFT_X, FIRST_WATERFALL_LINE + 1, 1, 2);
-    while (tft.readStatus())
-      ;  // Make sure it is done.  Memory moves can take time.
+  tft.BTE_move(WATERFALL_LEFT_X, FIRST_WATERFALL_LINE, MAX_WATERFALL_WIDTH, MAX_WATERFALL_ROWS - 2, WATERFALL_LEFT_X, FIRST_WATERFALL_LINE + 1, 1, 2);
+  while (tft.readStatus())
+    ;  // Make sure it is done.  Memory moves can take time.
 
-    // Now bring waterfall back to the beginning of the 2nd row.
-    tft.BTE_move(WATERFALL_LEFT_X, FIRST_WATERFALL_LINE + 1, MAX_WATERFALL_WIDTH, MAX_WATERFALL_ROWS - 2, WATERFALL_LEFT_X, FIRST_WATERFALL_LINE + 1, 2);
-    while (tft.readStatus())
-      ;  // Make sure it's done.
-  }
+  // Now bring waterfall back to the beginning of the 2nd row.
+  tft.BTE_move(WATERFALL_LEFT_X, FIRST_WATERFALL_LINE + 1, MAX_WATERFALL_WIDTH, MAX_WATERFALL_ROWS - 2, WATERFALL_LEFT_X, FIRST_WATERFALL_LINE + 1, 2);
+  while (tft.readStatus())
+    ;  // Make sure it's done.
+
   // Then write new row data into the missing top row to get a scroll effect using display hardware, not the CPU.
   tft.writeRect(WATERFALL_LEFT_X, FIRST_WATERFALL_LINE, MAX_WATERFALL_WIDTH, 1, waterfall);
 
-  // Manage RF spectral display graphics.  Keep the spectrum within the viewable area.
-  if (ConfigData.autoGain || ConfigData.autoSpectrum) {
-    if (FH_max_box > UPPERPIXTARGET) {  // HB. Adjust rfGainAllBands 15 and 13 to alter to move target base up and down. UPPERPIXTARGET = 15
-      if (ConfigData.autoGain) ConfigData.rfGainCurrent = ConfigData.rfGainCurrent - 1;
-      if (ConfigData.autoSpectrum) {
-        ConfigData.rfGainCurrent = ConfigData.rfGain[ConfigData.currentBand];
-        fftOffset = fftOffset - 1;
-      }
-    }
-    if (FH_max_box < LOWERPIXTARGET) {  // LOWERPIXTARGET = 13
-      if (ConfigData.autoGain) {
-        ConfigData.rfGainCurrent = ConfigData.rfGainCurrent + 1;
-        if (ConfigData.rfGainCurrent > 25.0) ConfigData.rfGainCurrent = 25.0;  //  Do not allow RF gain greater than 25.
-      }
-      if (ConfigData.autoSpectrum) {
-        ConfigData.rfGainCurrent = ConfigData.rfGain[ConfigData.currentBand];
-        fftOffset = fftOffset + 1;
-      }
-    }
-  }
-  // Don't allow fftOffset to exceed 200:
-  if (fftOffset > 200) fftOffset = 200;
-
   // Manage audio spectral display graphics.  Keep the spectrum within the viewable area.
-
   if (AudioH_max_box > 30) {  // HB. Adjust rfGainAllBands 15 and 13 to alter to move target base up and down. UPPERPIXTARGET = 15
     audioFFToffset = audioFFToffset - 1;
   }
@@ -303,72 +252,65 @@ void Display::ShowSpectrum(bool drawSpectrum) {
     audioFFToffset = audioFFToffset + 1;
   }
 
-  // Report the current RF "gain" setting.
-  tft.fillRect(SPECTRUM_LEFT_X + 125, SPECTRUM_TOP_Y + 2, 33, tft.getFontHeight(), RA8875_BLACK);
-  tft.setFontScale((enum RA8875tsize)0);
-  tft.setTextColor(RA8875_WHITE);
-  tft.setCursor(SPECTRUM_LEFT_X + 64, SPECTRUM_TOP_Y + 2);
-  tft.print("RF GAIN");
-  tft.setCursor(SPECTRUM_LEFT_X + 129, SPECTRUM_TOP_Y + 2);
-  if (ConfigData.autoGain) itoa(ConfigData.rfGainCurrent, buff, DEC);  // Make into a string
-  else itoa(ConfigData.rfGain[ConfigData.currentBand], buff, DEC);
-
-  tft.print(buff);  // HB End
 }  // End ShowSpectrum()
 
 
 /*****
-  Purpose: Show filter bandwidth near center of spectrum.
+  Purpose: Show filter bandwidth settings near the top center of the RF spectrum.
 
   Parameter list:
     void
 
   Return value;
     void
-        // AudioNoInterrupts();
-        // M = demod_mode, FU & FL upper & lower frequency
-        // this routine prints the frequency bars under the spectrum display
+*****/
+void Display::ShowRFGain() {
+  // Report the current RF "gain" setting.
+  //  tft.fillRect(SPECTRUM_LEFT_X + 125, SPECTRUM_TOP_Y + 2, 33, tft.getFontHeight(), RA8875_BLACK);
+  tft.setFontScale((enum RA8875tsize)0);
+  tft.setTextColor(RA8875_WHITE, RA8875_BLACK);
+  tft.setCursor(SPECTRUM_LEFT_X + 61, SPECTRUM_TOP_Y + 2);
+  tft.print("RF GAIN ");
+  //  tft.setCursor(SPECTRUM_LEFT_X + 129, SPECTRUM_TOP_Y + 2);
+  tft.print(ConfigData.rfGain[ConfigData.currentBand]);
+  tft.print("  ");
+}
+
+
+/*****
+  Purpose: Show filter bandwidth settings near the top center of the RF spectrum.
+
+  Parameter list:
+    void
+
+  Return value;
+    void
 *****/
 void Display::ShowBandwidth() {
-  char buff[10];
-  int pos_left;
+  tft.writeTo(L2);  // Write to layer 2.
+  tft.setFontScale((enum RA8875tsize)0);
+  tft.setTextColor(RA8875_LIGHT_GREY, RA8875_BLACK);
 
-  if (ConfigData.spectrum_zoom != SPECTRUM_ZOOM_1)
-    spectrum_pos_centre_f = 128 * xExpand - 1;  //AFP
-  else
-    spectrum_pos_centre_f = 64 * xExpand;  //AFP
-  pos_left = centerLine + static_cast<int>(bands.bands[ConfigData.currentBand].FLoCut / 1000.0 * pixel_per_khz);
-  if (pos_left < spectrum_x) {
-    pos_left = spectrum_x;
+  // Don't show HPF filter setting in AM modes, because it doesn't exist yet.
+  if (bands.bands[ConfigData.currentBand].mode != RadioMode::SAM_MODE and bands.bands[ConfigData.currentBand].mode != RadioMode::AM_MODE) {
+    tft.setCursor(158, 102);
+    tft.print("HPF = ");
+    tft.print(static_cast<float>(bands.bands[ConfigData.currentBand].FLoCut) / 1000.0f, 1);
+    tft.print("kHz");
   }
 
-  // Need to add in code for zoom factor here AFP 10-20-22
-
-  filterWidthX = pos_left + newCursorPosition - centerLine;
-  tft.writeTo(L2);
-  tft.setFontScale((enum RA8875tsize)0);
-  tft.setTextColor(RA8875_LIGHT_GREY);
-  if (switchFilterSideband == false)
-    tft.setTextColor(RA8875_WHITE);
-  else if (switchFilterSideband == true)
-    tft.setTextColor(RA8875_LIGHT_GREY);
-
-  if (bands.bands[ConfigData.currentBand].mode == RadioMode::SAM_MODE or bands.bands[ConfigData.currentBand].mode == RadioMode::AM_MODE)
-    MyDrawFloat(static_cast<float>(bands.bands[ConfigData.currentBand].FAMCut / 1000.0f), 1, FILTER_PARAMETERS_X, FILTER_PARAMETERS_Y, buff);
-  else MyDrawFloat(static_cast<float>(bands.bands[ConfigData.currentBand].FLoCut / 1000.0f), 1, FILTER_PARAMETERS_X, FILTER_PARAMETERS_Y, buff);
-  tft.print("kHz");
-
-  if (switchFilterSideband == true)
-    tft.setTextColor(RA8875_WHITE);
-  else if (switchFilterSideband == false)
-    tft.setTextColor(RA8875_LIGHT_GREY);
-
-  if (bands.bands[ConfigData.currentBand].mode == RadioMode::SAM_MODE or bands.bands[ConfigData.currentBand].mode == RadioMode::AM_MODE)
-    MyDrawFloat(static_cast<float>(bands.bands[ConfigData.currentBand].FAMCut / 1000.0f), 1, FILTER_PARAMETERS_X + 80, FILTER_PARAMETERS_Y, buff);
-  else MyDrawFloat(static_cast<float>(bands.bands[ConfigData.currentBand].FHiCut / 1000.0f), 1, FILTER_PARAMETERS_X + 80, FILTER_PARAMETERS_Y, buff);
-  tft.print("kHz");
-
-  tft.setTextColor(RA8875_WHITE);  // set text color to white for other print routines not to get confused ;-)
+  if (bands.bands[ConfigData.currentBand].mode == RadioMode::SAM_MODE or bands.bands[ConfigData.currentBand].mode == RadioMode::AM_MODE) {
+    tft.setCursor(265, 102);
+    tft.print("LPF = ");
+    tft.print(static_cast<float>(bands.bands[ConfigData.currentBand].FAMCut) / 1000.0f, 1);
+    tft.print("kHz");
+  } else {
+    tft.setCursor(265, 102);
+    tft.print("LPF = ");
+    tft.print(static_cast<float>(bands.bands[ConfigData.currentBand].FHiCut) / 1000.0f, 1);
+    tft.print("kHz");
+  }
+  tft.setTextColor(RA8875_WHITE, RA8875_BLACK);  // set text color to white for other print routines not to get confused ;-)
   tft.writeTo(L1);
 }
 
@@ -447,10 +389,10 @@ void Display::DrawSMeterContainer() {
 *****/
 void Display::ShowSpectrumdBScale() {
   tft.setFontScale((enum RA8875tsize)0);
-  tft.fillRect(SPECTRUM_LEFT_X + 1, SPECTRUM_TOP_Y + 2, 33, tft.getFontHeight(), RA8875_BLACK);
+  //  tft.fillRect(SPECTRUM_LEFT_X + 1, SPECTRUM_TOP_Y + 2, 33, tft.getFontHeight(), RA8875_BLACK);
   tft.setCursor(SPECTRUM_LEFT_X + 5, SPECTRUM_TOP_Y + 2);
-  tft.setTextColor(RA8875_WHITE);
-  tft.print(displayScale[ConfigData.currentScale].dbText);
+  tft.setTextColor(RA8875_WHITE, RA8875_BLACK);
+  tft.print("10 dB/");
 }
 
 
@@ -473,6 +415,15 @@ void Display::DrawSpectrumDisplayContainer() {
 }
 
 
+void Display::EraseRFSpectrum() {
+  tft.writeTo(L1);
+  // Erase inside the spectrum display container.
+  tft.fillRect(SPECTRUM_LEFT_X, SPECTRUM_TOP_Y + 10 + 10, MAX_WATERFALL_WIDTH, SPECTRUM_HEIGHT - 2 - 9 - 10, RA8875_BLACK);
+  // Because the center line is on Layer1, it has to be re-drawn.
+  tft.drawFastVLine(centerLine, SPECTRUM_TOP_Y, h + 20, RA8875_GREEN);
+}
+
+
 /*****
   Purpose: This function draws the frequency bar at the bottom of the spectrum scope, putting markers at every
             graticule and the full frequency.
@@ -484,80 +435,81 @@ void Display::DrawSpectrumDisplayContainer() {
     void
 *****/
 void Display::DrawFrequencyBarValue() {
-  char txt[16];
-  int bignum;
-  int centerIdx;
-  int pos_help;
-  int x{ 0 };
-  float disp_freq;
-  float freq_calc;
-  float grat;
-  // positions for graticules: first for ConfigData.spectrum_zoom < 3, then for ConfigData.spectrum_zoom > 2
-  const static int idx2pos[9] = { -43, 2, 48, 94, 140, 185, 231, 277, 314 };  //AFP 10-30-22
+  int centerIdx{ 0 };
+  float disp_freq{ 0.0 };
+  float freq_calc{ 0.0 };
+  float grat(0.0);
+  const uint32_t graticulePos[7]{ 2, 87, 174, 258, 343, 427, 515 };
+  const uint32_t cursorPos[7]{ 0, 76, 153, 233, 314, 391, 463 };
 
-  grat = static_cast<float>(SR[SampleRate].rate / 8000.0) / static_cast<float>(1 << ConfigData.spectrum_zoom);  // 1, 2, 4, 8, 16, 32, 64 . . . 4096
+  // Used to calculate graticule frequency in most cases.  Zoom = 1 is the exception.
+  grat = static_cast<float>(SR[SampleRate].rate) / 6000.0 / static_cast<float>(1 << ConfigData.spectrum_zoom);
 
   tft.writeTo(L1);  // Not writing to correct layer?  KF5N.  July 31, 2023
   tft.setTextColor(RA8875_WHITE, RA8875_BLACK);
   tft.setFontScale((enum RA8875tsize)0);
 
-  freq_calc = static_cast<float>(static_cast<uint32_t>(ConfigData.centerFreq));  // get current frequency in Hz
+  freq_calc = static_cast<float>(ConfigData.centerFreq) / 1000.0;  // Current frequency in kHz.
 
-  if (ConfigData.spectrum_zoom == 0) {
-    freq_calc += static_cast<float>(SR[SampleRate].rate) / 4.0;
-  }
+  if (ConfigData.spectrum_zoom != 0) centerIdx = 0;
+  else centerIdx = -2;
 
-  if (ConfigData.spectrum_zoom < 5) {
-    freq_calc = roundf(freq_calc / 100) / 10;  // round graticule frequency to the nearest 100Hz
-  }
-
-  if (ConfigData.spectrum_zoom != 0)
-    centerIdx = 0;
-  else
-    centerIdx = -2;
-
-  /**************************************************************************************************
-    CENTER FREQUENCY PRINT
-  **************************************************************************************************/
-  ultoa((freq_calc + (centerIdx * grat)), txt, DEC);
+  //    CENTER FREQUENCY PRINT
   disp_freq = freq_calc + (centerIdx * grat);
-  bignum = static_cast<int>(disp_freq);
-  itoa(bignum, txt, DEC);  // Make into a string
-  //=================== AFP 10-21-22 =====
   tft.setTextColor(RA8875_GREEN, RA8875_BLACK);
 
-  //  ========= AFP 1-21-22 ======
-  if (ConfigData.spectrum_zoom == 0) {
-    tft.setCursor(centerLine - 148, WATERFALL_TOP_Y);  //AFP 10-20-22
+  if (ConfigData.spectrum_zoom == 0) {   // Zoom == 1
+    tft.setCursor(75, WATERFALL_TOP_Y);  // Erase other zoom's frequencies.
+    tft.print("                 ");
+    // Also erase graticules not used with 1X zoom.
+    tft.drawFastVLine(graticulePos[1], WATERFALL_TOP_Y - 5, 7, RA8875_BLACK);
+    tft.drawFastVLine(graticulePos[2], WATERFALL_TOP_Y - 5, 7, RA8875_BLACK);
+    tft.setCursor(centerLine - 148, WATERFALL_TOP_Y);
+    tft.print("       ");
+    tft.setCursor(centerLine - 148, WATERFALL_TOP_Y);
   } else {
-    tft.setCursor(centerLine - 20, WATERFALL_TOP_Y);  //AFP 10-20-22
+    tft.setCursor(centerLine - 148, WATERFALL_TOP_Y);  // Erase Zoom == 1 center frequency first!
+    tft.print("       ");
+    tft.drawFastVLine(130, WATERFALL_TOP_Y - 5, 7, RA8875_BLACK);  // Erase center frequency graticule for 1X zoom.
+    tft.setCursor(centerLine - 25, WATERFALL_TOP_Y);               // centerLine = 258
+    tft.print("       ");
+    tft.setCursor(centerLine - 25, WATERFALL_TOP_Y);
   }
-  //  ========= AFP 1-21-22 ====
-  tft.print(txt);
-  tft.print(" ");
+  tft.print(freq_calc, 1);
 
   tft.setTextColor(RA8875_WHITE, RA8875_BLACK);
-  /**************************************************************************************************
-     PRINT ALL OTHER FREQUENCIES (NON-CENTER)
-   **************************************************************************************************/
-  // snprint() extremely memory inefficient. replaced with simple str?? functions JJP
-  for (int idx = -4; idx < 5; idx++) {
-    pos_help = idx2pos[idx + 4];
-    if (idx != centerIdx) {
-      ultoa((freq_calc + (idx * grat)), txt, DEC);
-      x = WATERFALL_LEFT_X + pos_help * xExpand + 40;
-      if (idx == 4) x = x - 4;  // Scoot end frequency a little bit left so it doesn't collide with audio 0k index.
-        tft.setCursor(x, WATERFALL_TOP_Y);  // AFP 10-20-22
-      // ============  AFP 10-21-22
-      tft.print(txt);
-      tft.print(" ");
-      if (idx < 4) {
-        tft.drawFastVLine((WATERFALL_LEFT_X + pos_help * xExpand + 60), WATERFALL_TOP_Y - 5, 7, RA8875_YELLOW);  // Tick marks depending on zoom
-      } else {
-        tft.drawFastVLine((WATERFALL_LEFT_X + (pos_help + 9) * xExpand + 60), WATERFALL_TOP_Y - 5, 7, RA8875_YELLOW);
+
+  // Print the frequencies.
+  // Zoom == 1.  This is a special case, and the x-axis is weird.
+  if (ConfigData.spectrum_zoom == 0) {
+    for (int idx = -3; idx < 4; idx++) {
+      // Don't print the center frequency, it was printed above.  Also skip the 2nd and 3rd.
+      if (idx == -3 or idx >= 0) {
+        if (idx == -3) disp_freq = freq_calc - 48.0;  // Farthest left.
+        if (idx >= 0) disp_freq = freq_calc + (idx * grat) + 48.0;
+        tft.setCursor(cursorPos[idx + 3], WATERFALL_TOP_Y);
+        tft.print(disp_freq, 1);
+        tft.print(" ");
+        tft.drawFastVLine(graticulePos[idx + 3], WATERFALL_TOP_Y - 5, 7, RA8875_YELLOW);
+      }
+    }
+    tft.drawFastVLine(130, WATERFALL_TOP_Y - 5, 7, RA8875_YELLOW);  // Center frequency graticule for 1X zoom.
+  }
+
+  // Zooms not equal to 1:
+  if (ConfigData.spectrum_zoom != 0) {
+    for (int idx = -3; idx < 4; idx++) {
+      // Don't print the center frequency, it was printed above.
+      if (idx != centerIdx) {
+        disp_freq = freq_calc + (idx * grat);
+        if (ConfigData.spectrum_zoom != 0) tft.setCursor(cursorPos[idx + 3], WATERFALL_TOP_Y);
+        tft.print(disp_freq, 1);
+        tft.print(" ");
+        tft.drawFastVLine(graticulePos[idx + 3], WATERFALL_TOP_Y - 5, 7, RA8875_YELLOW);
       }
     }
   }
+
   tft.writeTo(L1);  // Always leave on layer 1.  KF5N.  July 31, 2023
   tft.setFontScale((enum RA8875tsize)1);
 }
@@ -571,7 +523,7 @@ void Display::DrawFrequencyBarValue() {
 
   Return value;
     void
-*****/
+*****
 void Display::ShowAutoStatus() {
   tft.setFontScale((enum RA8875tsize)0);
   tft.setCursor(SPECTRUM_LEFT_X + 350, SPECTRUM_TOP_Y + 2);
@@ -583,7 +535,7 @@ void Display::ShowAutoStatus() {
   } else
     tft.print("                ");
 }
-
+*/
 
 /*****
   Purpose: To display the current transmission frequency, band, mode, and sideband above the spectrum display.
@@ -596,19 +548,22 @@ void Display::ShowAutoStatus() {
 
 *****/
 void Display::BandInformation() {
-  std::string CWFilter[] = { "0.8kHz", "1.0kHz", "1.3kHz", "1.8kHz", "2.0kHz", " Off " };
+  std::string CWFilter[] = { "0.8kHz", "1.0kHz", "1.3kHz", "1.8kHz", "2.0kHz", " Off  " };
 
   tft.writeTo(L1);
   tft.setFontScale((enum RA8875tsize)0);
-  tft.setTextColor(RA8875_GREEN);
+  tft.setTextColor(RA8875_GREEN, RA8875_BLACK);
   tft.setCursor(5, FREQUENCY_Y + 30);
-  tft.setTextColor(RA8875_WHITE);
-  tft.print("Center Freq");                                    // This is static, never changes.
-  tft.fillRect(100, FREQUENCY_Y + 31, 290, 15, RA8875_BLACK);  // Clear frequency, band, and mode.  This should be the only erase required.
+  // Need to erase all old information.
+  tft.print("                                                  ");
+  tft.setCursor(5, FREQUENCY_Y + 30);
+  tft.setTextColor(RA8875_WHITE, RA8875_BLACK);
+  tft.print("Center Freq ");  // This is static, never changes.
+                              //  tft.fillRect(100, FREQUENCY_Y + 31, 290, 15, RA8875_BLACK);  // Clear frequency, band, and mode.  This should be the only erase required.
 
   // Write the center frequency to the display.
-  tft.setCursor(100, FREQUENCY_Y + 30);
-  tft.setTextColor(RA8875_LIGHT_ORANGE);
+  //  tft.setCursor(100, FREQUENCY_Y + 30);
+  tft.setTextColor(RA8875_LIGHT_ORANGE, RA8875_BLACK);
   if (ConfigData.spectrum_zoom == SPECTRUM_ZOOM_1) {  // AFP 11-02-22
     tft.print(static_cast<int>(ConfigData.centerFreq) + 48000);
   } else {
@@ -616,7 +571,8 @@ void Display::BandInformation() {
   }
 
   // Write the band to the display.
-  tft.setTextColor(RA8875_LIGHT_ORANGE);
+  tft.print("  ");
+  tft.setTextColor(RA8875_LIGHT_ORANGE, RA8875_BLACK);
   tft.setCursor(OPERATION_STATS_X + 50, FREQUENCY_Y + 30);
   if (ConfigData.activeVFO == VFO_A) {
     tft.print(bands.bands[ConfigData.currentBandA].name);  // Write current band to the display.
@@ -624,44 +580,46 @@ void Display::BandInformation() {
     tft.print(bands.bands[ConfigData.currentBandB].name);
   }
 
+  // Write the word MODE in white.
+  tft.setTextColor(RA8875_WHITE, RA8875_BLACK);
+  tft.print("  MODE ");
+
   // Write CW mode and filter bandwidth to display.
-  tft.setTextColor(RA8875_GREEN);
-  tft.setCursor(OPERATION_STATS_X + 90, FREQUENCY_Y + 30);  //AFP 10-18-22
+  tft.setTextColor(RA8875_GREEN, RA8875_BLACK);
+  //  tft.setCursor(OPERATION_STATS_X + 90, FREQUENCY_Y + 30);  //AFP 10-18-22
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE) {
-    tft.print("CW ");
-    tft.setCursor(OPERATION_STATS_X + 111, FREQUENCY_Y + 30);  //AFP 10-18-22
-    tft.print(CWFilter[ConfigData.CWFilterIndex].c_str());     //AFP 10-18-22
+    tft.print("CW  ");
   }
 
   // Write SSB mode to display
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::SSB_MODE) {
-    if (ConfigData.cessb) tft.print("CESSB");  // Which mode
-    if (not ConfigData.cessb) tft.print("SSB");
+    if (ConfigData.cessb) tft.print("CESSB ");  // Which mode
+    if (not ConfigData.cessb) tft.print("SSB ");
   }
 
   // Write FT8 mode to display.
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::FT8_MODE) {
-    if(not ft8EnableFlag) tft.print("FT8");
-    if(ft8EnableFlag) {
-      tft.setTextColor(RA8875_RED);
-      tft.print("FT8");  // Indicate that FT8 transmit is enabled.
-      tft.setTextColor(RA8875_GREEN);
+    if (not ft8EnableFlag) tft.print("FT8 ");
+    if (ft8EnableFlag) {
+      tft.setTextColor(RA8875_RED, RA8875_BLACK);
+      tft.print("FT8  ");  // Indicate that FT8 transmit is enabled.
+      tft.setTextColor(RA8875_GREEN, RA8875_BLACK);
     }
   }
 
   // Write AM mode to display.
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::AM_MODE) {
-    tft.print("AM");
+    tft.print("AM  ");
   }
 
   // Write SAM mode to display.
   if (bands.bands[ConfigData.currentBand].mode == RadioMode::SAM_MODE) {
-    tft.print("SAM");
+    tft.print("SAM ");
   }
 
   // Write sideband or AM demodulation type to display.
-  tft.setCursor(OPERATION_STATS_X + 165, FREQUENCY_Y + 30);
-  tft.setTextColor(RA8875_WHITE);
+  //  tft.setCursor(OPERATION_STATS_X + 165, FREQUENCY_Y + 30);
+  tft.setTextColor(RA8875_WHITE, RA8875_BLACK);
 
   switch (bands.bands[ConfigData.currentBand].sideband) {
     case Sideband::LOWER:
@@ -678,6 +636,19 @@ void Display::BandInformation() {
       break;
     default:
       break;
+  }
+
+  // Printing the CW filter status needs to be done last.
+  if (not calOnFlag) {
+    if (bands.bands[ConfigData.currentBand].mode == RadioMode::CW_MODE) {
+      // Now print CW filter status and setting.
+      tft.setCursor(375, 102);
+      tft.print("CW FILTER ");
+      tft.print(CWFilter[ConfigData.CWFilterIndex].c_str());
+    } else {
+      tft.setCursor(375, 102);
+      tft.print("                 ");  // Erase if not in CW mode.
+    }
   }
 }
 
@@ -1469,7 +1440,7 @@ void Display::RedrawAll() {
   SwitchVFO();
   ShowSpectrumdBScale();
   DrawFrequencyBarValue();
-  ShowAutoStatus();
+  //  ShowAutoStatus();
   UpdateAGCField();
   DisplayIncrementField();
   UpdateNotchField();
@@ -1483,6 +1454,7 @@ void Display::RedrawAll() {
   UpdateAudioOutputField();
   BandInformation();
   UpdateVolumeField();
+  ShowRFGain();
   ShowFrequency();
   SetBandRelay();                   // Set LPF relays for current band.
   lastState = RadioState::NOSTATE;  // Force an update.
@@ -1500,10 +1472,13 @@ void Display::RedrawAll() {
 *****/
 void Display::DrawBandWidthIndicatorBar()  // AFP 10-30-22
 {
-  int Zoom1Offset = 0.0;
-  int cwOffsetPixels = 0;
-  int cwOffsets[4]{ 563, 657, 750, 844 };  // Rounded to nearest Hz.
+  int32_t Zoom1Offset = 0.0;
+  int32_t cwOffsetPixels = 0;
+  int32_t cwOffsets[4]{ 563, 657, 750, 844 };  // Rounded to nearest Hz.
   float hz_per_pixel = 0.0;
+  int32_t hpf_offset{ 0 };
+
+  int32_t cwFilterBW[5]{ 800, 1000, 1300, 1800, 2000 };  // CW filter bandwidths.
 
   switch (zoomIndex) {
     case 0:  // 1X
@@ -1531,35 +1506,39 @@ void Display::DrawBandWidthIndicatorBar()  // AFP 10-30-22
       Zoom1Offset = 0;
       break;
   }
-  newCursorPosition = static_cast<int>(NCOFreq / hz_per_pixel) + Zoom1Offset;  // More accurate tuning bar position.  KF5N May 17, 2024
-  tft.writeTo(L2);                                                             // Write graphics to Layer 2.
 
-  // Calculate the width of the tuning bar.
-  pixel_per_khz = ((1 << ConfigData.spectrum_zoom) * SPECTRUM_RES * 1000.0 / SR[SampleRate].rate);
+  // Calculate the offset due to the high-pass filter.
+  hpf_offset = static_cast<int32_t>(static_cast<float>(bands.bands[ConfigData.currentBand].FLoCut) / hz_per_pixel);
+
+  // newCursorPosition must take into account the high-pass filter setting.
+  if (bands.bands[ConfigData.currentBand].sideband == Sideband::UPPER) newCursorPosition = static_cast<int>(NCOFreq / hz_per_pixel) + Zoom1Offset + hpf_offset;  // More accurate tuning bar position.  KF5N May 17, 2024
+  if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER or bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_AM or bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_SAM) newCursorPosition = static_cast<int>(NCOFreq / hz_per_pixel) + Zoom1Offset;
+
+  tft.writeTo(L2);  // Write graphics to Layer 2.
+
   if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER or bands.bands[ConfigData.currentBand].sideband == Sideband::UPPER)
-    filterWidth = static_cast<int>(((bands.bands[ConfigData.currentBand].FHiCut - bands.bands[ConfigData.currentBand].FLoCut) / 1000.0) * pixel_per_khz * 1.06);  // AFP 10-30-22
+    filterWidth = static_cast<int32_t>((bands.bands[ConfigData.currentBand].FHiCut - bands.bands[ConfigData.currentBand].FLoCut) / hz_per_pixel);  // AFP 10-30-22
   else if (bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_AM or bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_SAM)
-    filterWidth = static_cast<int>(((bands.bands[ConfigData.currentBand].FAMCut * 2.0) / 1000.0) * pixel_per_khz * 1.06);  // AFP 10-30-22
+    filterWidth = static_cast<int32_t>((static_cast<float32_t>(bands.bands[ConfigData.currentBand].FAMCut) * 2.0) / hz_per_pixel);  // AFP 10-30-22
 
   // Draw the bar, except for CW.
   if (radioState != RadioState::CW_RECEIVE_STATE) {
-
     switch (bands.bands[ConfigData.currentBand].sideband) {
       case Sideband::LOWER:
-        tft.fillRect(centerLine - filterWidth + oldCursorPosition, SPECTRUM_TOP_Y + 20, filterWidth + 1, SPECTRUM_HEIGHT - 20, RA8875_BLACK);  // Was 0.96.  KF5N July 31, 2023
-        tft.fillRect(centerLine - filterWidth + newCursorPosition, SPECTRUM_TOP_Y + 20, filterWidth + 1, SPECTRUM_HEIGHT - 20, FILTER_WIN);
+        tft.fillRect(centerLine - oldFilterWidth + oldCursorPosition, SPECTRUM_TOP_Y + 20, oldFilterWidth + 1, SPECTRUM_HEIGHT - 20, RA8875_BLACK);
+        tft.fillRect(centerLine - filterWidth + newCursorPosition - hpf_offset, SPECTRUM_TOP_Y + 20, filterWidth + 1, SPECTRUM_HEIGHT - 20, FILTER_WIN);
         break;
 
       case Sideband::UPPER:
-        tft.fillRect(centerLine + oldCursorPosition, SPECTRUM_TOP_Y + 20, filterWidth, SPECTRUM_HEIGHT - 20, RA8875_BLACK);  //AFP 03-27-22 Layers
-        tft.fillRect(centerLine + newCursorPosition, SPECTRUM_TOP_Y + 20, filterWidth, SPECTRUM_HEIGHT - 20, FILTER_WIN);    //AFP 03-27-22 Layers
+        tft.fillRect(centerLine + oldCursorPosition, SPECTRUM_TOP_Y + 20, oldFilterWidth + 1, SPECTRUM_HEIGHT - 20, RA8875_BLACK);  //AFP 03-27-22 Layers
+        tft.fillRect(centerLine + newCursorPosition, SPECTRUM_TOP_Y + 20, filterWidth, SPECTRUM_HEIGHT - 20, FILTER_WIN);           //AFP 03-27-22 Layers
         break;
 
       case Sideband::BOTH_AM:
       case Sideband::BOTH_SAM:
-        tft.fillRect(centerLine - filterWidth / 2 + oldCursorPosition, SPECTRUM_TOP_Y + 20, filterWidth, SPECTRUM_HEIGHT - 20, RA8875_BLACK);              //AFP 10-30-22
-        tft.fillRect(centerLine - filterWidth / 2 * 0.93 + newCursorPosition, SPECTRUM_TOP_Y + 20, filterWidth * 0.95, SPECTRUM_HEIGHT - 20, FILTER_WIN);  //AFP 10-30-22
-                                                                                                                                                           //      tft.drawFastVLine(centerLine + newCursorPosition, SPECTRUM_TOP_Y + 20, h - 10, RA8875_CYAN);                 //AFP 10-30-22*/
+        tft.fillRect(centerLine - oldFilterWidth / 2 + oldCursorPosition, SPECTRUM_TOP_Y + 20, oldFilterWidth, SPECTRUM_HEIGHT - 20, RA8875_BLACK);  //AFP 10-30-22
+        tft.fillRect(centerLine - filterWidth / 2 + newCursorPosition, SPECTRUM_TOP_Y + 20, filterWidth, SPECTRUM_HEIGHT - 20, FILTER_WIN);          //AFP 10-30-22
+                                                                                                                                                     //      tft.drawFastVLine(centerLine + newCursorPosition, SPECTRUM_TOP_Y + 20, h - 10, RA8875_CYAN);                 //AFP 10-30-22*/
         break;
 
       default:
@@ -1569,16 +1548,22 @@ void Display::DrawBandWidthIndicatorBar()  // AFP 10-30-22
 
   // Draw the offset bar for CW.
   if (radioState == RadioState::CW_RECEIVE_STATE) {
+
+    // If a CW filter is on, filterWidth needs to take this into account.
+    if (ConfigData.CWFilterIndex != 5) {
+      filterWidth = static_cast<int>((cwFilterBW[ConfigData.CWFilterIndex] - bands.bands[ConfigData.currentBand].FLoCut) / hz_per_pixel);
+    }
+
     // Calculate the number of bins to offset based on CW offset, which can be 562.5, 656.5, 750.0 or 843.75 Hz.
     cwOffsetPixels = cwOffsets[ConfigData.CWOffset] / hz_per_pixel;
     switch (bands.bands[ConfigData.currentBand].sideband) {
       case Sideband::LOWER:
-        tft.fillRect(centerLine - filterWidth + oldCursorPosition + cwOffsetPixels, SPECTRUM_TOP_Y + 20, filterWidth, SPECTRUM_HEIGHT - 20, RA8875_BLACK);
-        tft.fillRect(centerLine - filterWidth + newCursorPosition + cwOffsetPixels, SPECTRUM_TOP_Y + 20, filterWidth, SPECTRUM_HEIGHT - 20, FILTER_WIN);
+        tft.fillRect(centerLine + oldCursorPosition + cwOffsetPixels - (oldFilterWidth + old_hpf_offset), SPECTRUM_TOP_Y + 20, oldFilterWidth, SPECTRUM_HEIGHT - 20, RA8875_BLACK);
+        tft.fillRect(centerLine + newCursorPosition + cwOffsetPixels - (filterWidth + hpf_offset), SPECTRUM_TOP_Y + 20, filterWidth, SPECTRUM_HEIGHT - 20, FILTER_WIN);
         break;
 
       case Sideband::UPPER:
-        tft.fillRect(centerLine + oldCursorPosition - cwOffsetPixels, SPECTRUM_TOP_Y + 20, filterWidth, SPECTRUM_HEIGHT - 20, RA8875_BLACK);
+        tft.fillRect(centerLine + oldCursorPosition - cwOffsetPixels, SPECTRUM_TOP_Y + 20, oldFilterWidth, SPECTRUM_HEIGHT - 20, RA8875_BLACK);
         tft.fillRect(centerLine + newCursorPosition - cwOffsetPixels, SPECTRUM_TOP_Y + 20, filterWidth, SPECTRUM_HEIGHT - 20, FILTER_WIN);
         break;
 
@@ -1587,9 +1572,21 @@ void Display::DrawBandWidthIndicatorBar()  // AFP 10-30-22
     }
   }
 
-  // Draw tuning alignment line in blue bandwidth bar.
-  tft.drawFastVLine(centerLine + newCursorPosition, SPECTRUM_TOP_Y + 20, h - 6, RA8875_CYAN);
+  // Draw tuning alignment line in blue bandwidth bar.  Need to ignore the high-pass filter offset.
+  // The old bar needs to be erased first!
+  if (bands.bands[ConfigData.currentBand].sideband == Sideband::LOWER) {
+    tft.drawFastVLine(centerLine + newCursorPosition, SPECTRUM_TOP_Y + 20, h - 6, RA8875_CYAN);
+  }
+  if (bands.bands[ConfigData.currentBand].sideband == Sideband::UPPER) {
+    tft.drawFastVLine(centerLine + newCursorPosition - hpf_offset, SPECTRUM_TOP_Y + 20, h - 6, RA8875_CYAN);
+  }
+  if (bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_AM or bands.bands[ConfigData.currentBand].sideband == Sideband::BOTH_SAM) {
+    tft.drawFastVLine(centerLine + newCursorPosition, SPECTRUM_TOP_Y + 20, h - 6, RA8875_CYAN);
+  }
+
+  oldFilterWidth = filterWidth;
   oldCursorPosition = newCursorPosition;
+  old_hpf_offset = hpf_offset;
   tft.writeTo(L1);  //AFP 03-27-22 Layers
 }
 

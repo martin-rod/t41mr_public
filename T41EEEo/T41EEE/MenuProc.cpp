@@ -410,7 +410,7 @@ void CWOptions()  // new option for Sidetone and Delay JJP 9/1/22
 
     case 1:              // CW Filter BW:      // AFP 10-18-22
       SelectCWFilter();  // in CWProcessing    // AFP 10-18-22
-      break;             // AFP 10-18-22
+      break;
 
     case 2:              // Select a preferred CW offset frequency.
       SelectCWOffset();  //  Located in CWProcessing.cpp
@@ -419,7 +419,7 @@ void CWOptions()  // new option for Sidetone and Delay JJP 9/1/22
     case 3:  // Keyer WPM.
       ConfigData.currentWPM = static_cast<uint32_t>(GetEncoderValueLoopFloat(5, 60, ConfigData.currentWPM, 1, 0, "Keyer WPM: ", true, true));
       SetTransmitDitLength(ConfigData.currentWPM);  //Afp 09-22-22     // JJP 8/19/23
-      display.UpdateKeyType();  // Update display to show revised WPM.
+      display.UpdateKeyType();                      // Update display to show revised WPM.
       break;
 
     case 4:  // Sidetone volume for speaker.
@@ -763,12 +763,12 @@ void EqualizerXmtOptions() {
 *****/
 void SSBOptions() {
   static int ssbChoice = 0;
-  float imdAmplitude = 0.0;
-  int imdAmplitudedB = 100;
+  float imdAmplitude = 1.0;
+  float imdAmplitudedB = 5;
   MenuSelect menu = MenuSelect::BOGUS_PIN_READ;
   const std::string ssbChoices[] = { "CESSB", "SSB", "FT8 Active", "Comp On", "Comp Off", "Mic Gain", "Comp Ratio", "Comp Threshold", "IMD Test ", "Cancel" };
 
-  ssbChoice = SubmenuSelect(ssbChoices, 9, ssbChoice);
+  ssbChoice = SubmenuSelect(ssbChoices, 10, ssbChoice);
   switch (ssbChoice) {
 
     case 0:  // CESSB on
@@ -825,7 +825,7 @@ void SSBOptions() {
       while (menu != MenuSelect::MENU_OPTION_SELECT) {
         menu = readButton();  // Use this to quit.
         // Return IMD amplitude in dB.
-        imdAmplitudedB = GetEncoderValueLive(0.0, 100.0, imdAmplitudedB, 1.0, ssbChoices[7], true, true);
+        imdAmplitudedB = GetEncoderValueLive(0.0, 100.0, imdAmplitudedB, 1.0, ssbChoices[8], true, true);
         imdAmplitude = volumeLog[static_cast<int>(imdAmplitudedB)];
         toneSSBCal1.amplitude(imdAmplitude);
         toneSSBCal2.amplitude(imdAmplitude);
@@ -864,14 +864,14 @@ void SSBOptions() {
   Parameter list:
     void
 
-  Return value12
-    none
+  Return value
+    void
 *****/
 void RFOptions() {
-  const std::string rfOptions[] = { "TX Power Set", "RF Gain Set", "RF Auto-Gain On", "RF Auto-Gain Off", "Auto-Spectrum On", "AutoSpectrum Off", "Cancel" };
+  const std::string rfOptions[] = { "TX Power Set", "RF Gain Set", "Cancel" };
   int rfSet = 0;
 
-  rfSet = SubmenuSelect(rfOptions, 7, rfSet);
+  rfSet = SubmenuSelect(rfOptions, 3, rfSet);
 
   switch (rfSet) {
     case 0:  // TX Power Set.
@@ -880,47 +880,18 @@ void RFOptions() {
       // When the transmit power level is set, this means ALL of the power coefficients must be revised!
       // powerOutCW and powerOutSSB must be updated.
       initPowerCoefficients();
-      eeprom.ConfigDataWrite();  //AFP 10-21-22
-                                 //      BandInformation();
       display.ShowCurrentPowerSetting();
       break;
 
     case 1:  // Manual gain set.
-      ConfigData.rfGain[ConfigData.currentBand] = static_cast<int>(GetEncoderValueLoopFloat(-60, 20, ConfigData.rfGain[ConfigData.currentBand], 5, 1, "RF Gain dB: ", true, true));
-      eeprom.ConfigDataWrite();
-      break;
-
-    case 2:  // Auto-Gain On
-      ConfigData.autoGain = true;
-      ConfigData.autoSpectrum = false;  // Make sure Auto-Spectrum is off.
-      display.ShowAutoStatus();
-      eeprom.ConfigDataWrite();
-      break;
-
-    case 3:  // Auto-Gain Off
-      ConfigData.autoGain = false;
-      fftOffset = 0;
-      display.ShowAutoStatus();
-      eeprom.ConfigDataWrite();
-      break;
-
-    case 4:  // Auto-Spectrum On
-      ConfigData.autoSpectrum = true;
-      ConfigData.autoGain = false;  // Make sure Auto-Gain is off.
-      display.ShowAutoStatus();
-      eeprom.ConfigDataWrite();
-      break;
-
-    case 5:  // Auto-Spectrum Off
-      ConfigData.autoSpectrum = false;
-      fftOffset = 0;
-      display.ShowAutoStatus();
-      eeprom.ConfigDataWrite();
+      ConfigData.rfGain[ConfigData.currentBand] = static_cast<int>(GetEncoderValueLoopFloat(-60, 20, ConfigData.rfGain[ConfigData.currentBand], 5, 0, "RF Gain dB: ", true, true));
+      display.ShowRFGain();
       break;
 
     default:  // Cancel
       break;
   }
+  eeprom.ConfigDataWrite();
 }
 
 
@@ -1169,14 +1140,13 @@ void CalDataOptions() {  //           0               1                2        
   Purpose: To select an option from a submenu
 
   Parameter list:
-    char *options[]           submenus
+    std::string options[]     submenus
     int numberOfChoices       choices available
     int defaultState          the starting option
 
   Return value
     int           an index into the band array
 *****/
-//int SubmenuSelect(const char *options[], int numberOfChoices, int defaultStart) {
 int SubmenuSelect(const std::string options[], int numberOfChoices, int defaultStart) {
   int refreshFlag = 0;
   MenuSelect menu;

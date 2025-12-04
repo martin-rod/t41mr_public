@@ -147,26 +147,11 @@ Bands bands = { { // Revised band struct with mode and sideband.  Greg KF5N Febr
                   { 24920000, 24890000, 24990000, "12M", RadioMode::SSB_MODE, Sideband::UPPER, 3000, 200, 5000, 15, HAM_BAND, 1.0, 20 },
                   { 28350000, 28000000, 29700000, "10M", RadioMode::SSB_MODE, Sideband::UPPER, 3000, 200, 5000, 15, HAM_BAND, 1.0, 20 } } };
 
-const struct SR_Descriptor SR[18] = {
+const struct SR_Descriptor SR[3] = {
   //   SR_n,        rate,  text
-  { SAMPLE_RATE_8K, 8000, "  8k" },      // not OK
-  { SAMPLE_RATE_11K, 11025, " 11k" },    // not OK
-  { SAMPLE_RATE_16K, 16000, " 16k" },    // OK
-  { SAMPLE_RATE_22K, 22050, " 22k" },    // OK
-  { SAMPLE_RATE_32K, 32000, " 32k" },    // OK, one more indicator?
   { SAMPLE_RATE_44K, 44100, " 44k" },    // OK
   { SAMPLE_RATE_48K, 48000, " 48k" },    // OK
-  { SAMPLE_RATE_50K, 50223, " 50k" },    // NOT OK
-  { SAMPLE_RATE_88K, 88200, " 88k" },    // OK
-  { SAMPLE_RATE_96K, 96000, " 96k" },    // OK
-  { SAMPLE_RATE_100K, 100000, "100k" },  // NOT OK
-  { SAMPLE_RATE_101K, 100466, "101k" },  // NOT OK
-  { SAMPLE_RATE_176K, 176400, "176k" },  // OK
   { SAMPLE_RATE_192K, 192000, "192k" },  // OK    THIS IS USED IN THE T41
-  { SAMPLE_RATE_234K, 234375, "234k" },  // NOT OK
-  { SAMPLE_RATE_256K, 256000, "256k" },  // NOT OK
-  { SAMPLE_RATE_281K, 281000, "281k" },  // NOT OK
-  { SAMPLE_RATE_353K, 352800, "353k" }   // NOT OK
 };
 
 const arm_cfft_instance_f32 *S;
@@ -187,13 +172,6 @@ arm_fir_interpolate_instance_f32 FIR_int1_Q;
 arm_fir_interpolate_instance_f32 FIR_int2_I;
 arm_fir_interpolate_instance_f32 FIR_int2_Q;
 arm_lms_norm_instance_f32 LMS_Norm_instance;
-
-// This is no longer used.  It needs to be removed.
-dispSc displayScale[] =  // dbText, dBScale, baseOffset
-  {
-    { "20 dB/", 10.0, 24 },
-    { "10 dB/", 20.0, 10 }  //  1, 2, and 5 dB options removed.  Greg KF5N July 30, 2024.
-  };
 
 int32_t NCOFreq = 0;  // Used for fine-tune frequency shift.
 
@@ -265,10 +243,10 @@ const uint16_t n_dec2_taps = (1 + (uint16_t)(n_att / (22.0 * (n_fstop2 - n_fpass
 
 int attenuator = 0;
 
-int audioYPixel[256]{ 0 };  // Will int16_t save memory here???  DMAMEM not working here.  Causes audio spectrum glitch.  KF5N February 26, 2024.
-int audioYPixelnew[256]{ 0 };
-int audioYPixelold[256]{ 0 };
-int audioYPixelcurrent[256]{ 0 };
+int16_t audioYPixel[256]{ 0 };  // Will int16_t save memory here???  DMAMEM not working here.  Causes audio spectrum glitch.  KF5N February 26, 2024.
+int16_t audioYPixelnew[256]{ 0 };
+int16_t audioYPixelold[256]{ 0 };
+int16_t audioYPixelcurrent[256]{ 0 };
 
 int bandswitchPins[] = {
   30,  // 80M
@@ -519,7 +497,7 @@ float TGetTemp() {
   while (!(TEMPMON_TEMPSENSE0 & 0x4U)) {
     ;
   }
-  // ready to read temperature code value
+  // Ready to read temperature code value.
   nmeas = (TEMPMON_TEMPSENSE0 & 0xFFF00U) >> 8U;
   tmeas = s_hotTemp - (float)((nmeas - s_hotCount) * s_hotT_ROOM / s_roomC_hotC);  // Calculate temperature
   return tmeas;
@@ -1361,4 +1339,5 @@ void loop() {
   if (ms_500.check() == 1) {  // For clock updates AFP 10-26-22
     display.DisplayClock();
   }
+
 }  // end loop()

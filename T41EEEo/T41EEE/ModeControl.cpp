@@ -14,6 +14,7 @@ void ModeControl::CWReceiveMode() {
 
 
 void ModeControl::CWTransmitMode() {
+  display.EraseRFSpectrum();
   SetFreq();
 }
 
@@ -28,7 +29,7 @@ void ModeControl::SSBReceiveMode() {
 
 
 void ModeControl::SSBTransmitMode() {
-
+  display.EraseRFSpectrum();
   SetFreq();
 }
 
@@ -44,7 +45,7 @@ void ModeControl::FT8ReceiveMode() {
 
 
 void ModeControl::FT8TransmitMode() {
-
+  display.EraseRFSpectrum();
   SetFreq();
 }
 
