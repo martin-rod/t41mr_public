@@ -45,14 +45,14 @@ make
 load_to_teensy.sh
 ```
 
-Add working copy of T41EEE to the directory T41EEEw
+Add working copy of T41EEE to the directory T41EEEo
 ```
-git subtree add --prefix=T41EEEw https://github.com/Greg-R/T41EEE main
+git subtree add --prefix=T41EEEo https://github.com/Greg-R/T41EEE main
 ```
 
-Update working copy of T41EEE to the directory T41EEEw
+Update working copy of T41EEE to the directory T41EEEo
 ```
-git subtree pull --prefix=T41EEEw https://github.com/Greg-R/T41EEE main
+git subtree pull --prefix=T41EEEo https://github.com/Greg-R/T41EEE main
 ```
 
 CPU speed is set to 528 MHz ...
