@@ -20,6 +20,7 @@
 #include <utility/imxrt_hw.h>  // For setting I2S freq, Thanks, FrankB!
 #include <EEPROM.h>
 #include <string>
+#include <algorithm>
 
 // User section which is customizable.
 #include "MyConfigurationFile.h"
@@ -550,7 +551,8 @@ extern AudioRecordQueue ADC_RX_Q;
 extern AudioRecordQueue_F32 Q_in_L_Ex;
 extern AudioRecordQueue_F32 Q_in_R_Ex;
 
-extern AudioPlayQueue Q_out_L;
+extern AudioPlayQueue_F32 audioOutQueue;
+extern AudioPlayQueue_F32 sidetoneOutQueue;
 extern AudioPlayQueue_F32 Q_out_L_Ex;
 extern AudioPlayQueue_F32 Q_out_R_Ex;
 

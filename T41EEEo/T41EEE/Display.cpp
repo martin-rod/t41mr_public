@@ -226,7 +226,7 @@ void Display::ShowSpectrum(bool drawSpectrum) {
 
     test1 = -y1_new + 230;  // Nudged waterfall towards blue.  KF5N July 23, 2023
     if (test1 < 0) test1 = 0;
-    if (test1 > 117) test1 = 117;
+    if (test1 > 116) test1 = 116;
     waterfall[x1] = gradient[test1];  // Try to put pixel values in middle of gradient array.  KF5N
     tft.writeTo(L1);
   }  // End for(...) Draw MAX_WATERFALL_WIDTH spectral points
@@ -514,28 +514,6 @@ void Display::DrawFrequencyBarValue() {
   tft.setFontScale((enum RA8875tsize)1);
 }
 
-
-/*****
-  Purpose:  Indicate Auto-Gain or Auto-Spectrum is active.
-
-  Parameter list:
-    void
-
-  Return value;
-    void
-*****
-void Display::ShowAutoStatus() {
-  tft.setFontScale((enum RA8875tsize)0);
-  tft.setCursor(SPECTRUM_LEFT_X + 350, SPECTRUM_TOP_Y + 2);
-  tft.setTextColor(RA8875_WHITE, RA8875_BLACK);
-  if (ConfigData.autoGain) {
-    tft.print("Auto-Gain On    ");
-  } else if (ConfigData.autoSpectrum) {
-    tft.print("Auto-Spectrum On");
-  } else
-    tft.print("                ");
-}
-*/
 
 /*****
   Purpose: To display the current transmission frequency, band, mode, and sideband above the spectrum display.
