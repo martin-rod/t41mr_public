@@ -37,7 +37,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          repository: martin-rod/t41mr_public
+          # repository: martin-rod/t41mr_public
+          repository: martin-rod/t41mr
       - name: Git submodule update
         run: |
           git submodule update --init --recursive
@@ -50,13 +51,13 @@ jobs:
         run: |
           cat version/git_version.sh
           cat version/git_version.h
-      - name: Build t41_sdt
+      - name: Build t41_eee
         run: |
-          echo "Build t41_sdt"
+          echo "Build t41_eee"
           ./create_build_eee_o.sh
           cd build_eee_o
           make VERBOSE=1
-      - name: Upload t41_sdt artifacts
+      - name: Upload t41_eee artifacts
         uses: actions/upload-artifact@v4
         with:
           name: t41_eee_artifact
