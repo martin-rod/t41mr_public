@@ -1,5 +1,5 @@
 name: t41eee_o-actions
-run-name: ${{ github.actor }} t41eee-actions
+run-name: ${{ github.actor }} t41eee-o-actions
 
 on:
   workflow_dispatch:
@@ -37,8 +37,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          # repository: martin-rod/t41mr_public
-          repository: martin-rod/t41mr
+          repository: martin-rod/t41mr_public
+          # repository: martin-rod/t41mr
       - name: Git submodule update
         run: |
           git submodule update --init --recursive
