@@ -369,3 +369,5 @@ target_link_libraries(t41sdt ${T41_LIB})
 message("CMAKE_BINARY_DIR:${CMAKE_BINARY_DIR}")
 target_link_directories(t41sdt PUBLIC ${CMAKE_BINARY_DIR})
 
+# initial configuration
+# -D CMAKE_TOOLCHAIN_FILE="./cmake/arm14.toolchain.cmake" -D T41_SRC_TYPE=EEE_O -D CMSIS_TYPE=SRC_V6 -D CMAKE_BUILD_TYPE=Debug
