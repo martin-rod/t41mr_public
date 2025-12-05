@@ -1,4 +1,4 @@
-name: t41eee-actions
+name: t41eee_o-actions
 run-name: ${{ github.actor }} t41eee-actions
 
 on:
@@ -30,7 +30,7 @@ jobs:
             version/git_version.sh
             version/git_version.h
 
-  build_t41_sdt:
+  build_t41_eee:
     #if: ${{ false }}
     needs: create_version
     runs-on: ubuntu-latest
@@ -53,13 +53,13 @@ jobs:
       - name: Build t41_sdt
         run: |
           echo "Build t41_sdt"
-          ./create_build_o.sh
+          ./create_build_eee_o.sh
           cd build_eee_o
           make VERBOSE=1
       - name: Upload t41_sdt artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: t41_sdt_artifact
+          name: t41_eee_artifact
           retention-days: 14
           path: |
             build_eee_o/t41sdt
