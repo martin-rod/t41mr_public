@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 18.0.0, 2025-12-05T12:04:52. -->
+<!-- Written by QtCreator 18.0.0, 2025-12-05T19:19:35. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -84,11 +84,16 @@
     <value type="int" key="ClangTools.ParallelJobs">2</value>
     <value type="bool" key="ClangTools.PreferConfigFile">true</value>
     <valuelist type="QVariantList" key="ClangTools.SelectedDirs">
-     <value type="QString">/home/rod/wrk_ham/t41/t41mr/CMakeLists.txt</value>
+     <value type="QString">/home/rod/wrk_ham/t41/t41mr/T41EEEo</value>
+     <value type="QString">/home/rod/wrk_ham/t41/t41mr/teensy</value>
     </valuelist>
     <valuelist type="QVariantList" key="ClangTools.SelectedFiles"/>
     <valuelist type="QVariantList" key="ClangTools.SuppressedDiagnostics"/>
     <value type="bool" key="ClangTools.UseGlobalSettings">true</value>
+   </valuemap>
+   <valuemap type="QVariantMap" key="ClangdSettings">
+    <value type="bool" key="blockIndexing">true</value>
+    <value type="bool" key="useGlobalSettings">true</value>
    </valuemap>
    <valuemap type="QVariantMap" key="CppcheckManual">
     <value type="QString" key="binary">/usr/bin/cppcheck</value>
