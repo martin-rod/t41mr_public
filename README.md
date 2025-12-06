@@ -336,6 +336,39 @@ sandbox/usb_audio.cpp
 sandobx/192k_test.wav
 ```
 
+# Coverity
+
+download Coverity Build Tool
+
+```
+https://scan.coverity.com/download/cxx/linux64
+```
+
+extract and add to PATH
+
+```
+export PATH=/home/rod/wrk_ham/t41/coverity/cov-analysis-linux64-2024.12.1/bin/:$PATH
+```
+
+because -fpermissive
+```
+export COVERITY_UNSUPPORTED_COMPILER_INVOCATION=1
+```
+
+run coverity
+
+```
+./create_build_eee_o.sh
+cd /home/rod/wrk_ham/t41/t41mr/build_eee_o
+cov-build --dir cov-int make -j 4
+tar czvf t41_eee_o.tgz cov-int
+```
+and upload ...
+
+```
+https://scan.coverity.com/projects/martin-rod-t41mr_public
+```
+
 
 *********************************************************************************************
 
