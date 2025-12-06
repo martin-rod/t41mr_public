@@ -43,6 +43,7 @@ list(APPEND CODE_QUALITY_FLAGS -Wunused-function)
 list(APPEND CODE_QUALITY_FLAGS -Wunused-result )
 list(APPEND CODE_QUALITY_FLAGS -Wunused-value)
 list(APPEND CODE_QUALITY_FLAGS -Wunused-variable)
+list(APPEND CODE_QUALITY_FLAGS -fanalyzer)
 
 #list(APPEND  CODE_QUALITY_FLAGS -Werror)
 
