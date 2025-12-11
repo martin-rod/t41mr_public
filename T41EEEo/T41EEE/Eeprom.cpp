@@ -1,3 +1,4 @@
+#include <memory>
 // EEPROM class
 
 
@@ -253,7 +254,7 @@ void Eeprom::SetFavoriteFrequency() {
 
 
 /*****
-  Purpose: Used to fetch a favortie frequency as stored in EEPROM. It then copies that
+  Purpose: Used to fetch a favorite frequency as stored in EEPROM. It then copies that
            frequency to the currently active VFO
 
   Parameter list:
@@ -364,8 +365,8 @@ void Eeprom::GetFavoriteFrequency() {
 *****/
 
 void Eeprom::ConfigDataDefaults() {
-  struct config_t* defaultConfig = new config_t;  // Create a copy of the default configuration.
-  ConfigData = *defaultConfig;                    // Copy the defaults to ConfigData struct.
+  config_t tempConfig;
+  ConfigData = tempConfig;  // Copy the defaults to ConfigData struct.
   // Initialize the frequency setting based on the last used frequency stored to EEPROM.
   TxRxFreq = ConfigData.centerFreq = ConfigData.lastFrequencies[ConfigData.currentBand][ConfigData.activeVFO];
 }
@@ -382,10 +383,8 @@ void Eeprom::ConfigDataDefaults() {
 *****/
 
 void Eeprom::CalDataDefaults() {
-  struct calibration_t* defaultCal = new calibration_t;  // Create a copy of the default configuration.
-  CalData = *defaultCal;                                 // Copy the defaults to ConfigData struct.
-  // Initialize the frequency setting based on the last used frequency stored to EEPROM.
-  TxRxFreq = ConfigData.centerFreq = ConfigData.lastFrequencies[ConfigData.currentBand][ConfigData.activeVFO];
+  calibration_t tempCal;
+  CalData = tempCal;  // Copy the defaults to CalData struct.
 }
 
 
@@ -399,14 +398,16 @@ void Eeprom::CalDataDefaults() {
     void
 *****/
 void Eeprom::EEPROMStartup() {
-  int ConfigDataEEPROMSize;
-  int ConfigDataStackSize;
-  int CalDataEEPROMSize;
-  int CalDataStackSize;
-  int BandsEEPROMSize;
-  int BandsStackSize;
+  int ConfigDataEEPROMSize{ 0 };
+  int ConfigDataStackSize{ 0 };
+  int CalDataEEPROMSize{ 0 };
+  int CalDataStackSize{ 0 };
+  int BandsEEPROMSize{ 0 };
+  int BandsStackSize{ 0 };
+  //  std::unique_ptr<config_t> defaultConfig = std::make_unique<config_t>();
+  config_t tempConfig;
 
-  //  Determine if the struct ConfigData is compatible (same size) with the one stored in EEPROM.
+  //  Determine if the structs ConfigData, CalData, and bands are compatible (same size) with the one stored in EEPROM.
 
   ConfigDataEEPROMSize = EEPROMReadSize(EEPROM_BASE_ADDRESS);
   ConfigDataStackSize = sizeof(ConfigData);
@@ -419,10 +420,10 @@ void Eeprom::EEPROMStartup() {
 
   // For minor revisions to the code, we don't want to overwrite the EEPROM.
   // We will assume the switch matrix and other items are calibrated or configured by the user, and are not to be lost.
-  // However, if the ConfigData or the CalData struct changes, it is necessary to overwrite the EEPROM with the new struct.
+  // However, if the ConfigData, CalData or bands structs change, it is necessary to overwrite the EEPROM with the new struct(s).
   // This decision is made by using a simple size comparison.  This is not fool-proof, but it will probably
   // work most of the time.  The users should be instructed to always save the EEPROM (ConfigData and CalData) to SD for later recovery
-  // of their calibration and configuration settings.
+  // of their calibration and configuration settings.  Note: the bands struct is saved along with ConfigData.
   // If all else fails, then the user should execute a FLASH erase.  The configuration and calibration can then be read from the SD card.
 
   // The case where struct sizes are the same, indicating no changes to the struct.  Nothing more to do, return.
@@ -431,7 +432,18 @@ void Eeprom::EEPROMStartup() {
     ConfigDataRead();  // Read the ConfigData into active memory.
     CalDataRead();     // Read the CalData into active memory.
     BandsRead();       // Read the bands array into active memory.
-    return;            // Done, begin radio operation.
+
+    // Handle the special case of overwrite when none of the structs have changed size.  This can happen when a user wants to
+    // upgrade without executing a FLASH erase.  The only thing which will be updated in this case is the version.
+    if (strcmp(tempConfig.versionSettings, ConfigData.versionSettings) == 0) {
+      return;  // Versions the same, done.
+    } else {
+      for (int i = 0; i < 10; i = i + 1) {
+        ConfigData.versionSettings[i] = tempConfig.versionSettings[i];  // Set to the new version.
+      }
+      ConfigDataWrite();  // Write to EEPROM.
+    }
+    return;  // Done, begin radio operation.
   }
 
   // If the flow proceeds here, it is time to initialize some things.
