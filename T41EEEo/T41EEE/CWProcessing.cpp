@@ -135,31 +135,31 @@ FLASHMEM void SelectCWFilter() {
   Return value:
     void
 *****/
-  std::vector<std::string>CWOffsets = { "562.5 Hz", "656.5 Hz", "750 Hz", "843.75 Hz", " Cancel " };
+
+std::vector<std::string> CWOffsets = {"562.5 Hz", "656.5 Hz", "750 Hz", "843.75 Hz", " Cancel "};
 FLASHMEM void SelectCWOffset() {
-  int tempCWOffset;
-  const int numCycles[4] = { 6, 7, 8, 9 };
+  uint32_t tempCWOffset;
+  const int numCycles[4] = {6, 7, 8, 9};
 
   tempCWOffset = ConfigData.CWOffset;
-  ConfigData.CWOffset = SubmenuSelect(CWOffsets, ConfigData.CWOffset);  // CWFilter is an array of strings.
-  if(ConfigData.CWOffset == -1) {
-    tft.setCursor(0, 1);
-    tft.println("Push Select");
-    ConfigData.CWOffset = tempCWOffset;  // Keep original value.
-    SelectCWOffset();  // User pushed the wrong button.  Start over.
+
+  int menuSelection = SubmenuSelect(CWOffsets, ConfigData.CWOffset);
+  if (menuSelection == -1) {
+    return;
   }
 
   //  If user selects cancel, CWOffset will be set to the bogus value of 4.  So keep the old value.
-  if (ConfigData.CWOffset == 4) ConfigData.CWOffset = tempCWOffset;
+  if (menuSelection == 4)
+    ConfigData.CWOffset = tempCWOffset;
 
-  // Now generate the values for the buffer which is used to create the CW tone.  The values are discrete because there must be whole cycles.
+  // Now generate the values for the buffer which is used to create the CW tone.  The values are discrete because there must be
+  // whole cycles.
   if (ConfigData.CWOffset < 4) {
-    sineTone(numCycles[ConfigData.CWOffset]);                   // This is for the CW decoder only.
-    cwexciter.writeSineBuffer(numCycles[ConfigData.CWOffset]);  // For the CW exciter only.
+    sineTone(numCycles[ConfigData.CWOffset]);                  // This is for the CW decoder only.
+    cwexciter.writeSineBuffer(numCycles[ConfigData.CWOffset]); // For the CW exciter only.
   }
   display.UpdateAudioGraphics();
 }
-
 
 //=================  AFP10-18-22 ================
 /*****

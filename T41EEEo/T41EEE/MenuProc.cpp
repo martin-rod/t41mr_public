@@ -414,7 +414,7 @@ void CWOptions()  // new option for Sidetone and Delay JJP 9/1/22
       break;
 
     case 2:              // Select a preferred CW offset frequency.
-//      SelectCWOffset();  //  Located in CWProcessing.cpp
+      // SelectCWOffset();  //  Located in CWProcessing.cpp
 
       button.InputParameterButton("CW Offset Hz", CWOffsets, ConfigData.CWOffset);
       break;
@@ -1156,7 +1156,7 @@ void CalDataOptions() {  //           0               1                2        
   Return value
     int           an index into the band array
 *****/
-int SubmenuSelect(std::vector<std::string>options, int defaultStart) {
+int SubmenuSelect(std::vector<std::string> & options, int defaultStart) {
   int refreshFlag = 0;
   MenuSelect menu;
   int buttonReturnValue;

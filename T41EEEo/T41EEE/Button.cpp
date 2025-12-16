@@ -1,6 +1,6 @@
 // Button class
 
-#include "SDT.h"
+#include "Button.h"
 
 /*
 The button interrupt routine implements a first-order recursive filter, or "leaky integrator,"
@@ -1111,7 +1111,7 @@ void Button::ExecuteModeChange() {
     void
     Base Code courtesy of Harry  GM3RVL
 *****/
-void Button::InputParameterButton(const std::string parameterName, std::vector<std::string> selectionList, uint32_t &parameter) {
+void Button::InputParameterButton(const std::string  & parameterName, std::vector<std::string> & selectionList, uint32_t &parameter) {
   int centerLine = (MAX_WATERFALL_WIDTH + SPECTRUM_LEFT_X) / 2;
   bool notDone{ true };
   int32_t buttonReturnValue{ 0 };

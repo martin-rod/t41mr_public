@@ -1,6 +1,6 @@
-// Button class
-
 #pragma once
+
+#include "SDT.h"
 
 class Button {
 
@@ -31,7 +31,7 @@ public:
   void ButtonMuteAudio();
   void ExecuteModeChange();
   void ButtonFrequencyEntry();
-  void InputParameterButton(const std::string parameterName, std::vector<std::string>selectionList, uint32_t &parameter);
+  void InputParameterButton(const std::string & parameterName, std::vector<std::string> & selectionList, uint32_t & parameter);
 
 private:
 
@@ -50,3 +50,5 @@ private:
   uint32_t TxRxFreqOld = 0;
   bool audioState = MUTEAUDIO;
 };
+
+extern Button button;             // Front-panel button object.

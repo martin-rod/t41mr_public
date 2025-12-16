@@ -587,7 +587,7 @@ extern JSON json;                 // JSON object.
 extern RxCalibrate rxcalibrater;  // CW mode calibration object.
 extern TxCalibrate txcalibrater;  // SSB mode calibration object.
 extern CW_Exciter cwexciter;      // CW exciter object
-extern Button button;             // Front-panel button object.
+
 
 extern Si5351 si5351;  // RF PLL object.
 
@@ -980,7 +980,7 @@ void SpectralNoiseReductionInit();
 void Splash();
 void SSBOptions();
 void isTransmitterKeyed();
-int SubmenuSelect(std::vector<std::string>options, int defaultStart);
+int SubmenuSelect(std::vector<std::string> & options, int defaultStart);
 int SubmenuSelectString(std::string options[], int numberOfChoices, int defaultStart);
 void T4_rtc_set(unsigned long t);
 float TGetTemp();
