@@ -328,7 +328,7 @@ struct config_t {
   uint32_t morseDecodeSensitivity = 3000;      // Greg KF5N February 19, 2025
   uint32_t keyType = STRAIGHT_KEY_OR_PADDLES;  // Straight key = 0, keyer = 1.  JJP 7-3-23
   int currentWPM = DEFAULT_KEYER_WPM;          // 4 bytes default = 15 JJP 7-3-23
-  int CWOffset = 2;                            // Default is 750 Hz.
+  uint32_t CWOffset = 2;                       // Default is 750 Hz.
   uint32_t sidetoneSpeaker = 40;               // 4 bytes
   uint32_t sidetoneHeadphone = 40;
   uint32_t cwTransmitDelay = 1000;
@@ -906,7 +906,7 @@ void DoExciterEQ();
 void DoReceiveEQ();
 void DoSignalHistogram(long val);
 void DoGapHistogram(long val);
-int DoSplitVFO();
+// int DoSplitVFO();  // Temporarily removed
 void DoPaddleFlip();
 void DrawActiveLetter(int row, int horizontalSpacer, int whichLetterIndex, int keyWidth, int keyHeight);
 void DrawKeyboard();
@@ -926,7 +926,6 @@ void FreqShift2();
 float goertzel_mag(int numSamples, int TARGET_FREQUENCY, int SAMPLING_RATE, float *data);
 float GetEncoderValueLive(float minValue, float maxValue, float startValue, float increment, std::string prompt, bool left, bool colorRed);
 float GetEncoderValueLoopFloat(float minValue, float maxValue, float startValue, float increment, int precision, std::string prompt, bool left, bool colorRed);
-void GetFavoriteFrequency();
 float HaversineDistance(float dxLat, float dxLon);
 void initializeAudioPaths();  // Greg KF5N March 9, 2025
 void InitializeDataArrays();
@@ -964,7 +963,6 @@ void SelectCWOffset();  // KF5N December 13, 2023
 void SetBandRelay();
 void SetDecIntFilters();
 void SetDitLength(int wpm);
-void SetFavoriteFrequency();
 void SetFreq();
 int SetI2SFreq(int freq);
 void SetIIRCoeffs(float32_t f0, float32_t Q, float32_t sample_rate, uint8_t filter_type);
@@ -982,7 +980,7 @@ void SpectralNoiseReductionInit();
 void Splash();
 void SSBOptions();
 void isTransmitterKeyed();
-int SubmenuSelect(const std::string options[], int numberOfChoices, int defaultStart);
+int SubmenuSelect(std::vector<std::string>options, int defaultStart);
 int SubmenuSelectString(std::string options[], int numberOfChoices, int defaultStart);
 void T4_rtc_set(unsigned long t);
 float TGetTemp();
