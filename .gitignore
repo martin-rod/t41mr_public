@@ -3,4 +3,6 @@ build*/
 .idea/
 cmake-build*/
 
+CMakeLists.txt.user
+
 poznamky.txt
