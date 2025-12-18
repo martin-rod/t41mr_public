@@ -1154,58 +1154,62 @@ void CalDataOptions() {  //           0               1                2        
     int           The index of the chosen option.
 *****/
 int SubmenuSelect(const std::vector<std::string> &options, int defaultStart) {
-  int refreshFlag = 0;
-  MenuSelect menu;
-  int buttonReturnValue;
-
-  tft.setTextColor(RA8875_BLACK);
-  buttonReturnValue = defaultStart;  // Start the options using this option
-
-  tft.setFontScale((enum RA8875tsize)1);
-  if (refreshFlag == 0) {
-    tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT, RA8875_GREEN);  // Show the option in the second field
-    tft.setCursor(SECONDARY_MENU_X + 1, MENUS_Y + 1);
-    tft.print(options[buttonReturnValue].c_str());  // Secondary Menu
-    refreshFlag = 1;
+  if (options.size() == 0) {
+    return -1;
   }
 
+  if (defaultStart < 0) {
+    defaultStart = 0;
+  }
+
+  size_t returnValue = defaultStart;
+
+  if (returnValue >= options.size()) {
+    returnValue = 0;
+  }
+
+  tft.setTextColor(RA8875_BLACK);
+  tft.setFontScale((enum RA8875tsize)1);
+  tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT, RA8875_GREEN); // Show the option in the second field
+  tft.setCursor(SECONDARY_MENU_X + 1, MENUS_Y + 1);
+  tft.print(options[returnValue].c_str()); // Secondary Menu
+
   while (true) {
-    menu = readButton();                       // Read the ladder value
-    if (menu != MenuSelect::BOGUS_PIN_READ) {  // Valid choice?
+    MenuSelect menu = readButton();
+    if (menu != MenuSelect::BOGUS_PIN_READ) {
       switch (menu) {
-        case MenuSelect::MENU_OPTION_SELECT:  // They made a choice
-          tft.setTextColor(RA8875_WHITE);
-          display.EraseMenus();
-          return buttonReturnValue;
-          break;
+      case MenuSelect::MENU_OPTION_SELECT:
+        tft.setTextColor(RA8875_WHITE);
+        display.EraseMenus();
+        return returnValue;
+        break;
 
-        case MenuSelect::MAIN_MENU_UP:
-          buttonReturnValue++;
-          if (buttonReturnValue >= static_cast<int>(options.size()))
-            buttonReturnValue = 0;
-          break;
+      case MenuSelect::MAIN_MENU_UP:
+        if (returnValue < (options.size() - 1)) {
+          returnValue++;
+        }
+        break;
 
-        case MenuSelect::MAIN_MENU_DN:
-          buttonReturnValue--;
-          if (buttonReturnValue < 0)
-            buttonReturnValue = options.size() - 1;
-          break;
+      case MenuSelect::MAIN_MENU_DN:
+        if (returnValue > 0) {
+          returnValue--;
+        }
+        break;
 
-        default:
-          buttonReturnValue = -1;  // An error selection
-          break;
+      default:
+        tft.setTextColor(RA8875_WHITE);
+        display.EraseMenus();
+        return -1;
+        break;
       }
-      if (buttonReturnValue != -1) {
-        tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT, RA8875_GREEN);  // Show the option in the second field
-        tft.setTextColor(RA8875_BLACK);
-        tft.setCursor(SECONDARY_MENU_X + 1, MENUS_Y + 1);
-        tft.print(options[buttonReturnValue].c_str());
-        refreshFlag = 0;
-      }
+
+      tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT, RA8875_GREEN); // Show the option in the second field
+      tft.setTextColor(RA8875_BLACK);
+      tft.setCursor(SECONDARY_MENU_X + 1, MENUS_Y + 1);
+      tft.print(options[returnValue].c_str());
     }
   }
 }
-
 
 /*****
   Purpose: To select an option from a submenu
@@ -1218,55 +1222,60 @@ int SubmenuSelect(const std::vector<std::string> &options, int defaultStart) {
   Return value
     int           an index into the band array
 *****/
-int SubmenuSelectString(std::string options[], int numberOfChoices, int defaultStart) {
-  int refreshFlag = 0;
-  MenuSelect menu;
-  int encoderReturnValue;
-
-  tft.setTextColor(RA8875_BLACK);
-  encoderReturnValue = defaultStart;  // Start the options using this option
-
-  tft.setFontScale((enum RA8875tsize)1);
-  if (refreshFlag == 0) {
-    tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT, RA8875_GREEN);  // Show the option in the second field
-    tft.setCursor(SECONDARY_MENU_X + 1, MENUS_Y + 1);
-    tft.print(options[encoderReturnValue].c_str());  // Secondary Menu
-    refreshFlag = 1;
+int SubmenuSelectString(std::string options[], size_t numberOfChoices, size_t defaultStart) {
+  if (numberOfChoices == 0) {
+    return -1;
   }
 
+  if (defaultStart < 0) {
+    defaultStart = 0;
+  }
+
+  size_t returnValue = defaultStart;
+
+  if (returnValue >= numberOfChoices) {
+    returnValue = 0;
+  }
+
+  tft.setTextColor(RA8875_BLACK);
+  tft.setFontScale((enum RA8875tsize)1);
+  tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT, RA8875_GREEN); // Show the option in the second field
+  tft.setCursor(SECONDARY_MENU_X + 1, MENUS_Y + 1);
+  tft.print(options[returnValue].c_str()); // Secondary Menu
+
   while (true) {
-    menu = readButton();                       // Read the ladder value
-    if (menu != MenuSelect::BOGUS_PIN_READ) {  // Valid choice?
+    MenuSelect menu = readButton();
+    if (menu != MenuSelect::BOGUS_PIN_READ) {
       switch (menu) {
-        case MenuSelect::MENU_OPTION_SELECT:  // They made a choice
-          tft.setTextColor(RA8875_WHITE);
-          display.EraseMenus();
-          return encoderReturnValue;
-          break;
+      case MenuSelect::MENU_OPTION_SELECT:
+        tft.setTextColor(RA8875_WHITE);
+        display.EraseMenus();
+        return returnValue;
+        break;
 
-        case MenuSelect::MAIN_MENU_UP:
-          encoderReturnValue++;
-          if (encoderReturnValue >= numberOfChoices)
-            encoderReturnValue = 0;
-          break;
+      case MenuSelect::MAIN_MENU_UP:
+        if (returnValue < (numberOfChoices - 1)) {
+          returnValue++;
+        }
+        break;
 
-        case MenuSelect::MAIN_MENU_DN:
-          encoderReturnValue--;
-          if (encoderReturnValue < 0)
-            encoderReturnValue = numberOfChoices - 1;
-          break;
+      case MenuSelect::MAIN_MENU_DN:
+        if (returnValue > 0) {
+          returnValue--;
+        }
+        break;
 
-        default:
-          encoderReturnValue = -1;  // An error selection
-          break;
+      default:
+        tft.setTextColor(RA8875_WHITE);
+        display.EraseMenus();
+        return -1;
+        break;
       }
-      if (encoderReturnValue != -1) {
-        tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT, RA8875_GREEN);  // Show the option in the second field
-        tft.setTextColor(RA8875_BLACK);
-        tft.setCursor(SECONDARY_MENU_X + 1, MENUS_Y + 1);
-        tft.print(options[encoderReturnValue].c_str());
-        refreshFlag = 0;
-      }
+
+      tft.fillRect(SECONDARY_MENU_X, MENUS_Y, EACH_MENU_WIDTH, CHAR_HEIGHT, RA8875_GREEN); // Show the option in the second field
+      tft.setTextColor(RA8875_BLACK);
+      tft.setCursor(SECONDARY_MENU_X + 1, MENUS_Y + 1);
+      tft.print(options[returnValue].c_str());
     }
   }
 }

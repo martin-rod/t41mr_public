@@ -968,7 +968,7 @@ void Splash();
 void SSBOptions();
 void isTransmitterKeyed();
 int SubmenuSelect(const std::vector<std::string> &options, int defaultStart);
-int SubmenuSelectString(std::string options[], int numberOfChoices, int defaultStart);
+int SubmenuSelectString(std::string options[], size_t numberOfChoices, size_t defaultStart);
 void T4_rtc_set(unsigned long t);
 float TGetTemp();
 void updateMic();  // This updates the Open Audio compressor.
