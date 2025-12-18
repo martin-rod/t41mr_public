@@ -369,6 +369,57 @@ and upload ...
 https://scan.coverity.com/projects/martin-rod-t41mr_public
 ```
 
+# Memory
+
+from https://www.pjrc.com/store/teensy41.html
+
+![Memory](/doc/teensy41_memory.png "Memory")
+
+## Program / Flash Memory
+
+Teensy 4.1 has 8 Mbyte of flash memory intended for storing your code. The flash memory can also store read-only variables and arrays. A portion of the flash memory may be used for file storage using the LittleFS library. The top 256K of this memory is reserved for EEPROM emulation data and the LED blink restore program.
+
+## RAM
+
+1024K of memory is available for variables and data. Half of this memory (RAM1) is accessed as tightly coupled memory for maximum performance. The other half (RAM2) is optimized for access by DMA. Normally large arrays & data buffers are placed in RAM2, to save the ultra-fast RAM1 for normal variables.
+
+```
+<ITCM>  00000000 .. 0000ffff  RAM1
+<DTCM>  20000000 .. 2006ffff  RAM1
+<RAM>   20200000 .. 2027ffff  RAM2
+<FLASH> 60000000 .. 607fffff
+<PSRAM> 70000000 .. 707fffff
+```
+
+### Static Allocation Keywords
+
+    When the compiler builds your program, all global variables, static variables, and compiled code is assigned to dedicated locations in memory. This is called static allocation, because the memory addresses are fixed. By default, allocation tries to use the ultra-fast DTCM & ITCM memory. The following keywords allow control over where the compiler will place your variables and code within the memory.
+
+        DMAMEM - Variables defined with DMAMEM are placed at the beginning of RAM2. Normally buffers and large arrays are placed here. These variables can not be initialized, your program must write their initial values, if needed.
+
+        EXTMEM - Variables defined with EXTMEM are placed in the optional PSRAM memory chip soldered to the QSPI memory expansion area on bottom side of Teensy 4.1. These variables can not be initialized, your program must write their initial values, if needed.
+
+        PROGMEM & F() - Variables defined with PROGMEM, and strings surrounded by F() are placed only in the flash memory. They can be accessed normally, special functions normally used on 8 bit boards are not required to read PROGMEM variables.
+
+        FASTRUN - Functions defined with "FASTRUN" are allocated in the beginning of RAM1. A copy is also stored in Flash and copied to RAM1 at startup. These functions are accessed by the Cortex-M7 ITCM bus, for the fastest possible performance. By default, functions without any memory type defined are treated as FASTRUN. A small amount of memory is typically unused, because the ITCM bus must access a memory region which is a multiple of 32K.
+
+        FLASHMEM - Functions defined with "FLASHMEM" executed directly from Flash. If the Cortex-M7 cache is not already holding a copy of the function, a delay results while the Flash memory is read into the M7's cache. FLASHMEM should be used on startup code and other functions where speed is not important.
+
+### Dynamic Allocation
+
+    As your program runs, it may use all of the RAM which was not reserved by static allocation. Because the specific memory address for each variable is computed as your program runs, this is called dynamic memory allocation.
+
+        Local Variables - Local variables, and also return addresses from function calls and the saved state from interrupts are placed on a stack which starts from the top of RAM1 and grown downward. The amount of space for local variable is the portion of RAM1 not used by FASTRUN code and the initialized and zeroed variables.
+
+        Heap - Memory allocated by C++ "new" and C malloc(), and Arduino String variables are placed in RAM2, starting immediately after the DMAMEM variables.
+
+        External Heap - If PSRAM has been added, extmem_malloc() may be used to allocate this memory, started immediately after the EXTMEM variables. When no PSRAM is present, extmem_malloc() automatically allocated memory from the normal heap in RAM2.
+
+## RTC RAM
+
+    16 bytes of memory are located within the RTC. If a coin cell is connected to VBAT, contents of this memory is preserved while power is off. This memory is accessed as 32 bit registers LPGPR0-LPGPR3.
+
+
 # ARM tool chain
 
 https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads
