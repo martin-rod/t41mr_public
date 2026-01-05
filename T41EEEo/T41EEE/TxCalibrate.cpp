@@ -474,10 +474,10 @@ void TxCalibrate::DoXmitCalibrate(int calMode, bool radio, bool refine, bool toE
   IQCalType = 0;          // Begin with IQ gain optimization.
   std::vector<float32_t> sweepVector(201);
   std::vector<float32_t> sweepVectorValue(201);
-  std::vector<float32_t> sub_vectorAmp = std::vector<float>(21);  // Can these arrays be commonized?
-  std::vector<float32_t> sub_vectorPhase = std::vector<float>(21);
-  std::vector<float> sub_vectorAmpResult = std::vector<float>(21);
-  std::vector<float> sub_vectorPhaseResult = std::vector<float>(21);
+  std::vector<float32_t> sub_vectorAmp(21);  // Can these arrays be commonized?
+  std::vector<float32_t> sub_vectorPhase(21);
+  std::vector<float> sub_vectorAmpResult(21);
+  std::vector<float> sub_vectorPhaseResult(21);
   elapsedMillis fiveSeconds;
   int startTimer = 0;
   TxCalibrate::autoCal = false;
@@ -794,10 +794,10 @@ void TxCalibrate::DoXmitCarrierCalibrate(int calMode, bool radio, bool refine, b
   TxCalibrate::saveToEeprom = toEeprom;     // Save to EEPROM
   std::vector<float32_t> sweepVector(201);  // 0 + 450 * 2 / 5
   std::vector<float32_t> sweepVectorValue(201);
-  std::vector<float32_t> sub_vectorIoffset = std::vector<float32_t>(21);
-  std::vector<float32_t> sub_vectorQoffset = std::vector<float32_t>(21);
-  std::vector<float> sub_vectorAmpResult = std::vector<float>(21);
-  std::vector<float> sub_vectorPhaseResult = std::vector<float>(21);
+  std::vector<float32_t> sub_vectorIoffset(21);
+  std::vector<float32_t> sub_vectorQoffset(21);
+  std::vector<float> sub_vectorAmpResult(21);
+  std::vector<float> sub_vectorPhaseResult(21);
   std::vector<float>::iterator result;
   int startTimer = 0;
   TxCalibrate::CalibratePreamble(2);  // Set zoom to 4X.  Note this is using 48ksps sample rate.
@@ -1114,8 +1114,7 @@ void TxCalibrate::RadioCal(int mode, bool refineCal) {
       bands.bands[ConfigData.currentBand].sideband = Sideband::LOWER;  // Calibrate lower sideband for 80M and 40M.
       rxcalibrater.DoReceiveCalibrate(mode, true, refineCal, false);
       txcalibrater.DoXmitCalibrate(mode, true, refineCal, false);
-    } else
-      bands.bands[ConfigData.currentBand].sideband = Sideband::UPPER;
+    }
 
     bands.bands[ConfigData.currentBand].sideband = Sideband::UPPER;
     rxcalibrater.DoReceiveCalibrate(mode, true, refineCal, false);  // Include 80M and 40M due to FT8.
