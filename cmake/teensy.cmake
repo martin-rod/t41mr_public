@@ -1,4 +1,4 @@
-set(runtime_ide_version 159)
+set(runtime_ide_version 160)
 set(arduino_ide_version 10607)
 set(TEENSY_VERSION 41 CACHE STRING "Set to the Teensy version" FORCE)
 
@@ -136,9 +136,9 @@ function(teensy_set_dynamic_properties_eee)
 
         if (NOT DEFINED ${build_usbtype})
             # set(build_usbtype USB_SERIAL)
-            # set(build_usbtype USB_DUAL_SERIAL)
+            set(build_usbtype USB_DUAL_SERIAL)
             # set(build_usbtype USB_TRIPLE_SERIAL)
-            set(build_usbtype USB_AUDIO192K_SERIAL_SERIAL)
+            # set(build_usbtype USB_AUDIO192K_SERIAL_SERIAL)
             # set(build_usbtype ${build_usbtype}  CACHE INTERNAL "build_usbtype")
             message(STATUS "build_usbtype: ${build_usbtype}" )
         endif()
