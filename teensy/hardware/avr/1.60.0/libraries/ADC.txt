@@ -1,0 +1,1 @@
+ADC provides access to Teensy 3.x and LC's advanced analog to digital converter features.

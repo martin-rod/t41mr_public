@@ -1,0 +1,3 @@
+Access CAN (Controller Area Network) bus on Teensy 3.1 & 3.2.
+
+CAN bus is using in automobiles and some industrial control applications.

@@ -1,0 +1,3 @@
+Control 7-segment displays or many LEDs, using MAX7219 or MAX7221 chip(s).
+
+Written by Eberhard Fahle.

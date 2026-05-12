@@ -1,0 +1,3 @@
+Use very inexpensive wireless communication modules.
+
+Written by Mike McCauley.

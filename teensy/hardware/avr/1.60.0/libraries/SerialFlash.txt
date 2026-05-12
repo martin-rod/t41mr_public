@@ -1,0 +1,3 @@
+Access SPI flash memory, using a file-based interface similar to the SD library.
+
+For direct low-level byte access, use SPIFlash.

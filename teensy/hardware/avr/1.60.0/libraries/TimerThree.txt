@@ -1,0 +1,1 @@
+Use Timer3 to run a function at periodic intervals and/or to create PWM output signals.

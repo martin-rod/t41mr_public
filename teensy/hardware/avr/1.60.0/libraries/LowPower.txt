@@ -1,0 +1,3 @@
+Use power saving modes on AVR processors.
+
+Only works with Teensy 2.0 & Teensy++ 2.0.  For 32 bit Teensy, use the Snooze library.

@@ -1,0 +1,1 @@
+nRF8001 is a Bluetooth LE communication module.

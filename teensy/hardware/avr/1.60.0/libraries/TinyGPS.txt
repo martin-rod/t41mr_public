@@ -1,0 +1,3 @@
+Parse the NEMA format data from a GPS (Global Positioning) unit, to easily obtain the key information.
+
+Written by Mikal Hart.

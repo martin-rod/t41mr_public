@@ -1,0 +1,1 @@
+Supports a variety of color TFT displays, including 8 and 16 bit parallel interface types.

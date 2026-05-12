@@ -1,0 +1,3 @@
+Use Maxim/Dallas 1-wire devices.
+
+Written by Jim Studt, based on code by Derek Yerger.  Improvements and bug fixes contributed by Tom Pollard, Robin James, and Paul Stoffregen.

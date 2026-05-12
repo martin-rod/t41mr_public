@@ -1,0 +1,5 @@
+An improved version of LiquidCrystal, for connecting character-based
+LCD displays.  This version is much faster and supports 4x40 and other
+4 line displays.
+
+Written by John Raines.

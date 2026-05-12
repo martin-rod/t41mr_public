@@ -1,0 +1,3 @@
+Access I2C bus on Teensy 3.x & LC.
+
+This library is a replacement for the Wire library, offering more features and non-blocking I/O.

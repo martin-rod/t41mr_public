@@ -1,0 +1,3 @@
+Control addressable RGB LEDs, especially WS2812B/NeoPixel & APA102/Dotstar.
+
+Has many optimized graphics drawing functions.  Can use OctoWS2811 as a driver for efficient control of large LED projects.

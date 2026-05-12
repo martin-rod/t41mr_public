@@ -1,0 +1,1 @@
+Supports a variety of wireless radio communication modules.
