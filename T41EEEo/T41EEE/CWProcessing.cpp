@@ -1,0 +1,897 @@
+// Morse decode (ALPS decoder) and other CW related utilities.
+
+#include "SDT.h"
+
+
+/*****
+  Purpose: This function replaces the arm_max_float32() function that finds the maximum element in an array.
+           The histograms are "fuzzy" in the sense that dits and dahs "cluster" around a maximum value rather
+           than having a single max value. This algorithm looks at a given cell and the adds in the previous
+           (index - 1) and next (index + 1) cells to get the total for that index.
+
+  Parameter list:
+    int32_t *array         the base address of the array to search
+    int32_t elements       the number of elements of the array to examine
+    int32_t *maxCount      the largest clustered value found
+    int32_t *maxIndex      the index of the center of the cluster
+    int32_t *firstNonZero  the first cell that has a non-zero value
+    int32_t clusterSpread  tells how far previous and ahead elements are to be included in the measure.
+                            Must be an odd integer > 1.
+
+  Return value;
+    void
+*****/
+void CWProcessing::JackClusteredArrayMax(int32_t *array, int32_t elements, int32_t *maxCount, int32_t *maxIndex, int32_t *firstNonZero, int32_t spread) {
+  int32_t i, j, clusteredIndex;
+  int32_t clusteredMax, temp;
+
+  *maxCount = '\0';  // Reset to empty
+  *maxIndex = '\0';
+
+  clusteredMax = 0;
+  clusteredIndex = -1;  // Now we can check for an error
+
+  for (i = spread; i < elements - spread; i++) {  // Start with 1 so we can look at the previous element's value
+    temp = 0;
+    for (j = i - spread; j <= i + spread; j++) {
+      temp += array[j];
+    }
+
+    if (temp >= clusteredMax) {
+      clusteredMax = temp;
+      clusteredIndex = i;
+    }
+  }
+  if (clusteredIndex > 0) {
+    *maxCount = array[clusteredIndex];
+    *maxIndex = clusteredIndex;
+  }
+}
+
+
+//=================  AFP10-18-22 ================
+/*****
+  Purpose: Select CW Filter. ConfigData.CWFilterIndex has these values:
+           0 = 840Hz
+           1 = 1kHz
+           2 = 1.3kHz
+           3 = 1.8kHz
+           4 = 2kHz
+           5 = Off
+
+  Parameter list:
+    void
+
+  Return value:
+    void
+*****/
+FLASHMEM void CWProcessing::SelectCWFilter() {
+  const std::string CWFilter[] = { "0.8kHz", "1.0kHz", "1.3kHz", "1.8kHz", "2.0kHz", " Off " };
+  ConfigData.CWFilterIndex = SubmenuSelect(CWFilter, 6, ConfigData.CWFilterIndex);  // CWFilter is an array of strings.
+
+  if (ConfigData.CWFilterIndex != 5) switchFilterSideband = true;  // Sets current delimiter to FLow (high-pass filter adjust).
+  display.UpdateAudioGraphics();                                   // This draws decoder delimiters and CW bandwidth box (red).
+  display.BandInformation();
+}
+
+
+/*****
+  Purpose: Select CW tone frequency.
+
+  Parameter list:
+    void
+
+  Return value:
+    void
+*****/
+FLASHMEM void CWProcessing::SelectCWOffset() {
+  int tempCWOffset;
+  const std::string CWOffsets[] = { "562.5 Hz", "656.5 Hz", "750 Hz", "843.75 Hz", " Cancel " };
+  const int numCycles[4] = { 6, 7, 8, 9 };
+
+  tempCWOffset = ConfigData.CWOffset;
+  ConfigData.CWOffset = SubmenuSelect(CWOffsets, 5, ConfigData.CWOffset);  // CWFilter is an array of strings.
+  if(ConfigData.CWOffset == -1) {
+    tft.setCursor(0, 1);
+    tft.println("Push Select");
+    ConfigData.CWOffset = tempCWOffset;  // Keep original value.
+    SelectCWOffset();  // User pushed the wrong button.  Start over.
+  }
+
+  //  If user selects cancel, CWOffset will be set to the bogus value of 4.  So keep the old value.
+  if (ConfigData.CWOffset == 4) ConfigData.CWOffset = tempCWOffset;
+
+  // Now generate the values for the buffer which is used to create the CW tone.  The values are discrete because there must be whole cycles.
+  if (ConfigData.CWOffset < 4) {
+    sineTone(numCycles[ConfigData.CWOffset]);                   // This is for the CW decoder only.
+    cwexciter.writeSineBuffer(numCycles[ConfigData.CWOffset]);  // For the CW exciter only.
+  }
+  display.UpdateAudioGraphics();
+}
+
+
+//=================  AFP10-18-22 ================
+/*****
+  Purpose: to process CW specific signals
+
+  Parameter list:
+    void
+
+  Return value:
+    void
+
+*****/
+void CWProcessing::DoCWReceiveProcessing() {  // All New AFP 09-19-22
+  float goertzelMagnitude1;
+  float goertzelMagnitude2;
+  float32_t aveCorrResult;
+  float32_t corrResultR;
+  uint32_t corrResultIndexR;
+  float32_t corrResultL;
+  uint32_t corrResultIndexL;
+  float32_t combinedCoeff;  //AFP 02-06-22
+  int audioTemp;            // KF5N
+
+  if (ConfigData.decoderFlag) {  // JJP 7/20/23
+
+    arm_fir_f32(&FIR_CW_DecodeL, float_buffer_L, float_buffer_L_CW, 256);  // AFP 10-25-22  Park McClellan FIR filter const Group delay
+    arm_fir_f32(&FIR_CW_DecodeR, float_buffer_R, float_buffer_R_CW, 256);
+
+    //Calculate correlation between sine and incoming signal.  AFP 02-04-22
+    arm_correlate_f32(float_buffer_R_CW, 256, sinBuffer, 256, float_Corr_BufferR);
+    arm_max_f32(float_Corr_BufferR, 511, &corrResultR, &corrResultIndexR);
+    // Running average of corr coeff. R
+    aveCorrResultR = .7 * corrResultR + .3 * aveCorrResultR;
+    arm_correlate_f32(float_buffer_L_CW, 256, sinBuffer, 256, float_Corr_BufferL);
+    // Get max value of correlation
+    arm_max_f32(float_Corr_BufferL, 511, &corrResultL, &corrResultIndexL);
+    // Running average of corr coeff. L
+    aveCorrResultL = .7 * corrResultL + .3 * aveCorrResultL;
+    // aveCorrResult reduced by factor of 2 to emphasize Goertzel a little more.
+    aveCorrResult = (corrResultR + corrResultL) / 4.0;  // Divisor was 2.0.
+
+    // Calculate Goertzel Mahnitude of incoming signal.
+    goertzelMagnitude1 = goertzel_mag(256, freq[ConfigData.CWOffset], 24000, float_buffer_L_CW);  //AFP 10-25-22
+    goertzelMagnitude2 = goertzel_mag(256, freq[ConfigData.CWOffset], 24000, float_buffer_R_CW);  //AFP 10-25-22
+
+    goertzelMagnitude = (goertzelMagnitude1 + goertzelMagnitude2) / 2;
+    //Combine Correlation and Gowetzel Coefficients.  Tuning coefficient added.  Greg KF5N March 9, 2025
+    combinedCoeff = static_cast<float32_t>(ConfigData.morseDecodeSensitivity) * aveCorrResult * goertzelMagnitude;
+    //    Serial.printf("combinedCoeff = %f\n", combinedCoeff);  // Use this to tune decoder.
+    //  Don't draw CW decode "lock" indicator if not required.
+    if (combinedCoeff > 50 and drewGreenLastLoop == false) {  // AFP 10-26-22
+      tft.fillRect(699, 442, 14, 14, RA8875_GREEN);
+      drewGreenLastLoop = true;
+      drewBlackLastLoop = false;
+    } else if (combinedCoeff < 50 and drewBlackLastLoop == false) {  // AFP 10-26-22
+      CWLevelTimer = millis();
+      if (CWLevelTimer - CWLevelTimerOld > 2000) {
+        CWLevelTimerOld = millis();
+        tft.fillRect(699, 442, 14, 14, RA8875_BLACK);  // Erase
+        drewBlackLastLoop = true;
+        drewGreenLastLoop = false;
+      }
+    }
+    if (combinedCoeff > 50) {  // if  have a reasonable corr coeff, >50, then we have a keeper. // AFP 10-26-22
+      audioTemp = 1;
+    } else {
+      audioTemp = 0;
+    }
+    //==============  acquire data on CW  ================
+    DoCWDecoding(audioTemp);
+  }
+}
+
+
+/*****
+  Purpose: establish the dit length for code transmission. Crucial since
+    all spacing is done using dit length
+
+  Parameter list:
+    int wpm
+
+  Return value:
+    void
+*****/
+void CWProcessing::SetTransmitDitLength(int wpm) {
+  transmitDitLength = 1200.0 / static_cast<float32_t>(wpm);  // JJP 8/19/23
+
+  // Total audio blocks that will be output = 1 (rise) + transmit(Dit|Dah)UnshapedBlocks + 1 (fall)
+  // Blocks are assumed to be 10ms long, and the number of unshaped blocks is rounded to acheive
+  // the best approximation of the actual desired dit and dah times.
+  if (transmitDitLength < 20) {
+    transmitDitUnshapedBlocks = 0;
+    transmitDahUnshapedBlocks = 0;
+  } else {
+    transmitDitUnshapedBlocks = static_cast<uint32_t>(rint(transmitDitLength / cwBlockLength)) - 2;  // Length of dit minus 2 for ramp up and down.
+    transmitDahUnshapedBlocks = (transmitDitUnshapedBlocks + 2) * 3 - 2;                             // Length of dit times 3 - 2 for ramp up and down.
+  }
+}
+
+
+/*****
+  Purpose: Select straight key, keyer, or iambic keyer.  All this does is control
+           the pullups on the GPIs connected to the key or keyer paddle.
+           This should be part of the menus used by the operator.
+
+  Parameter list:
+    void
+
+  Return value:
+    void
+*****/
+void CWProcessing::SetKeyType() {
+  uint32_t currentKey{ 0 };
+  const std::string keyChoice[] = { "Straight Key", "Keyer", "Iambic" };
+
+  keyPressedOn = false;  // Guard against already fired key interrupt.
+
+  // What to do will depend on the current setting!
+  currentKey = ConfigData.keyType;
+  // Now the user selects the key type.
+  ConfigData.keyType = SubmenuSelect(keyChoice, 3, ConfigData.keyType);
+  if (currentKey == ConfigData.keyType) return;  // No change.
+
+  // Configure key to user selection.
+  switch (ConfigData.keyType) {
+      //  Configure for straight key.
+    case 0:
+      // Detach the ring interrupt.  It is not needed and can cause undesired interrupts.
+      detachInterrupt(digitalPinToInterrupt(KEYER_DAH_INPUT_RING));
+      pinMode(KEYER_DAH_INPUT_RING, INPUT);  // Remove the pullup.
+
+      break;
+      // Configure for regular keyer and iambic keyer (same configuration).
+    case 1:
+    case 2:
+      // Set the pullup on the ring.
+      pinMode(KEYER_DAH_INPUT_RING, INPUT_PULLUP);  // The other keyer paddle.
+      // Attach the ring interrupt, because it was not needed for the straight key.
+      // The tip interrupt is always attached.
+      attachInterrupt(digitalPinToInterrupt(KEYER_DAH_INPUT_RING), KeyRingOn, CHANGE);
+      // Flip dit and dah as configured by operator.
+      if (ConfigData.paddleFlip) {  // Means right-paddle dit
+        ConfigData.paddleDit = KEYER_DAH_INPUT_RING;
+        ConfigData.paddleDah = KEYER_DIT_INPUT_TIP;
+      } else {
+        ConfigData.paddleDit = KEYER_DIT_INPUT_TIP;
+        ConfigData.paddleDah = KEYER_DAH_INPUT_RING;
+      }
+
+      break;
+
+    default:
+      break;
+
+  }  // end switch
+
+  delay(1000);           // This is required to allow GPIOs to settle out.
+  keyPressedOn = false;  // Guard against already fired key interrupt.
+  keyerFirstDit = false;
+  keyerFirstDah = false;
+}
+
+
+/*****
+  Purpose: Set up key configuration at power-up.  Don't run after power-up!  Greg Raven KF5N Oct 2025
+           This function should be in setup(), just after configuration of GPIOs.
+
+  Parameter list:
+    void
+
+  Return value:
+    void
+*****/
+FLASHMEM void CWProcessing::SetKeyPowerUp() {
+
+  pinMode(KEYER_DIT_INPUT_TIP, INPUT_PULLUP);  // Straight key and keyer paddle.
+  pinMode(KEYER_DAH_INPUT_RING, INPUT);        // The other keyer paddle.  Don't pullup if not used.
+
+  // Straight key, always uses tip.
+  if (ConfigData.keyType == 0) {
+    ConfigData.paddleDit = KEYER_DIT_INPUT_TIP;
+    ConfigData.paddleDah = KEYER_DAH_INPUT_RING;
+    // Attach the interrupt to the tip.  Ring doesn't need an interrupt.
+    attachInterrupt(digitalPinToInterrupt(KEYER_DIT_INPUT_TIP), KeyTipOn, CHANGE);
+  }
+
+  // Keyer paddle.
+  if (ConfigData.keyType == 1 or ConfigData.keyType == 2) {
+    pinMode(KEYER_DAH_INPUT_RING, INPUT_PULLUP);  // Activate pullup on dah.
+    attachInterrupt(digitalPinToInterrupt(KEYER_DIT_INPUT_TIP), KeyTipOn, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(KEYER_DAH_INPUT_RING), KeyRingOn, CHANGE);
+    // Flip dit and dah if so configured.
+    if (ConfigData.paddleFlip) {  // Means right-paddle dit
+      ConfigData.paddleDit = KEYER_DAH_INPUT_RING;
+      ConfigData.paddleDah = KEYER_DIT_INPUT_TIP;
+    } else {
+      ConfigData.paddleDit = KEYER_DIT_INPUT_TIP;
+      ConfigData.paddleDah = KEYER_DAH_INPUT_RING;
+    }
+  }
+
+  /* Keyer paddle.
+  if (ConfigData.keyType == 2) {
+    pinMode(KEYER_DAH_INPUT_RING, INPUT_PULLUP);  // Activate pullup on dah.
+    detachInterrupt(digitalPinToInterrupt(KEYER_DIT_INPUT_TIP));
+    detachInterrupt(digitalPinToInterrupt(KEYER_DAH_INPUT_RING));
+    // Flip dit and dah if so configured.
+    if (ConfigData.paddleFlip) {  // Means right-paddle dit
+      ConfigData.paddleDit = KEYER_DAH_INPUT_RING;
+      ConfigData.paddleDah = KEYER_DIT_INPUT_TIP;
+    } else {
+      ConfigData.paddleDit = KEYER_DIT_INPUT_TIP;
+      ConfigData.paddleDah = KEYER_DAH_INPUT_RING;
+    }
+  }
+  */
+}
+
+
+/*****
+  Purpose: Allow user to set the sidetone volume.  KF5N August 31, 2023
+           Sidetone volume is set separately for speaker and headphone.
+           Headphone volume has to be set in the Audio Adapter hardware.
+
+  Parameter list:
+    bool speaker (true for speaker, false for headphone)
+
+  Return value;
+    void
+*****/
+void CWProcessing::SetSideToneVolume(bool speaker) {
+  int sidetoneDisplay;
+  bool keyDown;
+  MenuSelect menu;
+  RadioState temp = radioState;
+
+  SetAudioOperatingState(RadioState::CW_TRANSMIT_STRAIGHT_STATE);
+  tft.setFontScale((enum RA8875tsize)1);
+  tft.fillRect(SECONDARY_MENU_X - 50, MENUS_Y, EACH_MENU_WIDTH + 60, CHAR_HEIGHT, RA8875_MAGENTA);
+  tft.setTextColor(RA8875_WHITE);
+  tft.setCursor(SECONDARY_MENU_X - 48, MENUS_Y + 1);
+  tft.print("Sidetone Volume:");
+  tft.setCursor(SECONDARY_MENU_X + 220, MENUS_Y + 1);
+  if (speaker) sidetoneDisplay = ConfigData.sidetoneSpeaker;
+  else sidetoneDisplay = ConfigData.sidetoneHeadphone;
+  keyDown = false;
+  tft.print(sidetoneDisplay);  // Display in range of 0 to 100.
+
+  // This is going to run the CW transmitter, however, the power amplifier is not enabled.
+  while (true) {
+    if (digitalRead(KEYER_DIT_INPUT_TIP) == LOW) {
+      if (keyDown) {
+        cwexciter.CW_ExciterIQData(CW_SHAPING_NONE);
+      } else {
+        cwexciter.CW_ExciterIQData(CW_SHAPING_RISE);
+        keyDown = true;
+      }
+    } else {
+      if (keyDown) {
+        cwexciter.CW_ExciterIQData(CW_SHAPING_FALL);
+        keyDown = false;
+      }
+    }
+
+    if (filterEncoderMove != 0) {
+      sidetoneDisplay = sidetoneDisplay + filterEncoderMove;  // * 0.001;  // ConfigData.sidetoneVolume range is 0.0 to 1.0 in 0.001 steps.  KF5N August 29, 2023
+      if (sidetoneDisplay < 0)
+        sidetoneDisplay = 0;
+      else if (sidetoneDisplay > 100)  // 100% max
+        sidetoneDisplay = 100;
+      tft.fillRect(SECONDARY_MENU_X + 200, MENUS_Y, 70, CHAR_HEIGHT, RA8875_MAGENTA);
+      tft.setCursor(SECONDARY_MENU_X + 220, MENUS_Y + 1);
+      if (speaker) ConfigData.sidetoneSpeaker = sidetoneDisplay;
+      else ConfigData.sidetoneHeadphone = sidetoneDisplay;
+      tft.setTextColor(RA8875_WHITE);
+      tft.print(sidetoneDisplay);
+      filterEncoderMove = 0;
+    }
+    speakerVolume.setGain(volumeLog[ConfigData.sidetoneSpeaker]);
+    // This is the only practical way to set headphone sidetone volume.
+    sgtl5000_1.volume(static_cast<float32_t>(ConfigData.sidetoneHeadphone) / 100.0);  // This control has a range of 0.0 to 1.0.
+    menu = readButton();
+    if (menu == MenuSelect::MENU_OPTION_SELECT) {  // Exit
+      break;
+    }
+  }  // end while loop
+  display.EraseMenus();
+  SetAudioOperatingState(temp);  // Restore the radio state.
+  keyPressedOn = false;          // Prevent the transmitter from being keyed upon exit.
+}
+
+
+//==================================== Decoder =================
+//DB2OO, 29-AUG-23: moved col declaration here
+static int col = 0;  // Start at lower left
+
+/*****
+    DB2OO, 29-AUG-23: added
+  Purpose: This function clears the morse code text buffer
+
+  Parameter list:
+    
+
+  Return value
+    void
+*****/
+void CWProcessing::MorseCharacterClear(void) {
+  col = 0;
+  decodeBuffer[col] = '\0';  // Make it a string
+}
+
+
+/*****
+  Purpose: This function displays the decoded Morse code below waterfall. Arranged as:
+
+  Parameter list:
+    char currentLetter
+
+  Return value
+    void
+*****
+void CWProcessing::MorseCharacterDisplay(char currentLetter) {
+  if (col < MAX_DECODE_CHARS) {  // Start scrolling??
+    decodeBuffer[col] = currentLetter;
+    col++;
+    decodeBuffer[col] = '\0';  // Make is a string
+  } else {
+    //DB2OO, 25-AUG-23: use memmove instead of memcpy(), to avoid the warning
+    memmove(decodeBuffer, &decodeBuffer[1], MAX_DECODE_CHARS - 1);  // Slide array down 1 character.
+    decodeBuffer[col - 1] = currentLetter;                          // Add to end
+    decodeBuffer[col] = '\0';                                       // Make is a string
+  }
+  tft.fillRect(CW_TEXT_START_X, CW_TEXT_START_Y, CW_MESSAGE_WIDTH, CW_MESSAGE_HEIGHT * 2, RA8875_BLACK);
+  tft.setFontScale((enum RA8875tsize)1);
+  tft.setTextColor(RA8875_WHITE);
+  tft.setCursor(CW_TEXT_START_X, CW_TEXT_START_Y);
+  tft.print(decodeBuffer);
+}
+*/
+
+/*****
+  Purpose: This function displays the decoded Morse code below waterfall. Arranged as:
+
+  Parameter list:
+    char currentLetter
+
+  Return value
+    void
+*****/
+void CWProcessing::MorseCharacterDisplay(char currentLetter) {
+
+  tft.setFontScale((enum RA8875tsize)1);
+  tft.setTextColor(RA8875_RED, RA8875_BLACK);
+  tft.setCursor(502, CW_TEXT_START_Y);
+  tft.writeTo(L1);
+
+  tft.BTE_move(18, 457, 505, 22, 0, 457, 1, 1);
+  tft.print(currentLetter);
+}
+
+
+/*****
+  Purpose: This function uses the current WPM to set an estimate ditLength any time the tune
+           endcoder is changed
+
+  Parameter list:
+    void
+
+  Return value
+    void
+*****/
+void CWProcessing::ResetHistograms() {
+  gapAtom = transmitDitLength;
+  gapChar = dahLength = transmitDitLength * 3;
+  thresholdGeometricMean = (transmitDitLength + dahLength) / 2;  // Use simple mean for starters so we don't have 0
+  aveDitLength = transmitDitLength;
+  aveDahLength = dahLength;
+  valRef1 = 0;
+  valRef2 = 0;
+  // Clear graph arrays
+  memset(signalHistogram, 0, HISTOGRAM_ELEMENTS * sizeof(uint32_t));
+  memset(gapHistogram, 0, HISTOGRAM_ELEMENTS * sizeof(uint32_t));
+}
+
+
+/*****
+  Purpose: This function creates a distribution of the gaps between signals, expressed
+           in milliseconds. The result is a tri-modal distribution around three timings:
+            1. inter-atom time (one dit length)
+            2. inter-character (three dit lengths)
+            3. word end (seven dit lengths)
+
+  Parameter list:
+    long val  The duration of the signal gap (ms).
+
+  Return value;
+    void
+*****/
+void CWProcessing::DoGapHistogram(uint32_t gapLen) {
+  int32_t tempAtom, tempChar;
+  int32_t atomIndex, charIndex, firstDit, temp;
+  uint32_t offset;
+
+  if (gapHistogram[gapLen] > 10) {  // Need over 1 so we don't have fractional value
+    for (int k = 0; k < HISTOGRAM_ELEMENTS; k++) {
+      gapHistogram[k] = (uint32_t)(.8 * (float)gapHistogram[k]);
+    }
+  }
+
+  gapHistogram[gapLen]++;  // Add new signal to distribution
+
+  atomIndex = charIndex = 0;
+  if (gapLen <= thresholdGeometricMean) {                                                                                 // Find new dit length
+    JackClusteredArrayMax(gapHistogram, (uint32_t)thresholdGeometricMean, &tempAtom, &atomIndex, &firstDit, (int32_t)1);  // Find max dit gap
+    if (atomIndex) {                                                                                                      // if something found
+      gapAtom = atomIndex;
+    }
+    for (int j = 0; j < HISTOGRAM_ELEMENTS; j++) {                        // count down
+      if (gapHistogram[HISTOGRAM_ELEMENTS - j] > 0 && endGapFlag == 0) {  //Look for non-zero entries in the histogram
+        if (HISTOGRAM_ELEMENTS - j < gapAtom * 2) {                       // limit search to probable gapAtom entries
+          topGapIndex = HISTOGRAM_ELEMENTS - j;                           //Upper end of gapAtom range
+          endGapFlag = 1;                                                 // set flag so we know tha this is the top of the gapAtom range
+        }
+      }
+      if (topGapIndex > 2 * gapAtom) topGapIndex = topGapIndexOld;  // discard outliers
+    }
+    endGapFlag = 0;                //reset flag
+    topGapIndexOld = topGapIndex;  //Keep good value for reference
+  } else {                         // dah calculation
+    if (gapLen <= thresholdGeometricMean * 2) {
+      offset = (uint32_t)(thresholdGeometricMean * 2);  // Find number of elements to check
+      JackClusteredArrayMax(&gapHistogram[(int32_t)thresholdGeometricMean + 1], offset, &tempChar, &charIndex, &temp, (int32_t)3);
+      if (charIndex)  // if something found
+        gapChar = charIndex;
+    }
+  }
+  if (atomIndex) {
+    gapAtom = atomIndex;
+  }
+  if (charIndex) {
+    gapChar = charIndex;
+  }
+}
+
+
+// This function was re-factored into a state machine by KF5N October 29, 2023.
+/*****
+  Purpose: Called when in CW mode and decoder flag is set. Function assumes:
+
+      dit           = 1
+      dah           = dit * 3
+      inter-atom    = dit
+      inter-letter  = dit * 3
+      inter-word    = dit * 7
+
+      You can distinguish between dah and inter-letter by presence/absence of signal. Same for inter-atom.
+
+  Parameter list:
+    float audioValue        the strength of audio signal
+
+  Return value;
+    void
+*****/
+// charProcessFlag means a character is being decoded.  blankFlag indicates a blank has already been printed.
+
+void CWProcessing::DoCWDecoding(int audioValue) {
+
+  for (int i = 0; i < 2; i = i + 1) {
+    switch (decodeStates) {
+      // State 0.  Detects start of signal and starts timer.
+      case state0:
+        // Detect signal and redirect to appropriate state.
+        if (audioValue == 1) {
+          signalStart = millis();                                                                    // Time stamp beginning of signal.
+          gapLength = signalStart - signalEnd;                                                       // Calculate the time gap between the start of this new signal and the end of the last one.
+                                                                                                     //        Serial.printf("gapLength state0 = %d\n", gapLength);
+          if (gapLength > LOWEST_ATOM_TIME && gapLength < (uint32_t)(thresholdGeometricMean * 3)) {  // range  LOWEST_ATOM_TIME = 20
+            DoGapHistogram(gapLength);                                                               // Map the gap in the signal
+          }
+          decodeStates = state1;  // Go to "signalStart" state.
+          break;                  // Go to state1;
+        }
+        noSignalTimeStamp = millis();
+        interElementGap = noSignalTimeStamp - signalEnd;
+        if ((interElementGap > (gapAtom * 2)) && charProcessFlag) {  // use thresholdGeometricMean??? was ditLength. End of character!  65 * 2
+          decodeStates = state3;                                     // Character ended, print it!
+          break;
+        }
+        if (interElementGap > (gapAtom * 5) && not blankFlag && not charProcessFlag) {  // A big gap, print a blank, but don't repeat a blank.  85 * 3.5
+          decodeStates = state4;
+          break;
+        }
+        decodeStates = state0;  // Stay in state0; no signal.
+        break;                  // End state0
+      case state1:              // This state times a signal and measures its duration.  The next state determines if the signal is a dit or a dah.
+        if (audioValue == 0) {
+          currentTime = millis();
+          signalElapsedTime = currentTime - signalStart;  // Calculate the duration of the signal.
+          // Ignore short noisy signal bursts:
+          if (signalElapsedTime < LOWEST_ATOM_TIME) {  // A hiccup or a real signal?  Make this a fraction of ditLength instead???
+            decodeStates = state0;                     // False signal, start over.
+            break;
+          }
+          if (signalElapsedTime > LOWEST_ATOM_TIME && signalElapsedTime < HISTOGRAM_ELEMENTS) {  // Valid elapsed time?
+            DoSignalHistogram(signalElapsedTime);                                                //Yep
+          }
+          signalEnd = currentTime;  // Time gap to next signal.
+          decodeStates = state2;    // Proceed to state2.  A timed signal is available and must be processed.
+          break;
+        }
+        decodeStates = state1;  // Signal still present, stay in state1.
+        break;                  // End state1
+
+      case state2:                                                                                     // Determine if a timed signal was a dit or a dah and increment the decode tree.
+        if (signalElapsedTime > (0.5 * transmitDitLength) && signalElapsedTime < (1.5 * dahLength)) {  // All this does is provide a wide boundary for dit and dah lengths.
+          currentDashJump = currentDashJump >> 1;                                                      // Fast divide by 2
+          if (signalElapsedTime < (int)thresholdGeometricMean) {                                       // It was a dit
+            charProcessFlag = true;
+            currentDecoderIndex++;
+          } else {  // It's a dah!
+            charProcessFlag = true;
+            currentDecoderIndex += currentDashJump;
+          }
+        }
+        decodeStates = state0;  // Begin process again.
+        break;                  // End state2
+      case state3:
+        MorseCharacterDisplay(bigMorseCodeTree[currentDecoderIndex]);  // This always prints.  How do blanks get printed.
+        currentDecoderIndex = 0;                                       //Reset everything if char or word
+        currentDashJump = DECODER_BUFFER_SIZE;
+        charProcessFlag = false;  // Char printed and no longer in progress.
+        decodeStates = state0;    // Start process for next incoming character.
+        blankFlag = false;
+
+        break;      // End state5
+      case state4:  //  Blank printing state.
+        MorseCharacterDisplay(' ');
+
+        tft.setFontScale((enum RA8875tsize)0);  // Show estimated WPM
+        tft.setTextColor(RA8875_GREEN);
+        tft.fillRect(DECODER_X + 75, DECODER_Y - 5, tft.getFontWidth() * 3, tft.getFontHeight(), RA8875_BLACK);  // Erase old WPM.
+        tft.setCursor(DECODER_X + 75, DECODER_Y - 5);
+        tft.writeTo(L1);
+        tft.print(1200L / (dahLength / 3));
+        tft.writeTo(L1);
+        tft.setTextColor(RA8875_WHITE);
+        tft.setFontScale((enum RA8875tsize)3);
+        blankFlag = true;
+        decodeStates = state0;  // Start process for next incoming character.
+        break;
+      default:
+        break;
+    }
+  }
+}
+
+
+/*****
+  Purpose: This function creates a distribution of the dit and dahs lengths, expressed in
+  milliseconds. The result is a bi-modal distribution around those two timings. The
+  modal value is then used for the timing of the decoder. The range should be between 20
+  (60wpm) and 240 (5wpm)
+
+  Parameter list:
+  long val        the strength of audio signal
+
+  Return value;
+  void
+
+*****/
+void CWProcessing::DoSignalHistogram(long val) {
+  float compareFactor = 2.0;
+  int32_t firstNonEmpty;
+  int32_t tempDit, tempDah;
+  int32_t offset;
+
+  if (valFlag == 0) {
+    valRef1 = signalElapsedTime;
+    signalStartOld = millis();
+    valFlag = 1;
+  }
+
+  if (millis() - signalStartOld > LOWEST_ATOM_TIME && valFlag == 1) {
+    gapRef1 = gapLength;
+    valRef2 = signalElapsedTime;
+    valFlag = 0;
+  }
+
+  if ((valRef2 >= valRef1 * compareFactor && gapRef1 <= valRef1 * compareFactor)
+      || (valRef1 >= valRef2 * compareFactor && gapRef1 <= valRef2 * compareFactor)) {
+    // See if consecutive signal lengths in approximate dit to dah ratio and which one is larger
+    if (valRef2 >= valRef1) {
+      aveDitLength = (long)(0.9 * aveDitLength + 0.1 * valRef1);  //Do some dit length averaging
+      aveDahLength = (long)(0.9 * aveDahLength + 0.1 * valRef2);
+    } else {
+      aveDitLength = (long)(0.9 * aveDitLength + 0.1 * valRef2);  // Use larger one. Note reversal of calc order
+      aveDahLength = (long)(0.9 * aveDahLength + 0.1 * valRef1);  // Do some dah length averaging
+    }
+  }
+  thresholdGeometricMean = sqrt(aveDitLength * aveDahLength);    //calculate geometric mean
+  thresholdArithmeticMean = (aveDitLength + aveDahLength) >> 1;  // Fast divide by 2 on integer data
+
+  signalHistogram[val]++;  // Don't care which half it's in, just put it in
+
+  offset = (uint32_t)thresholdGeometricMean - 1;  // Only do cast once
+  // Dit calculation
+  // 2nd parameter means we only look for dits below the geomean.
+
+  for (int32_t j = (int32_t)thresholdGeometricMean; j; j--) {
+    if (signalHistogram[j] != 0) {
+      firstNonEmpty = j;
+      break;
+    }
+  }
+
+  JackClusteredArrayMax(signalHistogram, offset, &tempDit, (int32_t *)&transmitDitLength, &firstNonEmpty, (int32_t)1);
+  // dah calculation
+  // Elements above the geomean. Note larger spread: higher variance
+  JackClusteredArrayMax(&signalHistogram[offset], HISTOGRAM_ELEMENTS - offset, &tempDah, (int32_t *)&dahLength, &firstNonEmpty, (uint32_t)3);
+  dahLength += (uint32_t)offset;
+
+  if (tempDit > SCALE_CONSTANT && tempDah > SCALE_CONSTANT) {  //Adaptive dit signalHistogram[]
+    for (int k = 0; k < HISTOGRAM_ELEMENTS; k++) {
+      signalHistogram[k] = ADAPTIVE_SCALE_FACTOR * signalHistogram[k];
+    }
+  }
+}
+
+
+/*****
+  Purpose: Calculate Goertzel Algorithn to enable decoding CW
+
+  Parameter list:
+    int numSamples,         // number of sample in data array
+    int TARGET_FREQUENCY,   // frequency for which the magnitude of the transform is to be found
+    int SAMPLING_RATE,      // Sampling rate in our case 24ksps
+    float* data             // pointer to input data array
+
+  Return value;
+    float magnitude     //magnitude of the transform at the target frequency
+
+*****/
+float CWProcessing::goertzel_mag(int numSamples, int TARGET_FREQUENCY, int SAMPLING_RATE, float *data) {
+  int k, i;
+  float floatnumSamples;
+  float omega, sine, cosine, coeff, q0, q1, q2, magnitude, real, imag;
+
+  float scalingFactor = numSamples / 2.0;
+
+  floatnumSamples = (float)numSamples;
+  k = (int)(0.5 + ((floatnumSamples * TARGET_FREQUENCY) / SAMPLING_RATE));
+  omega = (2.0 * M_PI * k) / floatnumSamples;
+  sine = sin(omega);
+  cosine = cos(omega);
+  coeff = 2.0 * cosine;
+  q0 = 0;
+  q1 = 0;
+  q2 = 0;
+
+  for (i = 0; i < numSamples; i++) {
+    q0 = coeff * q1 - q2 + data[i];
+    q2 = q1;
+    q1 = q0;
+  }
+  real = (q1 - q2 * cosine) / scalingFactor;  // calculate the real and imaginary results scaling appropriately
+  imag = (q2 * sine) / scalingFactor;
+
+  magnitude = sqrtf(real * real + imag * imag);
+  return magnitude;
+}
+
+
+// Iambic keyer methods follow.
+
+void CWProcessing::init_iambic() {
+
+  g_keyerState = KSTYPE::IDLE;
+  g_keyerControl = IAMBIC_B;  // Make Iambic B the default mode
+  //    #if defined (KEYER_MODE_IS_IAMBIC_A)
+  //      g_keyerControl = IAMBIC_A; // Override with Iambic A via conditional compilation
+  //    #endif
+}
+
+
+//    Latch dit and/or dah press
+void CWProcessing::updatePaddleLatch() {
+  if (digitalRead(ConfigData.paddleDit) == LOW) {
+    g_keyerControl |= DIT_L;  // |= is bitwise OR.  This is the same as g_keyerControl = g_keyerControl | DIT_L;
+  }
+  if (digitalRead(ConfigData.paddleDah) == LOW) {
+    g_keyerControl |= DAH_L;
+  }
+}
+
+
+void CWProcessing::iambicStateMachine(uint32_t &cwTimer) {
+
+  // This state machine translates paddle input into DITS and DAHs and keys the transmitter.
+  switch (g_keyerState) {
+    case KSTYPE::IDLE:  // Wait for direct or latched paddle press
+      if ((digitalRead(ConfigData.paddleDit) == LOW) || (digitalRead(ConfigData.paddleDah) == LOW) || (g_keyerControl & 0x03)) {
+        updatePaddleLatch();
+        g_keyerState = KSTYPE::CHK_DIT;
+      }
+      break;
+
+    case KSTYPE::CHK_DIT:  // See if the dit paddle was pressed
+      if (g_keyerControl & DIT_L) {
+        g_keyerControl |= DIT_PROC;
+        sendDit = true;
+        g_keyerState = KSTYPE::KEYED_PREP;
+      } else {
+        g_keyerState = KSTYPE::CHK_DAH;
+      }
+      break;
+
+    case KSTYPE::CHK_DAH:
+      // See if dah paddle was pressed
+      if (g_keyerControl & DAH_L) {
+        sendDah = true;
+        g_keyerState = KSTYPE::KEYED_PREP;
+      } else {
+        g_keyerState = KSTYPE::PRE_IDLE;
+      }
+      break;
+
+    case KSTYPE::KEYED_PREP:  // Prep for transmit, state shared for dit or dah.
+
+      g_keyerControl &= ~(DIT_L + DAH_L);  // clear both paddle latch bits
+
+      g_keyerState = KSTYPE::KEYED;  // next state
+      break;
+
+    case KSTYPE::KEYED:
+
+      cwexciter.CW_ExciterIQData(CW_SHAPING_RISE);
+      if (sendDit) {
+        for (uint32_t i = 0; i < transmitDitUnshapedBlocks; i = i + 1)
+          cwexciter.CW_ExciterIQData(CW_SHAPING_NONE);
+      }
+      if (sendDah) {
+        for (uint32_t i = 0; i < transmitDahUnshapedBlocks; i = i + 1)
+          cwexciter.CW_ExciterIQData(CW_SHAPING_NONE);
+      }
+      cwexciter.CW_ExciterIQData(CW_SHAPING_FALL);
+
+      sendDit = false;
+      sendDah = false;
+ 
+      g_keyerState = KSTYPE::INTER_ELEMENT;   // next state
+      // Reset the cwTimer (used in .ino), which resets the user-selected transmit delay.  This is passed in as a reference.
+      cwTimer = millis();
+
+      if (g_keyerControl & IAMBIC_B)
+        updatePaddleLatch();  // early paddle latch check in Iambic B mode
+
+      break;
+
+    case KSTYPE::INTER_ELEMENT:   // Insert time between dits/dahs
+
+      for (uint32_t i = 0; i < (transmitDitUnshapedBlocks + 2); i = i + 1)
+        cwexciter.CW_ExciterIQData(CW_SHAPING_ZERO);
+
+      updatePaddleLatch();                      // latch paddle state
+                                                //      if (millis() > ktimer) {                    // are we at end of inter-space ?
+      if (g_keyerControl & DIT_PROC) {          // was it a dit or dah ?
+        g_keyerControl &= ~(DIT_L + DIT_PROC);  // clear two bits
+        g_keyerState = KSTYPE::CHK_DAH;                 // dit done, check for dah
+      } else {
+        g_keyerControl &= ~(DAH_L);           // clear dah latch
+        g_keyerState = KSTYPE::PRE_IDLE;              // go idle
+      }
+      //      }
+      break;
+
+    case KSTYPE::PRE_IDLE:  // Wait for an intercharacter space
+
+      // Check for direct or latched paddle press
+      if ((digitalRead(ConfigData.paddleDit) == LOW) || (digitalRead(ConfigData.paddleDah) == LOW) || (g_keyerControl & 0x03)) {
+        updatePaddleLatch();
+        g_keyerState = KSTYPE::CHK_DIT;
+      }
+
+      break;
+  }
+}  // End of iambic keyer state machine.
