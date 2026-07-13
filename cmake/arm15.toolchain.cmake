@@ -1,6 +1,6 @@
 if (NOT DEFINED teensy_toolchain_file_has_executed)
     set(teensy_toolchain_file_has_executed 1 CACHE INTERNAL "")
-    set(COMPILER_PATH "$ENV{PRJ_DIR}/teensy/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi/bin" CACHE INTERNAL "")
+    set(COMPILER_PATH "$ENV{PRJ_DIR}/teensy/arm-gnu-toolchain-15.3.rel1-x86_64-arm-none-eabi/bin" CACHE INTERNAL "")
 endif()
 
 set(build_command_gcc arm-none-eabi-gcc)
